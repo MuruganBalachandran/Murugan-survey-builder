@@ -16,7 +16,13 @@
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
     "useDefineForClassFields": true,
-    "types": ["vite/client"]
+    "types": ["vite/client"],
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/components/*": ["./src/components/*"],
+      "@/lib/*": ["./src/lib/*"],
+      "@/theme/*": ["./src/theme/*"]
+    }
   },
   "include": ["src", "vite.config.ts"]
 }
