@@ -56,17 +56,31 @@ The API is stateless — JWT auth, no sessions. The frontend stores the token in
 
 The survey builder runs entirely inside an OffCanvas drawer — no separate route. This keeps the surveys list and builder on one page so changes appear immediately without navigation.
 
-## Key decisions
 
-**D1 over KV** — Survey data is relational (surveys → questions → responses). KV is key-value only; D1 gives SQL joins and `COUNT(*)` subqueries for response/question counts without extra round trips.
+## Most interesting decisions
 
-**Builder as a drawer, not a route** — Navigating to `/surveys/:id/edit` would require refetching survey data and managing back-navigation state. A drawer over the same page keeps `currentSurvey` in Redux and updates the grid beneath it in real time.
+**Locked dashboard instead of a blank login page** — Unauthenticated users see a blurred version of the real dashboard — analytics, charts, surveys — but cannot interact with it. The goal was to communicate the product's value before asking for a sign-in. It creates curiosity and gives context rather than dropping users onto an empty screen.
 
-**No ORM** — The query layer uses raw D1 SQL. For this scope, an ORM adds indirection without benefit. The SQL is straightforward and readable in `api/src/queries/`.
+**Chart built without a charting library** — The responses-over-time chart is plain `div` elements with heights calculated relative to the busiest day. No extra dependency, no bundle cost, and complete control over styling. The current day is highlighted and empty states are handled gracefully so the chart stays informative even with minimal data.
 
-**redux-persist only for auth** — Only the auth slice is persisted (token survives reload). Survey data is always re-fetched — stale survey state would be a worse UX than a brief loading state.
+**Multi-step OffCanvas wizard for survey creation** — Survey creation is split into four steps (details → branding → questions → publish) inside a drawer. Users never leave the surveys page, so there are no route transitions to manage and the survey list updates immediately after creation.
 
-**PBKDF2 over bcrypt** — Cloudflare Workers run on V8, not Node. `@noble/hashes` is a pure-JS crypto library that works in the Workers runtime without native bindings. 100k iterations, random 16-byte salt, stored as `iterations$salt$hash`.
+**Client-side filtering, search, sort, and pagination composed together** — All four are applied on the client from a single in-memory list. No extra requests, instant feedback, and draft surveys are surfaced prominently so users can easily pick up unfinished work.
+
+## What I'd do differently with another week
+
+Right now every published survey is fully public — anyone with the link can respond, anonymously, with no way to know who submitted what.
+
+I'd add authenticated responses. A survey owner could mark a survey as private, requiring respondents to sign in before submitting. The response would then be tied to a verified identity instead of an anonymous submission.
+
+This opens up the real organisational use case — a team lead sends an internal survey to their team, only team members can respond, and the owner can see exactly who said what. Anonymous public surveys are a commodity. Authenticated internal surveys for teams is where the product becomes genuinely useful to a paying user.
+
+The work would touch three layers:
+- The API needs a `visibility` field on surveys (`public` / `private`) and the response endpoint needs to verify a JWT before accepting a submission.
+- The public survey page needs to handle the unauthenticated case gracefully — redirect to login, then return the respondent back to the survey after sign-in.
+- The dashboard responses view needs to surface respondent identity instead of showing "Anonymous submitted."
+
+The authentication infrastructure is already there — JWT, PBKDF2, the auth slice in Redux. The gap is purely on the response side. It would require a schema change on the responses table and a new respondent relationship, but nothing architecturally difficult.
 
 ## Running locally
 
@@ -86,4 +100,8 @@ pnpm build            # Production build of web/
 
 ## AI tools used
 
-Amazon Q Developer (IDE assistant) — used throughout for fixing TypeScript errors, wiring Redux thunks, and writing the READMEs. Every suggestion was reviewed, understood, and adjusted where needed before committing. The architecture decisions, component structure, and UX choices were made independently.
+**Amazon Q Developer (IDE assistant)** — Used primarily as an implementation accelerator for fixing TypeScript issues, reducing repetitive Redux/thunk boilerplate, speeding up refactors, and improving documentation quality. Helpful for productivity-oriented tasks, but generated code was always reviewed and simplified where necessary to maintain the minimal, consistent code style of the project.
+
+**Claude** — Used mainly during planning and UI iteration for discussing feature organisation, validating component structure ideas, and exploring UX tradeoffs before implementation. Some UI suggestions were intentionally overridden to better align with the product direction and interaction model I wanted.
+
+**What remained fully manual** — The core engineering and system design decisions were entirely my own: the drawer-based UX, D1 over KV, no ORM, PBKDF2 for auth, and the overall project and file architecture. AI tools were used as assistants within an already defined structure — not as decision-makers. Every generated suggestion was reviewed, understood, modified when necessary, and integrated intentionally before being committed.
