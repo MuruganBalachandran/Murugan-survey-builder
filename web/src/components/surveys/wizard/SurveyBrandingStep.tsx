@@ -1,9 +1,10 @@
+// region imports
 import { Input } from '@/components/ui/Input'
 import { BRAND_SWATCHES } from '@/utils/constants'
 import type { SurveyBrandingStepProps } from '@/types'
+// endregion
 
-const brandSwatches = BRAND_SWATCHES
-
+// region component
 export const SurveyBrandingStep = ({
   primaryColor,
   logoUrl,
@@ -14,6 +15,7 @@ export const SurveyBrandingStep = ({
   onLogoUrlBlur,
 }: SurveyBrandingStepProps) => (
   <div className="space-y-5">
+    {/* native color picker + hex display */}
     <div>
       <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-gray-600">Primary color</label>
       <div className="flex items-center gap-3">
@@ -29,10 +31,11 @@ export const SurveyBrandingStep = ({
       </div>
     </div>
 
+    {/* preset swatches for quick color selection */}
     <div>
       <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-gray-600">Preset colors</label>
       <div className="grid grid-cols-6 gap-3 sm:grid-cols-12">
-        {brandSwatches.map((swatch) => (
+        {BRAND_SWATCHES.map((swatch) => (
           <button
             key={swatch}
             type="button"
@@ -50,6 +53,7 @@ export const SurveyBrandingStep = ({
       </div>
     </div>
 
+    {/* file upload converts the image to a data URL stored in logoUrl */}
     <div>
       <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-gray-600">
         Logo upload
@@ -63,6 +67,7 @@ export const SurveyBrandingStep = ({
       {logoFileName && <p className="mt-1.5 text-xs text-gray-500">Selected: {logoFileName}</p>}
     </div>
 
+    {/* direct URL input as alternative to file upload */}
     <Input
       label="Logo URL"
       type="url"
@@ -73,6 +78,7 @@ export const SurveyBrandingStep = ({
       hint="Uploading a file will convert it to a previewable data URL here."
     />
 
+    {/* live preview of the selected color and logo */}
     <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
       <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Preview</p>
       <div className="mt-3 flex items-center gap-3">
@@ -89,3 +95,4 @@ export const SurveyBrandingStep = ({
     </div>
   </div>
 )
+// endregion

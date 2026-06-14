@@ -1,9 +1,13 @@
+// region imports
 import { AppLayout } from '@/components/Layout/AppLayout'
+// endregion
 
+// region component
 export const PrivacyPolicyPage = () => (
   <AppLayout>
     <div className="app-page">
       <section className="app-panel space-y-6">
+        {/* browser back navigation */}
         <button
           type="button"
           onClick={() => window.history.back()}
@@ -25,3 +29,4 @@ export const PrivacyPolicyPage = () => (
     </div>
   </AppLayout>
 )
+// endregion

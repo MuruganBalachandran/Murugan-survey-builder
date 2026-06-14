@@ -1,7 +1,12 @@
-import { forwardRef, type ReactNode } from 'react'
+// region imports
+import { forwardRef } from 'react'
 import { cn } from '@/lib/cn'
 import type { ButtonProps, ButtonVariant, ButtonSize } from '@/types'
+// endregion
 
+// region constants
+
+// per-variant inline styles — gradient backgrounds, shadows, text colours
 const variants: Record<ButtonVariant, React.CSSProperties> = {
   primary: {
     background: 'linear-gradient(135deg, #6366F1 0%, #7C7FF5 100%)',
@@ -35,6 +40,7 @@ const variants: Record<ButtonVariant, React.CSSProperties> = {
   },
 }
 
+// padding + font-size + border-radius per size token
 const sizes: Record<ButtonSize, string> = {
   xs: 'px-2.5 py-1.5 text-xs font-medium rounded-md',
   sm: 'px-3 py-2 text-sm font-medium rounded-lg',
@@ -43,6 +49,9 @@ const sizes: Record<ButtonSize, string> = {
   xl: 'px-8 py-3.5 text-base font-semibold rounded-xl',
 }
 
+// endregion
+
+// region component
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {
@@ -62,6 +71,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ) => {
     const isDisabled = disabled || isLoading
 
+    // region render
     return (
       <button
         ref={ref}
@@ -81,18 +91,16 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           letterSpacing: '0.02em',
           fontWeight: 600,
           fontSize: '14px',
+          // disabled state overrides shadow and cursor via inline style
           ...(isDisabled && { opacity: 0.4, cursor: 'not-allowed', boxShadow: 'none' }),
           ...style,
         }}
-        onMouseOver={(e) => {
-          if (!isDisabled) e.currentTarget.style.opacity = '0.88'
-        }}
-        onMouseOut={(e) => {
-          e.currentTarget.style.opacity = '1'
-        }}
+        onMouseOver={(e) => { if (!isDisabled) e.currentTarget.style.opacity = '0.88' }}
+        onMouseOut={(e) => { e.currentTarget.style.opacity = '1' }}
         {...props}
       >
         {isLoading ? (
+          // spinner replaces icon when loading; label still visible
           <>
             <svg
               className="h-4 w-4 animate-spin text-current"
@@ -118,7 +126,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         )}
       </button>
     )
+    // endregion
   },
 )
 
 Button.displayName = 'Button'
+// endregion

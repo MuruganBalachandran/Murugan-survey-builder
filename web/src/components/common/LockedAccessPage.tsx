@@ -1,15 +1,21 @@
+// region imports
 import { useNavigate } from '@tanstack/react-router'
 import { Button } from '@/components/ui/Button'
 import { AppLayout } from '@/components/Layout/AppLayout'
 import { LockAccessIcon } from '@/utils/icons'
+// endregion
 
+// region component
 export const LockedAccessPage = () => {
   const navigate = useNavigate()
 
+  // region render
   return (
     <AppLayout>
       <main className="app-page">
         <div className="relative min-h-[calc(100vh-10rem)] overflow-hidden rounded-[2rem] border border-white/70 bg-white/60 shadow-xl">
+
+          {/* blurred dashboard preview shown behind the lock card */}
           <div className="pointer-events-none absolute inset-0 blur-sm opacity-90">
             <div className="grid h-full gap-6 p-6 lg:grid-cols-[1.3fr_0.7fr]">
               <section className="rounded-3xl bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600 p-8 text-white">
@@ -56,6 +62,8 @@ export const LockedAccessPage = () => {
           </div>
 
           <div className="absolute inset-0 bg-white/10 backdrop-blur-[1px]" />
+
+          {/* centred lock card with sign-in / sign-up CTAs */}
           <div className="relative z-10 flex min-h-[calc(100vh-10rem)] items-center justify-center p-6">
             <div className="w-full max-w-md rounded-3xl border border-white/80 bg-white/95 p-7 text-center shadow-2xl shadow-violet-950/15 backdrop-blur-xl">
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-blue-500 text-white shadow-lg shadow-violet-200">
@@ -83,5 +91,6 @@ export const LockedAccessPage = () => {
       </main>
     </AppLayout>
   )
+  // endregion
 }
-
+// endregion

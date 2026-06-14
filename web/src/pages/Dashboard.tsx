@@ -1,3 +1,4 @@
+// region imports
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { AppLayout } from '@/components/Layout/AppLayout'
@@ -7,7 +8,9 @@ import { getSurveyResponses } from '@/services/api/responses'
 import { fetchUserSurveys } from '@/store/slices/surveySlice'
 import { DashboardSurveyIcon, ResponseIcon, CompletionIcon, PublishedIcon, DraftIcon } from '@/utils/icons'
 import type { DashboardResponse, StatCardProps } from '@/types'
+// endregion
 
+// region helpers
 const StatCard = ({ label, value, detail, icon, iconClassName }: StatCardProps) => (
   <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
     <div className="flex items-start justify-between gap-4">
@@ -21,12 +24,14 @@ const StatCard = ({ label, value, detail, icon, iconClassName }: StatCardProps) 
   </div>
 )
 
+// returns true when an answer field has a non-empty value
 const isAnswered = (value: string | string[] | number) => {
   if (Array.isArray(value)) return value.length > 0
   if (typeof value === 'string') return value.trim().length > 0
   return true
 }
 
+// returns a Date set to 00:00 of the current ISO week's Monday
 const startOfCurrentWeek = () => {
   const date = new Date()
   const day = date.getDay()
@@ -36,6 +41,7 @@ const startOfCurrentWeek = () => {
   return date
 }
 
+// converts a UTC date string into a human-readable relative label
 const formatRelativeTime = (dateValue: string) => {
   const elapsedSeconds = Math.max(0, Math.floor((Date.now() - new Date(dateValue).getTime()) / 1000))
   if (elapsedSeconds < 60) return 'Just now'
@@ -52,6 +58,7 @@ const formatRelativeTime = (dateValue: string) => {
   return new Date(dateValue).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
+// returns a time-of-day greeting string
 const getGreeting = () => {
   const hour = new Date().getHours()
   if (hour < 12) return 'Good morning'
@@ -59,6 +66,9 @@ const getGreeting = () => {
   return 'Good evening'
 }
 
+// endregion
+
+// region component
 export const DashboardPage = () => {
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
@@ -67,26 +77,26 @@ export const DashboardPage = () => {
   const [responses, setResponses] = useState<DashboardResponse[]>([])
   const [responsesLoading, setResponsesLoading] = useState(false)
 
+  // region effects
+
+  // fetch surveys on mount and redirect unauthenticated users
   useEffect(() => {
     if (!isAuthenticated) {
       navigate({ to: '/login' })
       return
     }
-
     dispatch(fetchUserSurveys())
   }, [dispatch, isAuthenticated, navigate])
 
+  // re-fetch surveys when the tab regains focus to keep data fresh
   useEffect(() => {
     if (!isAuthenticated) return
-
-    const refreshSurveys = () => {
-      dispatch(fetchUserSurveys())
-    }
-
+    const refreshSurveys = () => dispatch(fetchUserSurveys())
     window.addEventListener('focus', refreshSurveys)
     return () => window.removeEventListener('focus', refreshSurveys)
   }, [dispatch, isAuthenticated])
 
+  // load responses for all surveys to compute stats
   useEffect(() => {
     if (!isAuthenticated || surveys.length === 0) {
       setResponses([])
@@ -102,7 +112,6 @@ export const DashboardPage = () => {
           try {
             const result = await getSurveyResponses(survey.id)
             if (!result.success || !result.data) return []
-
             return result.data.map((response) => ({
               ...response,
               surveyId: survey.id,
@@ -127,12 +136,19 @@ export const DashboardPage = () => {
     }
   }, [isAuthenticated, surveys])
 
+  // endregion
+
+  // region derived data
+
   const dashboardData = useMemo(() => {
     const totalResponses = surveys.reduce((sum, survey) => sum + (survey.responseCount ?? 0), 0)
+
+    // sort all responses newest-first for the activity feed
     const sortedResponses = [...responses].sort(
       (first, second) => new Date(second.submittedAt).getTime() - new Date(first.submittedAt).getTime(),
     )
 
+    // build a per-day count array for the current Mon-Sun week
     const weekStart = startOfCurrentWeek()
     const weekDays = Array.from({ length: 7 }, (_, index) => {
       const date = new Date(weekStart)
@@ -153,6 +169,8 @@ export const DashboardPage = () => {
     })
 
     const responsesThisWeek = weekDays.reduce((sum, day) => sum + day.count, 0)
+
+    // completion rate = answered fields / total expected fields across all responses
     const answeredFields = responses.reduce(
       (sum, response) => sum + response.answers.filter((answer) => isAnswered(answer.value)).length,
       0,
@@ -176,15 +194,20 @@ export const DashboardPage = () => {
     }
   }, [responses, surveys])
 
+  // endregion
+
   if (!isAuthenticated) return null
 
+  // scale bar chart heights relative to the busiest day
   const maxDailyResponses = Math.max(...dashboardData.weekDays.map((day) => day.count), 1)
+  // scale progress bars relative to the top-performing survey
   const maxSurveyResponses = Math.max(
     ...dashboardData.topSurveys.map((survey) => survey.responseCount ?? 0),
     1,
   )
   const isDashboardLoading = isLoading && surveys.length === 0
 
+  // region render
   return (
     <AppLayout>
       <div className="app-page">
@@ -210,6 +233,7 @@ export const DashboardPage = () => {
           </div>
         </section>
 
+        {/* stat cards row */}
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           <StatCard
             label="Surveys"
@@ -247,6 +271,8 @@ export const DashboardPage = () => {
             iconClassName="bg-amber-50 text-amber-600"
           />
         </section>
+
+        {/* draft surveys nudge — only shown when drafts exist */}
         {dashboardData.draftSurveys.length > 0 && (
           <section className="rounded-2xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -286,6 +312,7 @@ export const DashboardPage = () => {
           </section>
         )}
 
+        {/* weekly bar chart + top surveys side-by-side */}
         <section className="grid gap-6 xl:grid-cols-[1.55fr_0.85fr]">
           <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
             <div className="flex items-start justify-between gap-4">
@@ -300,6 +327,7 @@ export const DashboardPage = () => {
 
             <div className="mt-8 flex h-64 items-end gap-3 sm:gap-5">
               {dashboardData.weekDays.map((day) => {
+                // minimum bar height of 4% keeps empty days visible
                 const height = day.count === 0 ? 4 : Math.max(12, (day.count / maxDailyResponses) * 100)
 
                 return (
@@ -364,6 +392,7 @@ export const DashboardPage = () => {
                         View analytics
                       </button>
                     </div>
+                    {/* progress bar width proportional to top survey response count */}
                     <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-gray-100">
                       <div
                         className="h-full rounded-full bg-violet-500"
@@ -379,6 +408,7 @@ export const DashboardPage = () => {
           </div>
         </section>
 
+        {/* recent activity feed */}
         <section className="grid gap-6 lg:grid-cols-1">
           <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
             <div>
@@ -422,4 +452,6 @@ export const DashboardPage = () => {
       </div>
     </AppLayout>
   )
+  // endregion
 }
+// endregion

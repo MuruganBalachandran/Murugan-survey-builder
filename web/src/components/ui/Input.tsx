@@ -1,11 +1,16 @@
+// region imports
 import { forwardRef } from 'react'
 import { cn } from '@/lib/cn'
 import type { InputProps } from '@/types'
+// endregion
 
+// region component
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, hint, icon, suffix, className, id, ...props }, ref) => {
+    // fall back to name as the id so label htmlFor always links correctly
     const inputId = id || props.name
 
+    // region render
     return (
       <div className="w-full">
         {label && (
@@ -19,6 +24,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         )}
 
         <div className="relative flex items-center">
+          {/* optional leading icon */}
           {icon && (
             <div className="pointer-events-none absolute left-3 flex items-center text-gray-400">
               {icon}
@@ -39,27 +45,25 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               suffix && 'pr-10',
               className,
             )}
-            onFocus={(e) => {
-              props.onFocus?.(e)
-            }}
-            onBlur={(e) => {
-              props.onBlur?.(e)
-            }}
+            onFocus={(e) => props.onFocus?.(e)}
+            onBlur={(e) => props.onBlur?.(e)}
             {...props}
           />
 
+          {/* optional trailing suffix (e.g. unit label or icon) */}
           {suffix && (
-            <div className="absolute right-3 flex items-center text-gray-400">
-              {suffix}
-            </div>
+            <div className="absolute right-3 flex items-center text-gray-400">{suffix}</div>
           )}
         </div>
 
+        {/* error takes priority over hint */}
         {error && <p className="mt-1.5 text-xs font-medium text-red-600">{error}</p>}
         {hint && !error && <p className="mt-1.5 text-xs text-gray-500">{hint}</p>}
       </div>
     )
+    // endregion
   },
 )
 
 Input.displayName = 'Input'
+// endregion

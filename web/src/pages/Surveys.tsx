@@ -1,21 +1,16 @@
+// region imports
 import { Outlet, useLocation } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from '@/lib/toast'
 import { AppLayout } from '@/components/Layout/AppLayout'
 import { CustomModal } from '@/components/common/CustomModal'
-import { OffCanvas } from '@/components/common/OffCanvas'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
-import { SurveysGrid } from '@/components/surveys/SurveysGrid'
-import { SurveyDetailsForm } from '@/components/surveys/SurveyDetailsForm'
-import { BrandingForm } from '@/components/surveys/BrandingForm'
-import { ShareSurveyModal } from '@/components/surveys/ShareSurveyModal'
-import { SurveyBasicsStep } from '@/components/surveys/SurveyBasicsStep'
-import { SurveyBrandingStep } from '@/components/surveys/SurveyBrandingStep'
-import { SurveyQuestionsStep } from '@/components/surveys/SurveyQuestionsStep'
-import { SurveyPublishStep } from '@/components/surveys/SurveyPublishStep'
-import { QuestionComposerCard } from '@/components/surveys/QuestionComposerCard'
+import { SurveysGrid } from '@/components/surveys/grid/SurveysGrid'
+import { ShareSurveyModal } from '@/components/surveys/share/ShareSurveyModal'
+import { CreateSurveyDrawer } from '@/components/surveys/drawers/CreateSurveyDrawer'
+import { EditSurveyDrawer } from '@/components/surveys/drawers/EditSurveyDrawer'
 import { useModal } from '@/hooks/useModal'
 import { useAppDispatch, useAppSelector } from '@/hooks/redux'
 import type { Survey } from '@/services/api/surveys'
@@ -56,9 +51,11 @@ import {
   getSurveyUrl,
   readFileAsDataUrl,
 } from '@/utils/common/survey'
+// endregion
 
 const defaultQuestionForm: QuestionFormState = DEFAULT_QUESTION_FORM
 
+// region component
 export const SurveysPage = () => {
   const location = useLocation()
   const dispatch = useAppDispatch()
@@ -69,7 +66,8 @@ export const SurveysPage = () => {
   const isLoading = useAppSelector((state) => state.survey.isLoading)
   const error = useAppSelector((state) => state.survey.error)
 
-  // State management
+  // region state
+
   const [selectedSurveyId, setSelectedSurveyId] = useState<string | null>(null)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [createStep, setCreateStep] = useState<1 | 2 | 3 | 4>(1)
@@ -95,21 +93,23 @@ export const SurveysPage = () => {
 
   const pageSize = SURVEY_PAGE_SIZE
 
-  // Memoized computations
+  // endregion
+
+  // region derived data
+
+  // resolve the survey currently open in either drawer
   const activeSurvey = useMemo(() => {
     const surveyId = selectedSurveyId ?? (isCreateOpen ? createSurveyId : null)
     if (!surveyId) return null
-    if (currentSurvey?.id === surveyId) {
-      return currentSurvey
-    }
+    if (currentSurvey?.id === surveyId) return currentSurvey
     return surveys.find((survey) => survey.id === surveyId) ?? null
   }, [currentSurvey, createSurveyId, isCreateOpen, selectedSurveyId, surveys])
 
   const activeQuestions = activeSurvey?.questions ?? []
 
+  // true when the edit-drawer form differs from the persisted survey
   const hasEditChanges = useMemo(() => {
     if (!activeSurvey) return false
-
     return (
       activeSurvey.title !== surveyForm.title.trim() ||
       (activeSurvey.description || '') !== surveyForm.description.trim() ||
@@ -118,6 +118,7 @@ export const SurveysPage = () => {
     )
   }, [activeSurvey, surveyForm])
 
+  // surveys sorted newest-first as the base for filters
   const orderedSurveys = useMemo(
     () =>
       [...surveys].sort((first, second) => {
@@ -128,32 +129,22 @@ export const SurveysPage = () => {
     [surveys],
   )
 
+  // apply date range, status, search, and sort filters
   const filteredSurveys = useMemo(() => {
     const query = surveySearch.trim().toLowerCase()
     const now = Date.now()
-    const rangeFiltered = orderedSurveys.filter((survey) => {
-      if (surveyDateRange === 'all') {
-        return true
-      }
 
+    const rangeFiltered = orderedSurveys.filter((survey) => {
+      if (surveyDateRange === 'all') return true
       const createdAt = new Date(survey.createdAt).getTime()
       const daysAgo = (now - createdAt) / (1000 * 60 * 60 * 24)
-
-      if (surveyDateRange === '7d') {
-        return daysAgo <= 7
-      }
-
-      if (surveyDateRange === '30d') {
-        return daysAgo <= 30
-      }
-
+      if (surveyDateRange === '7d') return daysAgo <= 7
+      if (surveyDateRange === '30d') return daysAgo <= 30
       return true
     })
 
     const statusFiltered = rangeFiltered.filter((survey) => {
-      if (surveyStatus === 'all') {
-        return true
-      }
+      if (surveyStatus === 'all') return true
       return survey.status === surveyStatus
     })
 
@@ -164,7 +155,6 @@ export const SurveysPage = () => {
             .filter(Boolean)
             .join(' ')
             .toLowerCase()
-
           return searchable.includes(query)
         })
 
@@ -184,6 +174,8 @@ export const SurveysPage = () => {
   }, [orderedSurveys, surveyDateRange, surveyStatus, surveySearch, surveySortBy])
 
   const totalPages = Math.max(1, Math.ceil(filteredSurveys.length / pageSize))
+
+  // slice the filtered list to the current page
   const paginatedSurveys = useMemo(() => {
     const startIndex = (currentPage - 1) * pageSize
     return filteredSurveys.slice(startIndex, startIndex + pageSize)
@@ -191,30 +183,33 @@ export const SurveysPage = () => {
 
   const pageItems = useMemo(() => buildPaginationItems(currentPage, totalPages), [currentPage, totalPages])
 
-  // Effects
+  // endregion
+
+  // region effects
+
+  // load all surveys on mount
   useEffect(() => {
     dispatch(fetchUserSurveys())
   }, [dispatch])
 
+  // re-fetch surveys whenever the window regains focus
   useEffect(() => {
-    const refreshSurveys = () => {
-      dispatch(fetchUserSurveys())
-    }
-
+    const refreshSurveys = () => { dispatch(fetchUserSurveys()) }
     window.addEventListener('focus', refreshSurveys)
     return () => window.removeEventListener('focus', refreshSurveys)
   }, [dispatch])
 
+  // clamp page to valid range when filters shrink the result set
   useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(totalPages)
-    }
+    if (currentPage > totalPages) setCurrentPage(totalPages)
   }, [currentPage, totalPages])
 
+  // reset to page 1 whenever the search query changes
   useEffect(() => {
     setCurrentPage(1)
   }, [surveySearch])
 
+  // load full survey detail whenever the active drawer changes
   useEffect(() => {
     const surveyIdToLoad = selectedSurveyId ?? (isCreateOpen ? createSurveyId : null)
     if (surveyIdToLoad) {
@@ -224,9 +219,9 @@ export const SurveysPage = () => {
     }
   }, [createSurveyId, dispatch, isCreateOpen, selectedSurveyId])
 
+  // sync the form fields when a different survey becomes active
   useEffect(() => {
     if (!activeSurvey) return
-
     setSurveyForm({
       title: activeSurvey.title,
       description: activeSurvey.description || '',
@@ -235,6 +230,7 @@ export const SurveysPage = () => {
     })
   }, [activeSurvey?.id])
 
+  // show toast and clear redux error whenever one is set
   useEffect(() => {
     if (error) {
       const errorMsg = Object.values(error)[0] || 'An error occurred'
@@ -243,7 +239,24 @@ export const SurveysPage = () => {
     }
   }, [dispatch, error])
 
-  // Event handlers
+  // endregion
+
+  // region helpers
+
+  const refreshData = async (surveyId?: string) => {
+    await dispatch(fetchUserSurveys())
+    if (surveyId) await dispatch(fetchSurveyById(surveyId))
+  }
+
+  // single field updater used by both drawers
+  const handleSurveyFormChange = (field: string, value: string) => {
+    setSurveyForm((current) => ({ ...current, [field]: value }))
+  }
+
+  // endregion
+
+  // region drawer controls
+
   const closeSurveyDrawer = () => {
     setSelectedSurveyId(null)
     setIsQuestionComposerOpen(false)
@@ -264,13 +277,6 @@ export const SurveysPage = () => {
     setLogoFileName('')
     setSurveyForm(defaultSurveyForm)
     setSurveyErrors({})
-  }
-
-  const refreshData = async (surveyId?: string) => {
-    await dispatch(fetchUserSurveys())
-    if (surveyId) {
-      await dispatch(fetchSurveyById(surveyId))
-    }
   }
 
   const openCreateDrawer = () => {
@@ -297,6 +303,7 @@ export const SurveysPage = () => {
     setIsQuestionComposerOpen(true)
   }
 
+  // populate question form from existing question data before opening
   const openEditQuestionDrawer = (question: Question) => {
     setQuestionMode('edit')
     setEditingQuestionId(question.id)
@@ -319,12 +326,25 @@ export const SurveysPage = () => {
       description: question.description || '',
       required: question.required,
       options:
-        (question.type === 'multiple_choice' || question.uiType === 'checkbox_group' || question.uiType === 'select') && question.options && question.options.length > 0
+        (question.type === 'multiple_choice' || question.uiType === 'checkbox_group' || question.uiType === 'select') &&
+        question.options &&
+        question.options.length > 0
           ? question.options.map((option) => option)
           : ['', ''],
     })
     setIsQuestionComposerOpen(true)
   }
+
+  const closeComposer = () => {
+    setIsQuestionComposerOpen(false)
+    setEditingQuestionId(null)
+    setQuestionForm(defaultQuestionForm)
+    setQuestionErrors({})
+  }
+
+  // endregion
+
+  // region validation
 
   const validateSurveyForm = () => {
     const nextErrors: Record<string, string> = {}
@@ -358,11 +378,7 @@ export const SurveysPage = () => {
     if (isMultipleChoiceQuestion(questionForm.type)) {
       if (!isValidQuestionOptions(questionForm.options)) {
         const cleaned = questionForm.options.map((opt) => opt.trim()).filter(Boolean)
-        if (cleaned.length < 2) {
-          nextErrors.options = 'Add at least 2 options'
-        } else {
-          nextErrors.options = 'Options must be unique'
-        }
+        nextErrors.options = cleaned.length < 2 ? 'Add at least 2 options' : 'Options must be unique'
       }
     }
 
@@ -370,18 +386,23 @@ export const SurveysPage = () => {
     return Object.keys(nextErrors).length === 0
   }
 
+  // endregion
+
+  // region handlers
+
+  // convert uploaded file to a data URL and store it in the form
   const handleLogoUpload = async (file: File | null) => {
     if (!file) {
       setLogoFileName('')
       setSurveyForm((current) => ({ ...current, logoUrl: '' }))
       return
     }
-
     const nextLogoUrl = await readFileAsDataUrl(file)
     setLogoFileName(file.name)
     setSurveyForm((current) => ({ ...current, logoUrl: nextLogoUrl }))
   }
 
+  // advance the create wizard, creating or updating the survey at step 2
   const handleWizardNext = async () => {
     if (createStep === 1) {
       if (!validateSurveyForm()) return
@@ -395,6 +416,7 @@ export const SurveysPage = () => {
         let surveyIdToRefresh: string | undefined = selectedSurveyId ?? undefined
 
         if (selectedSurveyId) {
+          // editing an existing survey — just update details
           const result = await dispatch(
             updateSurveyDetails({
               id: selectedSurveyId,
@@ -404,23 +426,17 @@ export const SurveysPage = () => {
               logoUrl: surveyForm.logoUrl.trim() || undefined,
             }),
           )
-
-          if (result.type !== updateSurveyDetails.fulfilled.type) {
-            throw new Error('Failed to update survey')
-          }
+          if (result.type !== updateSurveyDetails.fulfilled.type) throw new Error('Failed to update survey')
         } else {
+          // new survey — create first, then apply branding
           const createAction = await dispatch(
             createNewSurvey({
               title: surveyForm.title.trim(),
               description: surveyForm.description.trim() || undefined,
             }),
           )
-
           const createdSurveyId = (createAction.payload as { id?: string } | undefined)?.id
-
-          if (!createdSurveyId) {
-            throw new Error('Failed to create survey')
-          }
+          if (!createdSurveyId) throw new Error('Failed to create survey')
 
           const updateAction = await dispatch(
             updateSurveyDetails({
@@ -431,10 +447,7 @@ export const SurveysPage = () => {
               logoUrl: surveyForm.logoUrl.trim() || undefined,
             }),
           )
-
-          if (updateAction.type !== updateSurveyDetails.fulfilled.type) {
-            throw new Error('Failed to save branding')
-          }
+          if (updateAction.type !== updateSurveyDetails.fulfilled.type) throw new Error('Failed to save branding')
 
           surveyIdToRefresh = createdSurveyId
           setCreateSurveyId(createdSurveyId)
@@ -464,13 +477,9 @@ export const SurveysPage = () => {
     setCreateStep((current) => Math.max(1, current - 1) as 1 | 2 | 3)
   }
 
-  const handleWizardFinish = () => {
-    closeCreateWizard()
-  }
-
+  // save edits to an existing survey from the edit drawer
   const handleSaveSurvey = async () => {
     if (!activeSurvey || !validateSurveyForm()) return
-
     if (!hasEditChanges) {
       toast.info('No changes detected')
       return
@@ -487,7 +496,6 @@ export const SurveysPage = () => {
           logoUrl: surveyForm.logoUrl.trim() || undefined,
         }),
       )
-
       if (result.type === updateSurveyDetails.fulfilled.type) {
         await refreshData(activeSurvey.id)
         toast.success('Survey saved')
@@ -500,6 +508,7 @@ export const SurveysPage = () => {
     }
   }
 
+  // prompt for confirmation before deleting a survey
   const handleSurveyDelete = (survey: SurveyRecord) => {
     modal.openModal({
       title: 'Delete Survey',
@@ -509,18 +518,16 @@ export const SurveysPage = () => {
       cancelText: 'Cancel',
       onConfirm: async () => {
         await dispatch(deleteSurveyById(survey.id))
-        if (selectedSurveyId === survey.id) {
-          closeSurveyDrawer()
-        }
+        if (selectedSurveyId === survey.id) closeSurveyDrawer()
         await dispatch(fetchUserSurveys())
         toast.success('Survey deleted')
       },
     })
   }
 
+  // prompt for confirmation before deleting a question
   const handleQuestionDelete = (question: Question) => {
     if (!activeSurvey) return
-
     modal.openModal({
       title: 'Delete Question',
       description: `Delete "${question.title}"?`,
@@ -531,7 +538,6 @@ export const SurveysPage = () => {
         const result = await dispatch(
           deleteQuestionFromSurvey({ surveyId: activeSurvey.id, questionId: question.id }),
         )
-
         if (result.type === deleteQuestionFromSurvey.fulfilled.type) {
           await refreshData(activeSurvey.id)
           toast.success('Question deleted')
@@ -551,6 +557,7 @@ export const SurveysPage = () => {
     event.dataTransfer.dropEffect = 'move'
   }
 
+  // reorder questions after a drag-and-drop operation
   const handleQuestionDrop = async (targetQuestionId: string) => {
     if (!activeSurvey || !draggedQuestionId || draggedQuestionId === targetQuestionId) {
       setDraggedQuestionId(null)
@@ -589,6 +596,7 @@ export const SurveysPage = () => {
     setDraggedQuestionId(null)
   }
 
+  // create or update a question and close the composer on success
   const handleSaveQuestion = async () => {
     if (!activeSurvey || !validateQuestionForm()) return
 
@@ -611,12 +619,7 @@ export const SurveysPage = () => {
     try {
       const result =
         questionMode === 'edit' && editingQuestionId
-          ? await dispatch(
-              updateQuestionDetails({
-                ...payload,
-                questionId: editingQuestionId,
-              }),
-            )
+          ? await dispatch(updateQuestionDetails({ ...payload, questionId: editingQuestionId }))
           : await dispatch(addQuestionToSurvey(payload))
 
       if (
@@ -624,16 +627,13 @@ export const SurveysPage = () => {
         result.type === addQuestionToSurvey.fulfilled.type
       ) {
         await refreshData(activeSurvey.id)
-        setEditingQuestionId(null)
-        setQuestionForm(defaultQuestionForm)
         toast.success(questionMode === 'edit' ? 'Question updated' : 'Question added')
+        // close the full drawer when editing from the edit-survey panel
         if (questionMode === 'edit' && selectedSurveyId && !isCreateOpen) {
           closeSurveyDrawer()
         } else {
-          setIsQuestionComposerOpen(false)
+          closeComposer()
         }
-        setEditingQuestionId(null)
-        setQuestionForm(defaultQuestionForm)
       } else {
         toast.error('Failed to save question')
       }
@@ -642,9 +642,9 @@ export const SurveysPage = () => {
     }
   }
 
+  // flip survey status to published and close the active drawer
   const handlePublishSurvey = async () => {
     if (!activeSurvey || activeSurvey.status === 'published') return
-
     if (activeQuestions.length === 0) {
       toast.error('Add at least one question before publishing')
       return
@@ -659,7 +659,6 @@ export const SurveysPage = () => {
           publishedAt: activeSurvey.publishedAt || new Date().toISOString(),
         }),
       )
-
       if (result.type === updateSurveyDetails.fulfilled.type) {
         await refreshData(activeSurvey.id)
         toast.success('Survey published')
@@ -676,17 +675,13 @@ export const SurveysPage = () => {
     }
   }
 
-  const handleOpenPreview = (slug: string) => {
-    window.open(getSurveyUrl(slug), '_blank', 'noopener,noreferrer')
-  }
-
+  // guard against copying a link for an unpublished survey
   const handleCopySurveyLink = async (slug: string) => {
     const survey = surveys.find((item) => item.slug === slug)
     if (!survey || survey.status !== 'published') {
       toast.error('Publish the survey before sharing it')
       return
     }
-
     try {
       await navigator.clipboard.writeText(getSurveyUrl(slug))
       toast.success('Public link copied')
@@ -695,15 +690,14 @@ export const SurveysPage = () => {
     }
   }
 
+  // open the share modal only for published surveys
   const handleOpenShareModal = (slug: string) => {
     const survey = surveys.find((item) => item.slug === slug)
     if (!survey) return
-
     if (survey.status !== 'published') {
       toast.error('Publish the survey before sharing it')
       return
     }
-
     setSurveyToShare({ title: survey.title, slug: survey.slug })
   }
 
@@ -715,10 +709,14 @@ export const SurveysPage = () => {
     setCurrentPage(page)
   }
 
+  // endregion
+
+  // render child routes (e.g. /surveys/:id/responses) instead of the grid
   if (location.pathname !== '/surveys' && location.pathname.startsWith('/surveys/')) {
     return <Outlet />
   }
 
+  // region render
   return (
     <AppLayout>
       <div className="app-page">
@@ -747,6 +745,7 @@ export const SurveysPage = () => {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <h2 className="text-xl font-bold text-gray-900">Your surveys</h2>
 
+            {/* filter + sort controls */}
             <div className="grid w-full gap-3 lg:max-w-5xl lg:grid-cols-[minmax(0,1.5fr)_150px_150px_150px]">
               <Input
                 value={surveySearch}
@@ -803,17 +802,16 @@ export const SurveysPage = () => {
                 <SurveysGrid
                   surveys={paginatedSurveys}
                   onEdit={openSurveyDrawer}
-                  onPreview={handleOpenPreview}
+                  onPreview={handlePreviewSurvey}
                   onShare={handleOpenShareModal}
                   onDelete={(id) => {
                     const survey = paginatedSurveys.find((item) => item.id === id)
-                    if (survey) {
-                      handleSurveyDelete(survey)
-                    }
+                    if (survey) handleSurveyDelete(survey)
                   }}
                 />
               </div>
 
+              {/* pagination bar */}
               <div className="mt-6 flex flex-col gap-4 border-t border-gray-200 pt-5 md:flex-row md:items-center md:justify-between">
                 <p className="text-sm text-gray-600">
                   Showing {(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, filteredSurveys.length)} of {filteredSurveys.length}
@@ -891,344 +889,75 @@ export const SurveysPage = () => {
         </section>
       </div>
 
-      <OffCanvas
+      <CreateSurveyDrawer
         isOpen={isCreateOpen}
+        createStep={createStep}
+        activeSurvey={activeSurvey}
+        activeQuestions={activeQuestions}
+        surveyForm={surveyForm}
+        surveyErrors={surveyErrors}
+        questionForm={questionForm}
+        questionErrors={questionErrors}
+        questionMode={questionMode}
+        isQuestionComposerOpen={isQuestionComposerOpen}
+        isSavingSurvey={isSavingSurvey}
+        isPublishingSurvey={isPublishingSurvey}
+        isSavingQuestion={isSavingQuestion}
+        logoFileName={logoFileName}
+        draggedQuestionId={draggedQuestionId}
         onClose={closeCreateWizard}
-        title={
-          createStep === 1
-            ? 'Create survey'
-            : createStep === 2
-              ? 'Add brand'
-              : createStep === 3
-                ? 'Add questions'
-                : 'Publish & share'
-        }
-        description={
-          createStep === 1
-            ? 'Start with the survey title and description.'
-            : createStep === 2
-              ? 'Add your brand color and logo.'
-              : createStep === 3
-                ? 'Add questions without leaving this drawer.'
-                : 'Publish the survey and share the live link.'
-        }
-        size="xl"
-        footer={
-          <div className="flex w-full items-center justify-between gap-4">
-            <Button variant="tertiary" onClick={handleWizardBack} disabled={createStep === 1}>
-              Back
-            </Button>
+        onWizardNext={handleWizardNext}
+        onWizardBack={handleWizardBack}
+        onWizardFinish={closeCreateWizard}
+        onPublish={handlePublishSurvey}
+        onSurveyFormChange={handleSurveyFormChange}
+        onSurveyErrorsChange={setSurveyErrors}
+        onLogoUpload={handleLogoUpload}
+        onAddQuestion={openAddQuestionDrawer}
+        onEditQuestion={openEditQuestionDrawer}
+        onDeleteQuestion={handleQuestionDelete}
+        onQuestionDragStart={handleQuestionDragStart}
+        onQuestionDragOver={handleQuestionDragOver}
+        onQuestionDrop={handleQuestionDrop}
+        onQuestionDragEnd={handleQuestionDragEnd}
+        onQuestionFormChange={setQuestionForm}
+        onSaveQuestion={handleSaveQuestion}
+        onCloseComposer={closeComposer}
+        onCopySurveyLink={handleCopySurveyLink}
+        onPreviewSurvey={handlePreviewSurvey}
+      />
 
-            <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-2">
-              {[1, 2, 3, 4].map((step) => (
-                <span
-                  key={step}
-                  className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${
-                    createStep === step ? 'bg-violet-600 text-white' : 'bg-white text-gray-500'
-                  }`}
-                >
-                  {step}
-                </span>
-              ))}
-            </div>
-
-            {createStep < 4 ? (
-              <Button
-                variant="primary"
-                onClick={handleWizardNext}
-                isLoading={isSavingSurvey}
-                disabled={createStep === 1 ? !surveyForm.title.trim() : false}
-              >
-                Next
-              </Button>
-            ) : (
-              <div className="flex gap-3">
-                <Button variant="secondary" onClick={handleWizardFinish}>
-                  Done
-                </Button>
-                <Button
-                  variant="primary"
-                  onClick={handlePublishSurvey}
-                  isLoading={isPublishingSurvey}
-                  disabled={!activeSurvey || activeQuestions.length === 0 || activeSurvey.status === 'published'}
-                >
-                  {activeSurvey?.status === 'published' ? 'Published' : 'Publish survey'}
-                </Button>
-              </div>
-            )}
-          </div>
-        }
-      >
-        <div className="space-y-6">
-          <div className="rounded-3xl border border-gray-200 bg-white p-4 shadow-sm">
-            {createStep === 1 && (
-              <SurveyBasicsStep
-                title={surveyForm.title}
-                description={surveyForm.description}
-                error={surveyErrors?.title}
-                descriptionError={surveyErrors?.description}
-                onTitleChange={(value) => setSurveyForm((current) => ({ ...current, title: value }))}
-                onDescriptionChange={(value) => setSurveyForm((current) => ({ ...current, description: value }))}
-                onTitleBlur={() => {
-                  const error = surveyForm.title.trim() === '' ? 'Survey title is required' : ''
-                  setSurveyErrors((current) => ({ ...current, title: error }))
-                }}
-                onDescriptionBlur={() => {
-                  const error = surveyForm.description.trim() === '' ? 'Description is required' : ''
-                  setSurveyErrors((current) => ({ ...current, description: error }))
-                }}
-              />
-            )}
-
-            {createStep === 2 && (
-              <SurveyBrandingStep
-                primaryColor={surveyForm.primaryColor}
-                logoUrl={surveyForm.logoUrl}
-                logoFileName={logoFileName}
-                onColorChange={(value) => setSurveyForm((current) => ({ ...current, primaryColor: value }))}
-                onLogoUrlChange={(value) => setSurveyForm((current) => ({ ...current, logoUrl: value }))}
-                onLogoUpload={handleLogoUpload}
-                onLogoUrlBlur={() => {
-                  const error = surveyForm.logoUrl.trim() !== '' && !surveyForm.logoUrl.startsWith('http') ? 'Invalid URL format' : ''
-                  setSurveyErrors((current) => ({ ...current, logoUrl: error }))
-                }}
-              />
-            )}
-
-            {createStep === 3 && (
-              <>
-                <SurveyQuestionsStep
-                  surveyTitle={activeSurvey?.title || surveyForm.title || 'Survey title'}
-                  surveyDescription={activeSurvey?.description || surveyForm.description || undefined}
-                  questions={activeQuestions}
-                  isQuestionsLoading={isLoading && activeQuestions.length === 0}
-                  isDraggingQuestionId={draggedQuestionId}
-                  onAddQuestion={openAddQuestionDrawer}
-                  onEditQuestion={openEditQuestionDrawer}
-                  onDeleteQuestion={handleQuestionDelete}
-                  onQuestionDragStart={handleQuestionDragStart}
-                  onQuestionDragOver={handleQuestionDragOver}
-                  onQuestionDrop={handleQuestionDrop}
-                  onQuestionDragEnd={handleQuestionDragEnd}
-                />
-
-                <QuestionComposerCard
-                  isOpen={isQuestionComposerOpen}
-                  mode={questionMode}
-                  form={questionForm}
-                  errors={questionErrors}
-                  isSaving={isSavingQuestion}
-                  onClose={() => {
-                    setIsQuestionComposerOpen(false)
-                    setEditingQuestionId(null)
-                    setQuestionForm(defaultQuestionForm)
-                    setQuestionErrors({})
-                  }}
-                  onSave={handleSaveQuestion}
-                  onChange={(updater) => setQuestionForm((current) => updater(current))}
-                />
-              </>
-            )}
-
-            {createStep === 4 && (
-              <SurveyPublishStep
-                surveyTitle={activeSurvey?.title || surveyForm.title || 'Survey title'}
-                surveySlug={activeSurvey?.slug}
-                isPublished={activeSurvey?.status === 'published'}
-                onCopyLink={() => activeSurvey?.slug && handleCopySurveyLink(activeSurvey.slug)}
-                onPreview={() => activeSurvey?.slug && activeSurvey.status === 'published' && handlePreviewSurvey(activeSurvey.slug)}
-                isPublishing={isPublishingSurvey}
-              />
-            )}
-          </div>
-        </div>
-      </OffCanvas>
-
-      <OffCanvas
+      <EditSurveyDrawer
         isOpen={selectedSurveyId !== null}
+        activeSurvey={activeSurvey}
+        activeQuestions={activeQuestions}
+        surveyForm={surveyForm}
+        questionForm={questionForm}
+        questionErrors={questionErrors}
+        questionMode={questionMode}
+        isQuestionComposerOpen={isQuestionComposerOpen}
+        isSavingSurvey={isSavingSurvey}
+        isPublishingSurvey={isPublishingSurvey}
+        isSavingQuestion={isSavingQuestion}
+        logoFileName={logoFileName}
+        draggedQuestionId={draggedQuestionId}
+        hasEditChanges={hasEditChanges}
         onClose={closeSurveyDrawer}
-        title={activeSurvey?.title || 'Survey editor'}
-        description={activeSurvey ? 'Edit details, brand, and questions from one drawer.' : 'Loading survey...'}
-        size="xl"
-        zIndex={70}
-        footer={
-          <div className="flex gap-3">
-            <Button variant="primary" onClick={handleSaveSurvey} isLoading={isSavingSurvey} disabled={!hasEditChanges}>
-              Save changes
-            </Button>
-            {activeSurvey && activeSurvey.status !== 'published' && (
-              <Button 
-                variant="primary" 
-                onClick={handlePublishSurvey} 
-                isLoading={isPublishingSurvey}
-                disabled={activeQuestions.length === 0}
-              >
-                Publish survey
-              </Button>
-            )}
-            <Button variant="tertiary" onClick={closeSurveyDrawer}>
-              Close
-            </Button>
-          </div>
-        }
-      >
-        {!activeSurvey ? (
-          <div className="rounded-2xl border border-dashed border-gray-200 p-8 text-center text-sm text-gray-500">
-            Loading survey...
-          </div>
-        ) : (
-          <div className="space-y-6">
-            <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-violet-600">Basic info</p>
-                  <h3 className="mt-2 text-2xl font-bold text-gray-900">Survey details</h3>
-                  <p className="mt-2 text-sm text-gray-600">Update the title and description here.</p>
-                </div>
-                <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">
-                  {statusLabel(activeSurvey.status)}
-                </span>
-              </div>
-              <div className="mt-5">
-                <SurveyDetailsForm
-                  title={surveyForm.title}
-                  description={surveyForm.description}
-                  onTitleChange={(value) => setSurveyForm((current) => ({ ...current, title: value }))}
-                  onDescriptionChange={(value) => setSurveyForm((current) => ({ ...current, description: value }))}
-                />
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-violet-600">Brand info</p>
-                  <h3 className="mt-2 text-2xl font-bold text-gray-900">Appearance</h3>
-                  <p className="mt-2 text-sm text-gray-600">Pick the color and logo shown to respondents.</p>
-                </div>
-              </div>
-              <div className="mt-5">
-                <BrandingForm
-                  primaryColor={surveyForm.primaryColor}
-                  logoUrl={surveyForm.logoUrl}
-                  logoFileName={logoFileName}
-                  onColorChange={(value) => setSurveyForm((current) => ({ ...current, primaryColor: value }))}
-                  onLogoUrlChange={(value) => setSurveyForm((current) => ({ ...current, logoUrl: value }))}
-                  onLogoUpload={handleLogoUpload}
-                />
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-violet-600">Questions</p>
-                  <h3 className="mt-2 text-2xl font-bold text-gray-900">Builder content</h3>
-                  <p className="mt-2 text-sm text-gray-600">Add, remove, and reorder the survey questions.</p>
-                </div>
-                <Button variant="primary" onClick={openAddQuestionDrawer}>
-                  Add question
-                </Button>
-              </div>
-
-              {activeQuestions.length === 0 ? (
-                <div className="mt-4 rounded-2xl border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500">
-                  No questions yet. Add the first one from the drawer.
-                </div>
-              ) : (
-                <div className="mt-4 space-y-3">
-                  {activeQuestions.map((question, index) => (
-                    <div
-                      key={question.id}
-                      draggable
-                      onDragStart={() => handleQuestionDragStart(question.id)}
-                      onDragOver={handleQuestionDragOver}
-                      onDrop={() => handleQuestionDrop(question.id)}
-                      onDragEnd={handleQuestionDragEnd}
-                      className={`rounded-2xl border bg-gray-50 p-4 transition-all ${
-                        draggedQuestionId === question.id ? 'border-violet-500 opacity-50' : 'border-gray-200 hover:border-violet-300'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex items-start gap-3">
-                          <div className="pt-1 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600">
-                            {/* DragIcon would be imported but using text for simplicity */}
-                            ⋮
-                          </div>
-
-                          <div>
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-violet-600 shadow-sm">
-                                Q{index + 1}
-                              </span>
-                              <span className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-gray-600 shadow-sm">
-                                {question.type}
-                              </span>
-                              {question.required && (
-                                <span className="rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-600">
-                                  Required
-                                </span>
-                              )}
-                            </div>
-                            <p className="mt-3 text-base font-semibold text-gray-900">{question.title}</p>
-                            {question.description && <p className="mt-1 text-sm text-gray-600">{question.description}</p>}
-                            {question.type === 'multiple_choice' && question.options?.length ? (
-                              <div className="mt-3 space-y-2">
-                                {question.options.map((option, optionIndex) => (
-                                  <div key={`${question.id}-${optionIndex}`} className="text-sm text-gray-700">
-                                    • {option}
-                                  </div>
-                                ))}
-                              </div>
-                            ) : null}
-                          </div>
-                        </div>
-
-                        <div className="flex flex-col gap-2">
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => openEditQuestionDrawer(question)}
-                              className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white p-2 text-violet-600 transition-colors hover:bg-violet-50"
-                              title="Edit question"
-                              aria-label="Edit question"
-                            >
-                              ✎
-                            </button>
-                            <button
-                              onClick={() => handleQuestionDelete(question)}
-                              className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white p-2 text-red-600 transition-colors hover:bg-red-50"
-                              title="Delete question"
-                              aria-label="Delete question"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <QuestionComposerCard
-                isOpen={isQuestionComposerOpen}
-                mode={questionMode}
-                form={questionForm}
-                errors={questionErrors}
-                isSaving={isSavingQuestion}
-                onClose={() => {
-                  setIsQuestionComposerOpen(false)
-                  setEditingQuestionId(null)
-                  setQuestionForm(defaultQuestionForm)
-                  setQuestionErrors({})
-                }}
-                onSave={handleSaveQuestion}
-                onChange={(updater) => setQuestionForm((current) => updater(current))}
-              />
-            </div>
-          </div>
-        )}
-      </OffCanvas>
+        onSave={handleSaveSurvey}
+        onPublish={handlePublishSurvey}
+        onSurveyFormChange={handleSurveyFormChange}
+        onLogoUpload={handleLogoUpload}
+        onAddQuestion={openAddQuestionDrawer}
+        onEditQuestion={openEditQuestionDrawer}
+        onDeleteQuestion={handleQuestionDelete}
+        onQuestionDragStart={handleQuestionDragStart}
+        onQuestionDragOver={handleQuestionDragOver}
+        onQuestionDrop={handleQuestionDrop}
+        onQuestionDragEnd={handleQuestionDragEnd}
+        onQuestionFormChange={setQuestionForm}
+        onSaveQuestion={handleSaveQuestion}
+        onCloseComposer={closeComposer}
+      />
 
       <ShareSurveyModal
         survey={surveyToShare}
@@ -1249,4 +978,6 @@ export const SurveysPage = () => {
       />
     </AppLayout>
   )
+  // endregion
 }
+// endregion

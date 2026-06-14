@@ -1,17 +1,23 @@
+// region imports
 import { useMemo, useState } from 'react'
 import { FAQ_SECTIONS, FAQ_TAB_ORDER } from '@/utils/constants'
+// endregion
 
-const faqSections = FAQ_SECTIONS
-const tabOrder = FAQ_TAB_ORDER
-
+// region component
 export const FaqSection = () => {
-  const [activeTab, setActiveTab] = useState<(typeof tabOrder)[number]>('General')
+  // region state
+  const [activeTab, setActiveTab] = useState<(typeof FAQ_TAB_ORDER)[number]>('General')
+  // endregion
 
+  // region derived data
+  // resolve the full FAQ section matching the active tab
   const activeSection = useMemo(
-    () => faqSections.find((section) => section.title === activeTab) || faqSections[0],
+    () => FAQ_SECTIONS.find((section) => section.title === activeTab) || FAQ_SECTIONS[0],
     [activeTab],
   )
+  // endregion
 
+  // region render
   return (
     <section id="faq" className="py-10">
       <div className="mx-auto max-w-3xl text-center">
@@ -20,22 +26,22 @@ export const FaqSection = () => {
       </div>
 
       <div className="mx-auto mt-8 max-w-5xl rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+        {/* tab strip — one button per FAQ category */}
         <div className="flex flex-wrap gap-2 border-b border-gray-100 pb-4">
-          {tabOrder.map((tab) => {
-            const isActive = tab === activeTab
-            return (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => setActiveTab(tab)}
-                className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-                  isActive ? 'bg-violet-600 text-white shadow-sm' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                {tab}
-              </button>
-            )
-          })}
+          {FAQ_TAB_ORDER.map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setActiveTab(tab)}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                tab === activeTab
+                  ? 'bg-violet-600 text-white shadow-sm'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
         </div>
 
         <div className="mt-5">
@@ -46,6 +52,7 @@ export const FaqSection = () => {
             </span>
           </div>
 
+          {/* accordion items — native <details> for zero-JS expand/collapse */}
           <div className="mt-5 grid gap-3">
             {activeSection?.items.map((faq) => (
               <details key={faq.question} className="group rounded-2xl border border-gray-200 bg-gray-50 p-5">
@@ -63,5 +70,6 @@ export const FaqSection = () => {
       </div>
     </section>
   )
+  // endregion
 }
-
+// endregion

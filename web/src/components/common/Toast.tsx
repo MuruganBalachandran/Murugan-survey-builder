@@ -1,6 +1,11 @@
+// region imports
 import { useEffect, useState } from 'react'
 import { subscribeToToasts, toast, type ToastMessage, type ToastVariant } from '@/lib/toast'
+// endregion
 
+// region constants
+
+// per-variant visual styles — icon, colours, aria description
 const variantStyles: Record<
   ToastVariant,
   { icon: string; iconClassName: string; accentClassName: string; description: string }
@@ -30,15 +35,26 @@ const variantStyles: Record<
     description: 'Information',
   },
 }
+// endregion
 
+// region ToastItem component
 const ToastItem = ({ message }: { message: ToastMessage }) => {
+  // region state
   const [isLeaving, setIsLeaving] = useState(false)
+  // endregion
+
   const styles = variantStyles[message.variant]
 
+  // region effects
+
+  // start leave animation before the toast is fully removed
   useEffect(() => {
     if (message.duration === 0) return
 
-    const leaveTimer = window.setTimeout(() => setIsLeaving(true), Math.max(0, message.duration - 200))
+    const leaveTimer = window.setTimeout(
+      () => setIsLeaving(true),
+      Math.max(0, message.duration - 200),
+    )
     const removeTimer = window.setTimeout(() => toast.dismiss(message.id), message.duration)
 
     return () => {
@@ -47,6 +63,9 @@ const ToastItem = ({ message }: { message: ToastMessage }) => {
     }
   }, [message.duration, message.id])
 
+  // endregion
+
+  // region render
   return (
     <div
       role="status"
@@ -55,7 +74,9 @@ const ToastItem = ({ message }: { message: ToastMessage }) => {
         isLeaving ? 'translate-x-4 opacity-0' : 'translate-x-0 opacity-100'
       }`}
     >
+      {/* left accent bar indicating variant */}
       <span className={`absolute inset-y-0 left-0 w-1 ${styles.accentClassName}`} />
+
       <div className="flex items-start gap-3">
         <span
           className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-base font-bold ${styles.iconClassName}`}
@@ -63,10 +84,15 @@ const ToastItem = ({ message }: { message: ToastMessage }) => {
         >
           {styles.icon}
         </span>
+
         <div className="min-w-0 flex-1 pt-0.5">
           <p className="text-sm font-semibold text-gray-900">{message.title}</p>
-          {message.description && <p className="mt-1 text-sm leading-5 text-gray-600">{message.description}</p>}
+          {message.description && (
+            <p className="mt-1 text-sm leading-5 text-gray-600">{message.description}</p>
+          )}
         </div>
+
+        {/* manual dismiss button */}
         <button
           type="button"
           onClick={() => toast.dismiss(message.id)}
@@ -78,13 +104,22 @@ const ToastItem = ({ message }: { message: ToastMessage }) => {
       </div>
     </div>
   )
+  // endregion
 }
+// endregion
 
+// region ToastContainer component
 export const ToastContainer = () => {
+  // region state
   const [messages, setMessages] = useState<ToastMessage[]>([])
+  // endregion
 
+  // region effects
+  // subscribe to the toast event bus on mount
   useEffect(() => subscribeToToasts(setMessages), [])
+  // endregion
 
+  // region render
   return (
     <div className="pointer-events-none fixed right-4 top-20 z-[100] flex w-[calc(100%-2rem)] max-w-sm flex-col gap-3 sm:right-6">
       {messages.map((message) => (
@@ -94,4 +129,6 @@ export const ToastContainer = () => {
       ))}
     </div>
   )
+  // endregion
 }
+// endregion

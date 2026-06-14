@@ -1,5 +1,7 @@
+// region imports
 import { useParams, useNavigate } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
+import { toast } from '@/lib/toast'
 import { AppLayout } from '@/components/Layout/AppLayout'
 import { Button } from '@/components/ui/Button'
 import { ResponsesSummary } from '@/components/surveyResponses/ResponsesSummary'
@@ -9,8 +11,9 @@ import { fetchSurveyById, clearError } from '@/store/slices/surveySlice'
 import { fetchSurveyResponses } from '@/store/slices/responseSlice'
 import type { SurveyResponse } from '@/types/survey'
 import { ExportIcon } from '@/utils/icons'
+// endregion
 
-
+// region component
 export const SurveyResponsesPage = () => {
   const { id } = useParams({ from: '/surveys/$id/responses' })
   const navigate = useNavigate()
@@ -20,27 +23,15 @@ export const SurveyResponsesPage = () => {
   const [loadingResponses, setLoadingResponses] = useState(false)
   const [exporting, setExporting] = useState(false)
 
+  // region effects
+
+  // fetch survey metadata and responses on mount
   useEffect(() => {
     dispatch(fetchSurveyById(id))
     loadResponses()
   }, [dispatch, id])
 
-  const loadResponses = async () => {
-    setLoadingResponses(true)
-    try {
-      const result = await dispatch(fetchSurveyResponses(id))
-      if (result.type === fetchSurveyResponses.fulfilled.type) {
-        setResponses(result.payload)
-      } else {
-        toast.error('Failed to load responses')
-      }
-    } catch (err) {
-      toast.error('Failed to load responses')
-    } finally {
-      setLoadingResponses(false)
-    }
-  }
-
+  // show toast and clear redux error whenever one is set
   useEffect(() => {
     if (error) {
       const errorMsg = Object.values(error)[0] || 'An error occurred'
@@ -49,19 +40,40 @@ export const SurveyResponsesPage = () => {
     }
   }, [error, dispatch])
 
-  const responseRate = useMemo(() => {
-    if (!currentSurvey || responses.length === 0) {
-      return 0
-    }
+  // endregion
 
-    const totalQuestions = currentSurvey.questions.length
-    if (totalQuestions === 0) {
-      return 0
+  // region functions
+
+  const loadResponses = async () => {
+    setLoadingResponses(true)
+    try {
+      const result = await dispatch(fetchSurveyResponses(id))
+      if (result.type === fetchSurveyResponses.fulfilled.type) {
+        setResponses(result.payload as SurveyResponse[])
+      } else {
+        toast.error('Failed to load responses')
+      }
+    } catch {
+      toast.error('Failed to load responses')
+    } finally {
+      setLoadingResponses(false)
     }
+  }
+
+  // endregion
+
+  // region derived data
+
+  // percentage of answer fields that were filled across all responses
+  const responseRate = useMemo(() => {
+    if (!currentSurvey || responses.length === 0) return 0
+    const totalQuestions = currentSurvey.questions.length
+    if (totalQuestions === 0) return 0
 
     const answeredFields = responses.reduce(
       (sum, response) =>
-        sum + response.answers.filter((answer) => {
+        sum +
+        response.answers.filter((answer) => {
           if (Array.isArray(answer.value)) return answer.value.length > 0
           if (typeof answer.value === 'string') return answer.value.trim().length > 0
           return true
@@ -73,18 +85,22 @@ export const SurveyResponsesPage = () => {
     return Math.round((answeredFields / totalFields) * 100)
   }, [currentSurvey, responses])
 
+  // endregion
+
+  // region handlers
+
   const handleExportCSV = async () => {
     if (!currentSurvey) return
-    
+
     setExporting(true)
     try {
-      // Create CSV header
+      // build header row from question titles
       const headers = ['Response ID', 'Submitted At', ...currentSurvey.questions.map((q) => q.title)]
-      
-      // Create CSV rows
+
+      // build one row per response, matching answers to question columns
       const rows = responses.map((response) => {
         const row = [response.id, new Date(response.submittedAt).toLocaleString()]
-        
+
         currentSurvey.questions.forEach((question) => {
           const answer = response.answers.find((a) => a.questionId === question.id)
           const value = answer
@@ -94,37 +110,40 @@ export const SurveyResponsesPage = () => {
             : ''
           row.push(value)
         })
-        
+
         return row
       })
 
-      // Combine headers and rows
+      // wrap every cell in quotes to handle commas inside values
       const csvContent = [
         headers.map((h) => `"${h}"`).join(','),
         ...rows.map((r) => r.map((cell) => `"${cell}"`).join(',')),
       ].join('\n')
 
-      // Create and download file
+      // trigger browser download via a temporary anchor element
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
       const link = document.createElement('a')
       const url = URL.createObjectURL(blob)
-      
+
       link.setAttribute('href', url)
       link.setAttribute('download', `${currentSurvey.title}-responses.csv`)
       link.style.visibility = 'hidden'
-      
+
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
-      
+
       toast.success('Responses exported successfully')
-    } catch (err) {
+    } catch {
       toast.error('Failed to export responses')
     } finally {
       setExporting(false)
     }
   }
 
+  // endregion
+
+  // region render
   return (
     <AppLayout>
       <div className="app-page">
@@ -154,6 +173,7 @@ export const SurveyResponsesPage = () => {
           </div>
         </div>
 
+        {/* loading spinner shown while either survey or responses are fetching */}
         {(isLoading || loadingResponses) && (
           <div className="text-center py-12">
             <div className="inline-block w-8 h-8 border-4 border-violet-200 border-t-violet-600 rounded-full animate-spin" />
@@ -179,4 +199,6 @@ export const SurveyResponsesPage = () => {
       </div>
     </AppLayout>
   )
+  // endregion
 }
+// endregion

@@ -1,6 +1,9 @@
+// region imports
 import { useState, useCallback } from 'react'
-import type { ModalVariant } from '@/components/common/CustomModal'
+import type { ModalVariant } from '@/types'
+// endregion
 
+// region types
 interface ModalState {
   isOpen: boolean
   title: string
@@ -10,7 +13,9 @@ interface ModalState {
   cancelText?: string
   onConfirm?: () => void | Promise<void>
 }
+// endregion
 
+// region hook
 export const useModal = () => {
   const [state, setState] = useState<ModalState>({
     isOpen: false,
@@ -56,6 +61,7 @@ export const useModal = () => {
     }
   }, [state, closeModal])
 
+  // region return
   return {
     isOpen: state.isOpen,
     title: state.title,
@@ -68,4 +74,6 @@ export const useModal = () => {
     closeModal,
     handleConfirm,
   }
+  // endregion
 }
+// endregion

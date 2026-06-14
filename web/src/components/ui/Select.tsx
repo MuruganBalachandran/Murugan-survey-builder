@@ -1,11 +1,15 @@
+// region imports
 import { forwardRef, type ReactNode } from 'react'
 import { cn } from '@/lib/cn'
-import type { SelectProps, SelectOption } from '@/types'
+import type { SelectProps } from '@/types'
+// endregion
 
+// region component
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
   ({ label, error, hint, options, placeholder, icon, className, id, ...props }, ref) => {
     const inputId = id || props.name
 
+    // region render
     return (
       <div className="w-full">
         {label && (
@@ -16,6 +20,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
         )}
 
         <div className="relative flex items-center">
+          {/* optional leading icon */}
           {icon && (
             <div className="pointer-events-none absolute left-3 flex items-center text-neutral-400">
               {icon}
@@ -37,6 +42,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             )}
             {...props}
           >
+            {/* placeholder shown as a non-selectable default option */}
             {placeholder && (
               <option value="" disabled hidden>
                 {placeholder}
@@ -54,7 +60,9 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
         {hint && !error && <p className="mt-1.5 text-sm text-neutral-500">{hint}</p>}
       </div>
     )
+    // endregion
   },
 )
 
 Select.displayName = 'Select'
+// endregion

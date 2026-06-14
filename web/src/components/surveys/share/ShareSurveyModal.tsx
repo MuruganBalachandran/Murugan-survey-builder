@@ -1,35 +1,45 @@
+// region imports
 import { useEffect } from 'react'
 import { WhatsAppIcon, MailShareIcon, CopyShareIcon, Share2Icon, LinkedInIcon } from '@/utils/icons'
 import { toast } from '@/lib/toast'
 import { getSurveyUrl } from '@/utils/common/survey'
 import type { ShareSurveyModalProps } from '@/types'
+// endregion
 
+// region component
 export const ShareSurveyModal = ({ survey, onClose, onCopy }: ShareSurveyModalProps) => {
+  // region effects
+
+  // close the modal on Escape key
   useEffect(() => {
     if (!survey) return
-
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose()
     }
-
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [onClose, survey])
 
+  // endregion
+
   if (!survey) return null
 
+  // region derived data
   const surveyUrl = getSurveyUrl(survey.slug)
   const shareText = `Please take a moment to complete "${survey.title}".`
+
   const openShareWindow = (url: string) => {
     window.open(url, '_blank', 'noopener,noreferrer')
   }
 
+  // share channel definitions — each maps to a platform-specific URL
   const shareOptions = [
     {
       label: 'WhatsApp',
       icon: <WhatsAppIcon />,
       className: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100',
-      onClick: () => openShareWindow(`https://wa.me/?text=${encodeURIComponent(`${shareText} ${surveyUrl}`)}`),
+      onClick: () =>
+        openShareWindow(`https://wa.me/?text=${encodeURIComponent(`${shareText} ${surveyUrl}`)}`),
     },
     {
       label: 'Email',
@@ -45,24 +55,34 @@ export const ShareSurveyModal = ({ survey, onClose, onCopy }: ShareSurveyModalPr
       icon: <LinkedInIcon />,
       className: 'bg-sky-50 text-sky-700 hover:bg-sky-100',
       onClick: () =>
-        openShareWindow(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(surveyUrl)}`),
+        openShareWindow(
+          `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(surveyUrl)}`,
+        ),
     },
   ]
+  // endregion
+
+  // region handlers
 
   const handleNativeShare = async () => {
     if (!navigator.share) return
-
     try {
       await navigator.share({ title: survey.title, text: shareText, url: surveyUrl })
     } catch (error) {
+      // ignore user-cancelled share dialogs
       if (error instanceof DOMException && error.name === 'AbortError') return
       toast.error('Unable to open share options')
     }
   }
 
+  // endregion
+
+  // region render
   return (
     <>
+      {/* backdrop */}
       <div className="fixed inset-0 z-40 bg-black/50" onClick={onClose} role="presentation" />
+
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
           role="dialog"
@@ -70,6 +90,7 @@ export const ShareSurveyModal = ({ survey, onClose, onCopy }: ShareSurveyModalPr
           aria-labelledby="share-survey-title"
           className="w-full max-w-md overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl"
         >
+          {/* modal header */}
           <div className="flex items-start justify-between gap-4 border-b border-gray-200 px-6 py-5">
             <div>
               <h2 id="share-survey-title" className="text-lg font-bold text-gray-900">
@@ -88,8 +109,12 @@ export const ShareSurveyModal = ({ survey, onClose, onCopy }: ShareSurveyModalPr
           </div>
 
           <div className="space-y-5 px-6 py-5">
+            {/* copyable public link */}
             <div>
-              <label htmlFor="survey-share-link" className="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <label
+                htmlFor="survey-share-link"
+                className="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500"
+              >
                 Public link
               </label>
               <div className="flex gap-2">
@@ -111,6 +136,7 @@ export const ShareSurveyModal = ({ survey, onClose, onCopy }: ShareSurveyModalPr
               </div>
             </div>
 
+            {/* platform share buttons */}
             <div>
               <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">Share with</p>
               <div className="grid grid-cols-3 gap-3">
@@ -128,6 +154,7 @@ export const ShareSurveyModal = ({ survey, onClose, onCopy }: ShareSurveyModalPr
               </div>
             </div>
 
+            {/* native share API — only shown when the browser supports it */}
             {typeof navigator.share === 'function' && (
               <button
                 type="button"
@@ -143,4 +170,6 @@ export const ShareSurveyModal = ({ survey, onClose, onCopy }: ShareSurveyModalPr
       </div>
     </>
   )
+  // endregion
 }
+// endregion

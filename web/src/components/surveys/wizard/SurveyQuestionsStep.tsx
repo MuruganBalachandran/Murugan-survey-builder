@@ -1,8 +1,11 @@
+// region imports
 import { Button } from '@/components/ui/Button'
 import { DragIcon, EditIcon, TrashIcon } from '@/utils/icons'
 import { questionTypeLabel } from '@/utils/common/survey'
 import type { SurveyQuestionsStepProps } from '@/types'
+// endregion
 
+// region component
 export const SurveyQuestionsStep = ({
   surveyTitle,
   surveyDescription,
@@ -18,6 +21,7 @@ export const SurveyQuestionsStep = ({
   onQuestionDragEnd,
 }: SurveyQuestionsStepProps) => (
   <div className="space-y-6">
+    {/* header with survey title and add-question button */}
     <div className="flex items-start justify-between gap-4">
       <div>
         <p className="text-sm font-semibold uppercase tracking-[0.18em] text-violet-600">Questions</p>
@@ -29,6 +33,7 @@ export const SurveyQuestionsStep = ({
       </Button>
     </div>
 
+    {/* question list — loading, empty, or scrollable list */}
     {isQuestionsLoading ? (
       <div className="rounded-2xl border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500">
         Loading questions...
@@ -48,16 +53,20 @@ export const SurveyQuestionsStep = ({
             onDrop={() => onQuestionDrop?.(question.id)}
             onDragEnd={onQuestionDragEnd}
             className={`rounded-2xl border bg-gray-50 p-4 transition-all ${
-              isDraggingQuestionId === question.id ? 'border-violet-500 opacity-50' : 'border-gray-200 hover:border-violet-300'
+              isDraggingQuestionId === question.id
+                ? 'border-violet-500 opacity-50'
+                : 'border-gray-200 hover:border-violet-300'
             }`}
           >
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-start gap-3">
+                {/* drag handle */}
                 <div className="pt-1 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600">
                   <DragIcon />
                 </div>
 
                 <div>
+                  {/* question index, type badge, and required flag */}
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-violet-600 shadow-sm">
                       Q{index + 1}
@@ -72,29 +81,30 @@ export const SurveyQuestionsStep = ({
                     )}
                   </div>
                   <p className="mt-3 text-base font-semibold text-gray-900">{question.title}</p>
-                  {question.description && <p className="mt-1 text-sm text-gray-600">{question.description}</p>}
+                  {question.description && (
+                    <p className="mt-1 text-sm text-gray-600">{question.description}</p>
+                  )}
                 </div>
+              </div>
 
-                <div className="flex flex-col gap-2">
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => onEditQuestion(question)}
-                      className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white p-2 text-violet-600 transition-colors hover:bg-violet-50"
-                      title="Edit question"
-                      aria-label="Edit question"
-                    >
-                      <EditIcon />
-                    </button>
-                    <button
-                      onClick={() => onDeleteQuestion(question)}
-                      className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white p-2 text-red-600 transition-colors hover:bg-red-50"
-                      title="Delete question"
-                      aria-label="Delete question"
-                    >
-                      <TrashIcon />
-                    </button>
-                  </div>
-                </div>
+              {/* edit and delete actions */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => onEditQuestion(question)}
+                  className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white p-2 text-violet-600 transition-colors hover:bg-violet-50"
+                  title="Edit question"
+                  aria-label="Edit question"
+                >
+                  <EditIcon />
+                </button>
+                <button
+                  onClick={() => onDeleteQuestion(question)}
+                  className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white p-2 text-red-600 transition-colors hover:bg-red-50"
+                  title="Delete question"
+                  aria-label="Delete question"
+                >
+                  <TrashIcon />
+                </button>
               </div>
             </div>
           </div>
@@ -103,3 +113,4 @@ export const SurveyQuestionsStep = ({
     )}
   </div>
 )
+// endregion

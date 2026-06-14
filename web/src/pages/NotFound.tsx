@@ -1,6 +1,9 @@
+// region imports
 import { Link } from '@tanstack/react-router'
 import { AppLayout } from '@/components/Layout/AppLayout'
+// endregion
 
+// region component
 export const NotFoundPage = () => (
   <AppLayout>
     <div className="app-page">
@@ -11,6 +14,7 @@ export const NotFoundPage = () => (
           The page you tried to open does not exist or has moved.
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          {/* go back one step in browser history */}
           <button
             type="button"
             onClick={() => window.history.back()}
@@ -29,3 +33,4 @@ export const NotFoundPage = () => (
     </div>
   </AppLayout>
 )
+// endregion

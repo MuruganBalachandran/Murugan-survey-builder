@@ -1,67 +1,74 @@
+// region imports
 import { useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import type { Survey } from '@/services/api/surveys'
-import { SurveyCardEditIcon, PreviewIcon, ShareIcon, TrashIcon } from '@/utils/icons'
+import { SurveyCardEditIcon, PreviewIcon, ShareIcon, TrashIcon, ResponseIcon } from '@/utils/icons'
 import type { SurveyCardProps } from '@/types'
+// endregion
 
+// region helpers
+
+// human-readable label for each survey status
 const statusLabel = (status?: string) => {
   switch (status) {
-    case 'published':
-      return 'Published'
-    case 'closed':
-      return 'Closed'
-    case 'archived':
-      return 'Archived'
-    default:
-      return 'Draft'
+    case 'published': return 'Published'
+    case 'closed': return 'Closed'
+    case 'archived': return 'Archived'
+    default: return 'Draft'
   }
 }
 
+// tailwind classes for the status badge colour
 const statusTone = (status?: string) => {
   switch (status) {
-    case 'published':
-      return 'bg-emerald-50 text-emerald-700'
-    case 'closed':
-      return 'bg-gray-100 text-gray-700'
-    case 'archived':
-      return 'bg-amber-50 text-amber-700'
-    default:
-      return 'bg-violet-50 text-violet-700'
+    case 'published': return 'bg-emerald-50 text-emerald-700'
+    case 'closed': return 'bg-gray-100 text-gray-700'
+    case 'archived': return 'bg-amber-50 text-amber-700'
+    default: return 'bg-violet-50 text-violet-700'
   }
 }
 
+// truncate long descriptions with an ellipsis
 const truncateDescription = (description: string, limit = 98) => {
-  if (description.length <= limit) {
-    return description
-  }
-
+  if (description.length <= limit) return description
   return `${description.slice(0, limit).trimEnd()}...`
 }
 
+// endregion
+
+// region component
 export const SurveyCard = ({ survey, onEdit, onPreview, onShare, onDelete }: SurveyCardProps) => {
   const navigate = useNavigate()
+
+  // region state
   const [showMore, setShowMore] = useState(false)
+  // endregion
+
+  // region derived data
   const titleInitial = survey.title?.trim()?.[0]?.toUpperCase() || '?'
   const accentColor = survey.primaryColor || '#6366F1'
-
-  const description = useMemo(() => {
-    if (!survey.description) {
-      return ''
-    }
-
-    return showMore ? survey.description : truncateDescription(survey.description)
-  }, [showMore, survey.description])
-
   const canExpand = (survey.description?.length ?? 0) > 98
 
+  // truncate or expand description based on toggle state
+  const description = useMemo(() => {
+    if (!survey.description) return ''
+    return showMore ? survey.description : truncateDescription(survey.description)
+  }, [showMore, survey.description])
+  // endregion
+
+  // region render
   return (
     <article className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-md">
+      {/* accent bar using survey primary color */}
       <div className="h-1.5 w-full" style={{ backgroundColor: accentColor }} />
 
       <div className="p-5">
+        {/* card header — logo/initial, title, slug, status badge, edit button */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-start gap-3">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl text-white shadow-sm" style={{ backgroundColor: accentColor }}>
+            <div
+              className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl text-white shadow-sm"
+              style={{ backgroundColor: accentColor }}
+            >
               {survey.logoUrl ? (
                 <img src={survey.logoUrl} alt={`${survey.title} logo`} className="h-full w-full object-cover" />
               ) : (
@@ -90,6 +97,7 @@ export const SurveyCard = ({ survey, onEdit, onPreview, onShare, onDelete }: Sur
           </div>
         </div>
 
+        {/* expandable description with read-more toggle */}
         {survey.description && (
           <div className="mt-3">
             <p className="text-sm leading-6 text-gray-600">
@@ -112,7 +120,18 @@ export const SurveyCard = ({ survey, onEdit, onPreview, onShare, onDelete }: Sur
           <span>{survey.responseCount ?? 0} responses</span>
         </div>
 
+        {/* action toolbar — responses, preview, share, delete */}
         <div className="mt-5 flex items-center gap-2 border-t border-gray-100 pt-4">
+          <button
+            type="button"
+            onClick={() => navigate({ to: '/surveys/$id/responses', params: { id: survey.id } })}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-700 transition-colors hover:bg-gray-50"
+            aria-label="View responses"
+            title="View responses"
+          >
+            <ResponseIcon />
+          </button>
+
           <button
             type="button"
             onClick={() => onPreview(survey.slug)}
@@ -123,12 +142,10 @@ export const SurveyCard = ({ survey, onEdit, onPreview, onShare, onDelete }: Sur
             <PreviewIcon />
           </button>
 
+          {/* share disabled until survey is published */}
           <button
             type="button"
-            onClick={() => {
-              if (survey.status !== 'published') return
-              onShare(survey.slug)
-            }}
+            onClick={() => survey.status === 'published' && onShare(survey.slug)}
             disabled={survey.status !== 'published'}
             className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
             aria-label="Share survey"
@@ -150,4 +167,6 @@ export const SurveyCard = ({ survey, onEdit, onPreview, onShare, onDelete }: Sur
       </div>
     </article>
   )
+  // endregion
 }
+// endregion

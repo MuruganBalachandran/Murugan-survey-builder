@@ -1,11 +1,12 @@
+// region imports
 import { useEffect, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '@/lib/cn'
 import type { OffCanvasProps } from '@/types'
 import { SIZE_CLASSES } from '@/utils/constants'
+// endregion
 
-const sizes = SIZE_CLASSES.OFFCANVAS
-
+// region component
 export const OffCanvas = ({
   isOpen,
   onClose,
@@ -16,13 +17,14 @@ export const OffCanvas = ({
   size = 'lg',
   zIndex = 60,
 }: OffCanvasProps) => {
+  // region effects
+
+  // lock body scroll and register Escape handler while drawer is open
   useEffect(() => {
     if (!isOpen) return
 
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose()
-      }
+      if (event.key === 'Escape') onClose()
     }
 
     document.addEventListener('keydown', handleEscape)
@@ -34,21 +36,24 @@ export const OffCanvas = ({
     }
   }, [isOpen, onClose])
 
-  if (!isOpen || typeof document === 'undefined') {
-    return null
-  }
+  // endregion
 
+  if (!isOpen || typeof document === 'undefined') return null
+
+  // region render
   return createPortal(
     <div className="fixed inset-0" style={{ zIndex }}>
+      {/* backdrop — clicking closes the drawer */}
       <div className="absolute inset-0 bg-black/45 backdrop-blur-sm" onClick={onClose} />
 
       <aside
         className={cn(
           'absolute right-0 top-0 flex h-full w-full flex-col bg-white shadow-2xl',
           'animate-in slide-in-from-right duration-200',
-          sizes[size],
+          SIZE_CLASSES.OFFCANVAS[size],
         )}
       >
+        {/* drawer header with optional description and close button */}
         <div className="flex items-start justify-between gap-4 border-b border-gray-200 px-6 py-5">
           <div>
             <h2 className="text-xl font-bold text-gray-900">{title}</h2>
@@ -66,11 +71,15 @@ export const OffCanvas = ({
           </button>
         </div>
 
+        {/* scrollable content area */}
         <div className="flex-1 overflow-y-auto px-6 py-6">{children}</div>
 
+        {/* optional sticky footer for action buttons */}
         {footer && <div className="border-t border-gray-200 px-6 py-4">{footer}</div>}
       </aside>
     </div>,
     document.body,
   )
+  // endregion
 }
+// endregion

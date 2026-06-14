@@ -1,16 +1,21 @@
+// region imports
 import { forwardRef } from 'react'
 import { cn } from '@/lib/cn'
 import type { TextareaProps } from '@/types'
+// endregion
 
+// region component
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
-  (
-    { label, error, hint, maxLength, showCharCount = true, className, id, value, ...props },
-    ref,
-  ) => {
+  ({ label, error, hint, maxLength, showCharCount = true, className, id, value, ...props }, ref) => {
     const inputId = id || props.name
-    const charCount = typeof value === 'string' ? value.length : 0
-    const charPercentage = maxLength ? Math.round((charCount / maxLength) * 100) : 0
 
+    // region derived data
+    const charCount = typeof value === 'string' ? value.length : 0
+    // percentage used to colour the char counter near the limit
+    const charPercentage = maxLength ? Math.round((charCount / maxLength) * 100) : 0
+    // endregion
+
+    // region render
     return (
       <div className="w-full">
         {label && (
@@ -43,20 +48,18 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
             {hint && !error && <p className="text-sm text-neutral-500">{hint}</p>}
           </div>
 
+          {/* char counter turns warning colour when approaching the limit */}
           {maxLength && showCharCount && (
-            <p
-              className={cn(
-                'text-xs font-medium',
-                charPercentage > 90 ? 'text-warning-600' : 'text-neutral-400',
-              )}
-            >
+            <p className={cn('text-xs font-medium', charPercentage > 90 ? 'text-warning-600' : 'text-neutral-400')}>
               {charCount} / {maxLength}
             </p>
           )}
         </div>
       </div>
     )
+    // endregion
   },
 )
 
 Textarea.displayName = 'Textarea'
+// endregion

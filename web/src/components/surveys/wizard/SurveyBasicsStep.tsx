@@ -1,6 +1,9 @@
+// region imports
 import { Input } from '@/components/ui/Input'
 import type { SurveyBasicsStepProps } from '@/types'
+// endregion
 
+// region component
 export const SurveyBasicsStep = ({
   title,
   description,
@@ -11,7 +14,9 @@ export const SurveyBasicsStep = ({
   onTitleBlur,
   onDescriptionBlur,
 }: SurveyBasicsStepProps) => (
+  // region render
   <div className="space-y-5">
+    {/* required title field — validated on blur and submit */}
     <Input
       label="Survey title"
       required
@@ -22,6 +27,7 @@ export const SurveyBasicsStep = ({
       placeholder="Customer feedback"
     />
 
+    {/* optional description — only validated if non-empty */}
     <div>
       <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-gray-600">
         Description
@@ -37,4 +43,6 @@ export const SurveyBasicsStep = ({
       {descriptionError && <p className="mt-1.5 text-xs font-medium text-red-600">{descriptionError}</p>}
     </div>
   </div>
+  // endregion
 )
+// endregion

@@ -18,7 +18,6 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SurveySlugRouteImport } from './routes/survey.$slug'
 import { Route as SurveysIdResponsesRouteImport } from './routes/surveys.$id.responses'
-import { Route as SurveysIdEditRouteImport } from './routes/surveys.$id.edit'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -65,11 +64,6 @@ const SurveysIdResponsesRoute = SurveysIdResponsesRouteImport.update({
   path: '/$id/responses',
   getParentRoute: () => SurveysRoute,
 } as any)
-const SurveysIdEditRoute = SurveysIdEditRouteImport.update({
-  id: '/$id/edit',
-  path: '/$id/edit',
-  getParentRoute: () => SurveysRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -80,7 +74,6 @@ export interface FileRoutesByFullPath {
   '/surveys': typeof SurveysRouteWithChildren
   '/terms': typeof TermsRoute
   '/survey/$slug': typeof SurveySlugRoute
-  '/surveys/$id/edit': typeof SurveysIdEditRoute
   '/surveys/$id/responses': typeof SurveysIdResponsesRoute
 }
 export interface FileRoutesByTo {
@@ -92,7 +85,6 @@ export interface FileRoutesByTo {
   '/surveys': typeof SurveysRouteWithChildren
   '/terms': typeof TermsRoute
   '/survey/$slug': typeof SurveySlugRoute
-  '/surveys/$id/edit': typeof SurveysIdEditRoute
   '/surveys/$id/responses': typeof SurveysIdResponsesRoute
 }
 export interface FileRoutesById {
@@ -105,7 +97,6 @@ export interface FileRoutesById {
   '/surveys': typeof SurveysRouteWithChildren
   '/terms': typeof TermsRoute
   '/survey/$slug': typeof SurveySlugRoute
-  '/surveys/$id/edit': typeof SurveysIdEditRoute
   '/surveys/$id/responses': typeof SurveysIdResponsesRoute
 }
 export interface FileRouteTypes {
@@ -119,7 +110,6 @@ export interface FileRouteTypes {
     | '/surveys'
     | '/terms'
     | '/survey/$slug'
-    | '/surveys/$id/edit'
     | '/surveys/$id/responses'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -131,7 +121,6 @@ export interface FileRouteTypes {
     | '/surveys'
     | '/terms'
     | '/survey/$slug'
-    | '/surveys/$id/edit'
     | '/surveys/$id/responses'
   id:
     | '__root__'
@@ -143,7 +132,6 @@ export interface FileRouteTypes {
     | '/surveys'
     | '/terms'
     | '/survey/$slug'
-    | '/surveys/$id/edit'
     | '/surveys/$id/responses'
   fileRoutesById: FileRoutesById
 }
@@ -223,23 +211,14 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SurveysIdResponsesRouteImport
       parentRoute: typeof SurveysRoute
     }
-    '/surveys/$id/edit': {
-      id: '/surveys/$id/edit'
-      path: '/$id/edit'
-      fullPath: '/surveys/$id/edit'
-      preLoaderRoute: typeof SurveysIdEditRouteImport
-      parentRoute: typeof SurveysRoute
-    }
   }
 }
 
 interface SurveysRouteChildren {
-  SurveysIdEditRoute: typeof SurveysIdEditRoute
   SurveysIdResponsesRoute: typeof SurveysIdResponsesRoute
 }
 
 const SurveysRouteChildren: SurveysRouteChildren = {
-  SurveysIdEditRoute: SurveysIdEditRoute,
   SurveysIdResponsesRoute: SurveysIdResponsesRoute,
 }
 

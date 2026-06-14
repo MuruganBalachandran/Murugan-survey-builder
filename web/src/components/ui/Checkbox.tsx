@@ -1,11 +1,15 @@
-import { forwardRef, type ReactNode } from 'react'
+// region imports
+import { forwardRef } from 'react'
 import { cn } from '@/lib/cn'
 import type { CheckboxProps } from '@/types'
+// endregion
 
+// region component
 export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
   ({ label, error, className, id, ...props }, ref) => {
     const checkboxId = id || props.name
 
+    // region render
     return (
       <div className="flex items-start">
         <div className="flex items-center h-6">
@@ -25,6 +29,8 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
             {...props}
           />
         </div>
+
+        {/* label sits to the right and is linked via htmlFor */}
         {label && (
           <div className="ml-3 text-sm leading-6">
             <label htmlFor={checkboxId} className="font-medium text-neutral-700 cursor-pointer">
@@ -34,7 +40,9 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
         )}
       </div>
     )
+    // endregion
   },
 )
 
 Checkbox.displayName = 'Checkbox'
+// endregion
