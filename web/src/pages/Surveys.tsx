@@ -1,6 +1,6 @@
 // region imports
 import { Outlet, useLocation } from '@tanstack/react-router'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from '@/lib/toast'
 import { AppLayout } from '@/components/Layout/AppLayout'
 import { CustomModal } from '@/components/common/CustomModal'
@@ -46,7 +46,6 @@ import {
 } from '@/utils/validations'
 import {
   normalizeQuestionType,
-  statusLabel,
   buildPaginationItems,
   getSurveyUrl,
   readFileAsDataUrl,
@@ -62,6 +61,7 @@ export const SurveysPage = () => {
   const modal = useModal()
 
   const surveys = useAppSelector((state) => state.survey.surveys) as SurveyRecord[]
+  const surveysTotal = useAppSelector((state) => state.survey.surveysTotal)
   const currentSurvey = useAppSelector((state) => state.survey.currentSurvey) as SurveyRecord | null
   const isLoading = useAppSelector((state) => state.survey.isLoading)
   const error = useAppSelector((state) => state.survey.error)
@@ -84,6 +84,7 @@ export const SurveysPage = () => {
   const [questionForm, setQuestionForm] = useState(defaultQuestionForm)
   const [questionErrors, setQuestionErrors] = useState<Record<string, string>>({})
   const [surveySearch, setSurveySearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [surveyDateRange, setSurveyDateRange] = useState('all')
   const [surveyStatus, setSurveyStatus] = useState('all')
   const [surveySortBy, setSurveySortBy] = useState('newest')
@@ -118,68 +119,10 @@ export const SurveysPage = () => {
     )
   }, [activeSurvey, surveyForm])
 
-  // surveys sorted newest-first as the base for filters
-  const orderedSurveys = useMemo(
-    () =>
-      [...surveys].sort((first, second) => {
-        const firstDate = new Date(first.createdAt).getTime()
-        const secondDate = new Date(second.createdAt).getTime()
-        return secondDate - firstDate
-      }),
-    [surveys],
-  )
+  const totalPages = Math.max(1, Math.ceil(surveysTotal / pageSize))
 
-  // apply date range, status, search, and sort filters
-  const filteredSurveys = useMemo(() => {
-    const query = surveySearch.trim().toLowerCase()
-    const now = Date.now()
-
-    const rangeFiltered = orderedSurveys.filter((survey) => {
-      if (surveyDateRange === 'all') return true
-      const createdAt = new Date(survey.createdAt).getTime()
-      const daysAgo = (now - createdAt) / (1000 * 60 * 60 * 24)
-      if (surveyDateRange === '7d') return daysAgo <= 7
-      if (surveyDateRange === '30d') return daysAgo <= 30
-      return true
-    })
-
-    const statusFiltered = rangeFiltered.filter((survey) => {
-      if (surveyStatus === 'all') return true
-      return survey.status === surveyStatus
-    })
-
-    const searchFiltered = !query
-      ? statusFiltered
-      : statusFiltered.filter((survey) => {
-          const searchable = [survey.title, survey.description, survey.slug, statusLabel(survey.status)]
-            .filter(Boolean)
-            .join(' ')
-            .toLowerCase()
-          return searchable.includes(query)
-        })
-
-    return [...searchFiltered].sort((first, second) => {
-      switch (surveySortBy) {
-        case 'oldest':
-          return new Date(first.createdAt).getTime() - new Date(second.createdAt).getTime()
-        case 'title':
-          return first.title.localeCompare(second.title)
-        case 'responses':
-          return (second.responseCount ?? 0) - (first.responseCount ?? 0)
-        case 'newest':
-        default:
-          return new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime()
-      }
-    })
-  }, [orderedSurveys, surveyDateRange, surveyStatus, surveySearch, surveySortBy])
-
-  const totalPages = Math.max(1, Math.ceil(filteredSurveys.length / pageSize))
-
-  // slice the filtered list to the current page
-  const paginatedSurveys = useMemo(() => {
-    const startIndex = (currentPage - 1) * pageSize
-    return filteredSurveys.slice(startIndex, startIndex + pageSize)
-  }, [currentPage, filteredSurveys])
+  // surveys for the current page come directly from the API
+  const paginatedSurveys = surveys
 
   const pageItems = useMemo(() => buildPaginationItems(currentPage, totalPages), [currentPage, totalPages])
 
@@ -187,27 +130,30 @@ export const SurveysPage = () => {
 
   // region effects
 
-  // load all surveys on mount
+  // debounce search input — wait 400 ms after the user stops typing
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => {
-    dispatch(fetchUserSurveys())
-  }, [dispatch])
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => setDebouncedSearch(surveySearch), 400)
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
+  }, [surveySearch])
 
-  // re-fetch surveys whenever the window regains focus
-  useEffect(() => {
-    const refreshSurveys = () => { dispatch(fetchUserSurveys()) }
-    window.addEventListener('focus', refreshSurveys)
-    return () => window.removeEventListener('focus', refreshSurveys)
-  }, [dispatch])
-
-  // clamp page to valid range when filters shrink the result set
-  useEffect(() => {
-    if (currentPage > totalPages) setCurrentPage(totalPages)
-  }, [currentPage, totalPages])
-
-  // reset to page 1 whenever the search query changes
+  // reset to page 1 whenever filters change
   useEffect(() => {
     setCurrentPage(1)
-  }, [surveySearch])
+  }, [debouncedSearch, surveyStatus, surveyDateRange, surveySortBy])
+
+  // fetch surveys from the API whenever filters, sort, or page change
+  useEffect(() => {
+    dispatch(fetchUserSurveys({
+      page: currentPage,
+      pageSize,
+      search: debouncedSearch,
+      status: surveyStatus,
+      dateRange: surveyDateRange,
+      sort: surveySortBy,
+    }))
+  }, [dispatch, currentPage, pageSize, debouncedSearch, surveyStatus, surveyDateRange, surveySortBy])
 
   // load full survey detail whenever the active drawer changes
   useEffect(() => {
@@ -244,7 +190,7 @@ export const SurveysPage = () => {
   // region helpers
 
   const refreshData = async (surveyId?: string) => {
-    await dispatch(fetchUserSurveys())
+    await dispatch(fetchUserSurveys({ page: currentPage, pageSize, search: debouncedSearch, status: surveyStatus, dateRange: surveyDateRange, sort: surveySortBy }))
     if (surveyId) await dispatch(fetchSurveyById(surveyId))
   }
 
@@ -519,7 +465,7 @@ export const SurveysPage = () => {
       onConfirm: async () => {
         await dispatch(deleteSurveyById(survey.id))
         if (selectedSurveyId === survey.id) closeSurveyDrawer()
-        await dispatch(fetchUserSurveys())
+        await refreshData()
         toast.success('Survey deleted')
       },
     })
@@ -796,7 +742,7 @@ export const SurveysPage = () => {
             <div className="mt-6 rounded-2xl border border-dashed border-gray-200 p-8 text-center text-sm text-gray-500">
               Loading surveys...
             </div>
-          ) : filteredSurveys.length > 0 ? (
+          ) : paginatedSurveys.length > 0 ? (
             <>
               <div className="mt-6">
                 <SurveysGrid
@@ -814,7 +760,7 @@ export const SurveysPage = () => {
               {/* pagination bar */}
               <div className="mt-6 flex flex-col gap-4 border-t border-gray-200 pt-5 md:flex-row md:items-center md:justify-between">
                 <p className="text-sm text-gray-600">
-                  Showing {(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, filteredSurveys.length)} of {filteredSurveys.length}
+                  Showing {(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, surveysTotal)} of {surveysTotal}
                 </p>
 
                 <div className="flex flex-wrap items-center gap-2">
@@ -871,7 +817,7 @@ export const SurveysPage = () => {
                 </div>
               </div>
             </>
-          ) : surveys.length > 0 ? (
+          ) : surveysTotal > 0 ? (
             <div className="mt-6 rounded-2xl border border-dashed border-gray-200 p-8 text-center text-sm text-gray-500">
               No surveys match your filter.
             </div>

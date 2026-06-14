@@ -66,7 +66,7 @@ Public routes: `/`, `/login`, `/signup`, `/terms`, `/privacy`, `/survey/:slug`.
 Redux Toolkit. Three meaningful slices:
 
 - **authSlice** — user, token, isAuthenticated, isLoading. Persisted via redux-persist (token survives page reload).
-- **surveySlice** — surveys list + currentSurvey (survey with questions). Fetched on page load and refreshed after mutations.
+- **surveySlice** — surveys list, `surveysTotal` (total count from API), and `currentSurvey` (survey with questions). Fetched on page load and refreshed after mutations. Pagination and filtering are server-driven — the slice stores only the current page of results.
 - **questionSlice** — question mutation thunks (add, update, delete, reorder) and response thunks (submit, fetch). Shares the response slice reducer with `responseSlice.ts`.
 
 Why Redux over local state: the survey builder drawer and the surveys list are siblings, both needing `currentSurvey`. Lifting that state through props would be fragile. Redux keeps the active survey as a single source of truth both the drawer and the grid can read.
@@ -90,6 +90,7 @@ Key interactions:
 - **Question composer** — `QuestionComposerCard` renders inline inside the questions step. Supports 7 question types: short text, long text, multiple choice, checkbox group, dropdown, rating, yes/no.
 - **Reorder** — HTML5 drag-and-drop. `draggedQuestionId` tracks the dragged item; on drop, the new order is computed client-side and sent to `PUT /questions/reorder`.
 - **Branding** — `ColorPicker` + logo URL input. Primary color is applied live in the preview panel and persisted on the survey.
+- **Filtering and pagination** — search, status, date range, and sort are filter state on the frontend. Each change fires a debounced fetch to the API, which applies the filters in SQL and returns only the current page. `surveysTotal` from the API response drives the pagination bar.
 
 ## Public Survey Page
 

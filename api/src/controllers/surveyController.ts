@@ -7,6 +7,7 @@ import {
   findSurveyById,
   findSurveyBySlug,
   findSurveysByUserId,
+  findSurveysByUserIdPaginated,
   updateSurvey,
 } from '../queries'
 import { generateId, generateSlug } from '../utils/generators'
@@ -60,13 +61,29 @@ export const createNewSurvey = async (c: Context): Promise<Response> => {
 // region get user surveys
 export const getUserSurveys = async (c: Context): Promise<Response> => {
   try {
-    // get db and user details
     const db = c.env.DB
     const user = c.get('user')
 
-    // get surveys
-    const surveys = await findSurveysByUserId(db, user.userId)
-    return c.json<ApiResponse<Survey[]>>({ success: true, message: 'Surveys retrieved', data: surveys }, 200)
+    const page = Math.max(1, Number(c.req.query('page') ?? 1))
+    const pageSize = Math.min(50, Math.max(1, Number(c.req.query('pageSize') ?? 6)))
+    const search = c.req.query('search') ?? ''
+    const status = c.req.query('status') ?? 'all'
+    const dateRange = c.req.query('dateRange') ?? 'all'
+    const sort = c.req.query('sort') ?? 'newest'
+
+    const { surveys, total } = await findSurveysByUserIdPaginated(db, user.userId, {
+      page,
+      pageSize,
+      search,
+      status,
+      dateRange,
+      sort,
+    })
+
+    return c.json<ApiResponse<{ surveys: Survey[]; total: number; page: number; pageSize: number }>>(
+      { success: true, message: 'Surveys retrieved', data: { surveys, total, page, pageSize } },
+      200,
+    )
   } catch (error) {
     console.error('Get surveys error:', error)
     return c.json<ApiResponse<null>>({ success: false, message: 'Internal server error' }, 500)

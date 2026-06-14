@@ -54,16 +54,27 @@ export const createSurvey = async (
 // endregion
 
 // region get user surveys
-export const getUserSurveys = async (): Promise<
-  ApiResponse<Survey[]>
-> => {
-  try {
-    // fetch current user surveys
-    const response =
-      await apiClient.get<ApiResponse<Survey[]>>(
-        '/surveys',
-      )
+export interface SurveyListParams {
+  page?: number
+  pageSize?: number
+  search?: string
+  status?: string
+  dateRange?: string
+  sort?: string
+}
 
+export interface PaginatedSurveys {
+  surveys: Survey[]
+  total: number
+  page: number
+  pageSize: number
+}
+
+export const getUserSurveys = async (
+  params: SurveyListParams = {},
+): Promise<ApiResponse<PaginatedSurveys>> => {
+  try {
+    const response = await apiClient.get<ApiResponse<PaginatedSurveys>>('/surveys', { params })
     return response.data
   } catch (error: any) {
     return handleApiError(error)

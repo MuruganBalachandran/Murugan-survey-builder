@@ -13,6 +13,7 @@ Built as a take-home for the SDE intern role at [DoCoDeGo](https://docodego.com/
 - Per-survey branding: primary color picker + logo URL
 - Publish a survey and share a public URL — no login required to respond
 - View all responses per survey in the dashboard
+- Server-side filtered and paginated survey list — search, status, date range, and sort are applied in SQL
 
 ## Stack
 
@@ -65,7 +66,9 @@ The survey builder runs entirely inside an OffCanvas drawer — no separate rout
 
 **Multi-step OffCanvas wizard for survey creation** — Survey creation is split into four steps (details → branding → questions → publish) inside a drawer. Users never leave the surveys page, so there are no route transitions to manage and the survey list updates immediately after creation.
 
-**Client-side filtering, search, sort, and pagination composed together** — All four are applied on the client from a single in-memory list. No extra requests, instant feedback, and draft surveys are surfaced prominently so users can easily pick up unfinished work.
+**Server-side filtering and pagination** — The surveys list fetches only the current page from the API. Search, status, date range, and sort are passed as query params and applied in SQL with `WHERE`, `ORDER BY`, `LIMIT`, and `OFFSET`. The API returns `{ surveys, total, page, pageSize }` — the frontend stores only the visible page and drives the pagination bar from `total`. Search input is debounced 400ms client-side before triggering a fetch so the API isn't called on every keystroke.
+
+**Client-side filtering, search, sort, and pagination composed together** — This was the original approach — all four applied in-memory from a single fetched list. It has since been moved server-side (see above). The frontend filter state, pagination controls, and search debounce remain on the client, but they now drive API params rather than in-memory operations.
 
 ## What I'd do differently with another week
 

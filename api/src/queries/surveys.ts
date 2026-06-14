@@ -164,6 +164,89 @@ export const findSurveysByUserId = async (
 }
 // endregion
 
+// region find surveys paginated
+export interface SurveyListParams {
+  page: number
+  pageSize: number
+  search?: string
+  status?: string
+  dateRange?: string
+  sort?: string
+}
+
+export const findSurveysByUserIdPaginated = async (
+  db: D1Database,
+  userId: string,
+  params: SurveyListParams,
+): Promise<{ surveys: Survey[]; total: number }> => {
+  try {
+    const { page, pageSize, search = '', status = 'all', dateRange = 'all', sort = 'newest' } = params
+    const offset = (page - 1) * pageSize
+
+    // build WHERE clauses dynamically
+    const conditions: string[] = ['s.user_id = ?']
+    const bindings: any[] = [userId]
+
+    if (status !== 'all') {
+      conditions.push('s.status = ?')
+      bindings.push(status)
+    }
+
+    if (search.trim()) {
+      conditions.push('(s.title LIKE ? OR s.description LIKE ? OR s.slug LIKE ?)')
+      const term = `%${search.trim()}%`
+      bindings.push(term, term, term)
+    }
+
+    if (dateRange === '7d') {
+      conditions.push("s.created_at >= datetime('now', '-7 days')")
+    } else if (dateRange === '30d') {
+      conditions.push("s.created_at >= datetime('now', '-30 days')")
+    }
+
+    const orderClause =
+      sort === 'oldest' ? 's.created_at ASC'
+      : sort === 'title' ? 's.title ASC'
+      : sort === 'responses' ? 'response_count DESC'
+      : 's.created_at DESC'
+
+    const where = conditions.join(' AND ')
+    const baseSelect = `
+      SELECT s.*,
+        (SELECT COUNT(*) FROM survey_responses r WHERE r.survey_id = s.id) AS response_count,
+        (SELECT COUNT(*) FROM questions q WHERE q.survey_id = s.id) AS question_count
+      FROM surveys s
+      WHERE ${where}`
+
+    const [countResult, listResult] = await Promise.all([
+      db.prepare(`SELECT COUNT(*) AS total FROM surveys s WHERE ${where}`).bind(...bindings).first<{ total: number }>(),
+      db.prepare(`${baseSelect} ORDER BY ${orderClause} LIMIT ? OFFSET ?`).bind(...bindings, pageSize, offset).all<any>(),
+    ])
+
+    const surveys = listResult.results.map((result) => ({
+      id: result.id,
+      userId: result.user_id,
+      title: result.title,
+      description: result.description,
+      slug: result.slug,
+      primaryColor: result.primary_color,
+      logoUrl: result.logo_url,
+      status: result.status,
+      publishedAt: result.published_at,
+      createdAt: result.created_at,
+      updatedAt: result.updated_at,
+      responseCount: Number(result.response_count ?? 0),
+      questionCount: Number(result.question_count ?? 0),
+    }))
+
+    return { surveys, total: Number(countResult?.total ?? 0) }
+  } catch (error) {
+    console.error('Find surveys paginated error:', error)
+    return { surveys: [], total: 0 }
+  }
+}
+// endregion
+
 // region update survey
 export const updateSurvey = async (
   db: D1Database,

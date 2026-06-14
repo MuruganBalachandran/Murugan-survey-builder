@@ -1,9 +1,11 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import * as surveyAPI from '@/services/api/surveys'
 import type { Survey, SurveyWithQuestions } from '@/types/survey'
+import type { SurveyListParams } from '@/services/api/surveys'
 
 export interface SurveyState {
   surveys: Survey[]
+  surveysTotal: number
   currentSurvey: SurveyWithQuestions | null
   isLoading: boolean
   error: Record<string, string> | null
@@ -11,6 +13,7 @@ export interface SurveyState {
 
 const initialState: SurveyState = {
   surveys: [],
+  surveysTotal: 0,
   currentSurvey: null,
   isLoading: false,
   error: null,
@@ -34,17 +37,20 @@ export const createNewSurvey = createAsyncThunk(
 // endregion
 
 // region fetch user surveys
-export const fetchUserSurveys = createAsyncThunk('survey/fetchUserSurveys', async (_, { rejectWithValue }) => {
-  try {
-    const response = await surveyAPI.getUserSurveys()
-    if (!response.success || !response.data) {
-      return rejectWithValue(response.errors || { general: response.message })
+export const fetchUserSurveys = createAsyncThunk(
+  'survey/fetchUserSurveys',
+  async (params: SurveyListParams = {}, { rejectWithValue }) => {
+    try {
+      const response = await surveyAPI.getUserSurveys(params)
+      if (!response.success || !response.data) {
+        return rejectWithValue(response.errors || { general: response.message })
+      }
+      return response.data
+    } catch (error: any) {
+      return rejectWithValue({ general: error.message || 'Failed to fetch surveys' })
     }
-    return response.data
-  } catch (error: any) {
-    return rejectWithValue({ general: error.message || 'Failed to fetch surveys' })
-  }
-})
+  },
+)
 // endregion
 
 // region fetch survey by ID
@@ -146,7 +152,8 @@ const surveySlice = createSlice({
       })
       .addCase(fetchUserSurveys.fulfilled, (state, action) => {
         state.isLoading = false
-        state.surveys = action.payload
+        state.surveys = action.payload.surveys
+        state.surveysTotal = action.payload.total
       })
       .addCase(fetchUserSurveys.rejected, (state, action) => {
         state.isLoading = false

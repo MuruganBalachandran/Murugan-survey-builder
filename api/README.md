@@ -63,7 +63,7 @@ All responses follow `ApiResponse<T>: { success, message, data?, errors? }`.
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | POST | `/` | ✓ | Create survey (title, description). Returns survey with generated slug. |
-| GET | `/` | ✓ | List all surveys for the authenticated user, with `responseCount` and `questionCount`. |
+| GET | `/` | ✓ | List surveys for the authenticated user, paginated and filtered server-side. Accepts `page`, `pageSize`, `search`, `status`, `dateRange`, `sort` query params. Returns `{ surveys, total, page, pageSize }`. |
 | GET | `/:id` | ✓ | Fetch survey + its ordered questions. |
 | PUT | `/:id` | ✓ | Update title, description, primaryColor, logoUrl, status, publishedAt. |
 | DELETE | `/:id` | ✓ | Deletes survey, its questions, and all responses (cascaded manually). |
