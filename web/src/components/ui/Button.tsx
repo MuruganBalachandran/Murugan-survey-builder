@@ -6,38 +6,13 @@ import type { ButtonProps, ButtonVariant, ButtonSize } from '@/types'
 
 // region constants
 
-// per-variant inline styles — gradient backgrounds, shadows, text colours
-const variants: Record<ButtonVariant, React.CSSProperties> = {
-  primary: {
-    background: 'linear-gradient(135deg, #6366F1 0%, #7C7FF5 100%)',
-    color: '#fff',
-    border: 'none',
-    boxShadow: '0 4px 24px rgba(99,102,241,0.3), 0 1px 0 rgba(255,255,255,0.1) inset',
-  },
-  secondary: {
-    background: 'rgba(255,255,255,0.04)',
-    color: '#C4C4D4',
-    border: '0.5px solid rgba(255,255,255,0.1)',
-    boxShadow: 'none',
-  },
-  tertiary: {
-    background: 'transparent',
-    color: '#818CF8',
-    border: 'none',
-    boxShadow: 'none',
-  },
-  danger: {
-    background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
-    color: '#fff',
-    border: 'none',
-    boxShadow: '0 4px 24px rgba(239,68,68,0.3), 0 1px 0 rgba(255,255,255,0.1) inset',
-  },
-  success: {
-    background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
-    color: '#fff',
-    border: 'none',
-    boxShadow: '0 4px 24px rgba(16,185,129,0.3), 0 1px 0 rgba(255,255,255,0.1) inset',
-  },
+// per-variant tailwind classes
+const variants: Record<ButtonVariant, string> = {
+  primary: 'bg-gradient-to-br from-indigo-500 to-indigo-400 text-white border-none shadow-[0_4px_24px_rgba(99,102,241,0.3),0_1px_0_rgba(255,255,255,0.1)_inset]',
+  secondary: 'bg-white/[0.04] text-[#C4C4D4] border border-white/10',
+  tertiary: 'bg-transparent text-indigo-400 border-none shadow-none',
+  danger: 'bg-gradient-to-br from-red-500 to-red-600 text-white border-none shadow-[0_4px_24px_rgba(239,68,68,0.3),0_1px_0_rgba(255,255,255,0.1)_inset]',
+  success: 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-none shadow-[0_4px_24px_rgba(16,185,129,0.3),0_1px_0_rgba(255,255,255,0.1)_inset]',
 }
 
 // padding + font-size + border-radius per size token
@@ -78,25 +53,17 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={isDisabled}
         className={cn(
           'inline-flex items-center justify-center gap-2',
+          'tracking-[0.02em] font-semibold text-sm',
           'transition-all duration-200 ease-out',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#08080E]',
           'disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none',
-          'active:scale-[0.985]',
+          'hover:opacity-90 active:scale-[0.985]',
+          variants[variant],
           sizes[size],
           fullWidth && 'w-full',
           className,
         )}
-        style={{
-          ...variants[variant],
-          letterSpacing: '0.02em',
-          fontWeight: 600,
-          fontSize: '14px',
-          // disabled state overrides shadow and cursor via inline style
-          ...(isDisabled && { opacity: 0.4, cursor: 'not-allowed', boxShadow: 'none' }),
-          ...style,
-        }}
-        onMouseOver={(e) => { if (!isDisabled) e.currentTarget.style.opacity = '0.88' }}
-        onMouseOut={(e) => { e.currentTarget.style.opacity = '1' }}
+        style={style}
         {...props}
       >
         {isLoading ? (

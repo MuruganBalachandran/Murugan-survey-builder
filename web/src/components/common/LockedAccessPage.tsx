@@ -44,7 +44,7 @@ export const LockedAccessPage = () => {
                           <span className="text-gray-500">{[124, 98, 72][index]} responses</span>
                         </div>
                         <div className="mt-2 h-2 rounded-full bg-violet-100">
-                          <div className="h-2 rounded-full bg-violet-500" style={{ width: `${80 - index * 16}%` }} />
+                        <div className="h-2 rounded-full bg-violet-500" style={{ width: `${80 - index * 16}%` }} />
                         </div>
                       </div>
                     ))}
@@ -80,7 +80,7 @@ export const LockedAccessPage = () => {
                 <Button
                   variant="secondary"
                   onClick={() => navigate({ to: '/signup' })}
-                  style={{ background: '#EEF2FF', color: '#4F46E5', border: 'none' }}
+                  className="bg-indigo-50 !text-indigo-600 !border-none"
                 >
                   Get Started
                 </Button>

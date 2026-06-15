@@ -680,7 +680,7 @@ export const SurveysPage = () => {
             <Button
               variant="secondary"
               onClick={openCreateDrawer}
-              style={{ background: 'white', color: '#4F46E5', border: 'none' }}
+              className="bg-white !text-indigo-600 !border-none"
             >
               Create survey
             </Button>

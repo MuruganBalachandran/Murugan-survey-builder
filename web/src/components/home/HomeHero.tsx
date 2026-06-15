@@ -26,7 +26,7 @@ export const HomeHero = ({ isAuthenticated, onPrimaryClick, onSignInClick }: Hom
           variant="secondary"
           size="lg"
           onClick={onPrimaryClick}
-          style={{ background: 'white', color: '#4F46E5', border: 'none' }}
+          className="bg-white !text-indigo-600 !border-none"
         >
           Create Your First Survey
         </Button>
@@ -36,11 +36,7 @@ export const HomeHero = ({ isAuthenticated, onPrimaryClick, onSignInClick }: Hom
             variant="secondary"
             size="lg"
             onClick={onSignInClick}
-            style={{
-              background: 'rgba(255,255,255,0.12)',
-              color: 'white',
-              border: '1px solid rgba(255,255,255,0.25)',
-            }}
+            className="bg-white/10 !text-white border border-white/25"
           >
             Sign In
           </Button>

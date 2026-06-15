@@ -226,7 +226,7 @@ export const DashboardPage = () => {
             <Button
               variant="secondary"
               onClick={() => navigate({ to: '/surveys' })}
-              style={{ background: 'white', color: '#4F46E5', border: 'none' }}
+              className="bg-white !text-indigo-600 !border-none"
             >
               Manage surveys
             </Button>

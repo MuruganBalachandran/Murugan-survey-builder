@@ -17,7 +17,7 @@ export const FinalCtaSection = ({ onGetStarted }: FinalCtaSectionProps) => (
       size="lg"
       className="mt-6"
       onClick={onGetStarted}
-      style={{ background: 'white', color: '#4F46E5', border: 'none' }}
+      className="bg-white !text-indigo-600 !border-none"
     >
       Get Started
     </Button>

@@ -110,7 +110,7 @@ export const CustomModal = ({
               disabled={isLoading}
               variant="secondary"
               fullWidth
-              style={{ background: '#F3F4F6', color: '#374151', border: 'none', boxShadow: 'none' }}
+              className="bg-gray-100 !text-gray-700 !border-none !shadow-none"
             >
               {cancelText}
             </Button>
