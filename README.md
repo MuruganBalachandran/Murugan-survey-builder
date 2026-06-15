@@ -62,8 +62,6 @@ The survey builder runs entirely inside an OffCanvas drawer — no separate rout
 
 **Locked dashboard instead of a blank login page** — Unauthenticated users see a blurred version of the real dashboard — analytics, charts, surveys — but cannot interact with it. The goal was to communicate the product's value before asking for a sign-in. It creates curiosity and gives context rather than dropping users onto an empty screen.
 
-**Chart built without a charting library** — The responses-over-time chart is plain `div` elements with heights calculated relative to the busiest day. No extra dependency, no bundle cost, and complete control over styling. The current day is highlighted and empty states are handled gracefully so the chart stays informative even with minimal data.
-
 **Multi-step OffCanvas wizard for survey creation** — Survey creation is split into four steps (details → branding → questions → publish) inside a drawer. Users never leave the surveys page, so there are no route transitions to manage and the survey list updates immediately after creation.
 
 **Server-side filtering and pagination** — The surveys list fetches only the current page from the API. Search, status, date range, and sort are passed as query params and applied in SQL with `WHERE`, `ORDER BY`, `LIMIT`, and `OFFSET`. The API returns `{ surveys, total, page, pageSize }` — the frontend stores only the visible page and drives the pagination bar from `total`. Search input is debounced 400ms client-side before triggering a fetch so the API isn't called on every keystroke.
