@@ -57,6 +57,8 @@ interface Props {
   onCloseComposer: () => void;
   endsAt?: string;
   onEndsAtChange: (value: string) => void;
+  maxResponses?: string;
+  onMaxResponsesChange: (value: string) => void;
   onManualClose: () => void;
   onCopySurveyLink: (slug: string) => void;
   onPreviewSurvey: (slug: string) => void;
@@ -122,6 +124,8 @@ export const CreateSurveyDrawer = ({
   onPreviewSurvey,
   endsAt,
   onEndsAtChange,
+  maxResponses,
+  onMaxResponsesChange,
   onManualClose,
   onSelectTemplate,
   onBlankSurvey,
@@ -138,7 +142,7 @@ export const CreateSurveyDrawer = ({
           <Button
             variant="tertiary"
             onClick={onWizardBack}
-            disabled={createStep === 0}
+            disabled={createStep === 1}
           >
             Back
           </Button>
@@ -307,6 +311,8 @@ export const CreateSurveyDrawer = ({
             isPublishing={isPublishingSurvey}
             endsAt={endsAt}
             onEndsAtChange={onEndsAtChange}
+            maxResponses={maxResponses}
+            onMaxResponsesChange={onMaxResponsesChange}
           />
         )}
       </div>

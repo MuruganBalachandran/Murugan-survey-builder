@@ -64,6 +64,26 @@ export const findResponseById = async (
 };
 // endregion
 
+// region countResponsesBySurveyId
+export const countResponsesBySurveyId = async (
+  db: D1Database,
+  surveyId: string,
+): Promise<number> => {
+  try {
+    const row = (await db
+      .prepare(
+        "SELECT COUNT(*) AS total FROM survey_responses WHERE survey_id = ?",
+      )
+      .bind(surveyId)
+      .first()) as { total: number } | null;
+    return row?.total ?? 0;
+  } catch (error) {
+    console.error("countResponsesBySurveyId error:", error);
+    return 0;
+  }
+};
+// endregion
+
 // region findResponsesBySurveyId
 export const findResponsesBySurveyId = async (
   db: D1Database,

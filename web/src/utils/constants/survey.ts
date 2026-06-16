@@ -1,9 +1,9 @@
 // Form defaults
 const oneDayFromNow = () => {
-  const d = new Date()
-  d.setDate(d.getDate() + 1)
-  return d.toISOString()
-}
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString();
+};
 
 export const DEFAULT_SURVEY_FORM = () => ({
   title: "",
@@ -11,6 +11,7 @@ export const DEFAULT_SURVEY_FORM = () => ({
   primaryColor: "#6366F1",
   logoUrl: "",
   endsAt: oneDayFromNow(),
+  maxResponses: "1000",
 });
 
 export const DEFAULT_QUESTION_FORM = {

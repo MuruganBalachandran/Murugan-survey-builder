@@ -120,6 +120,8 @@ export const updateSurvey = async (
     status?: "draft" | "published" | "closed";
     publishedAt?: string;
     endsAt?: string;
+    maxResponses?: number | null;
+    thankYouMessage?: string;
   },
 ): Promise<ApiResponse<Survey>> => {
   try {

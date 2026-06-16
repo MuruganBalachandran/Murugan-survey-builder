@@ -117,6 +117,10 @@ export interface SurveyPublishStepProps {
   isPublishing?: boolean;
   endsAt?: string;
   onEndsAtChange?: (value: string) => void;
+  maxResponses?: string;
+  onMaxResponsesChange?: (value: string) => void;
+  onMaxResponsesBlur?: () => void;
+  maxResponsesError?: string;
   onCopyLink?: () => void;
   onPreview?: () => void;
   errors?: Record<string, string>;

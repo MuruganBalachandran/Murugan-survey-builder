@@ -28,7 +28,14 @@ export interface Question {
 }
 
 export type QuestionPayload = {
-  type: "short_text" | "long_text" | "multiple_choice" | "checkbox_group" | "dropdown" | "rating" | "yes_no";
+  type:
+    | "short_text"
+    | "long_text"
+    | "multiple_choice"
+    | "checkbox_group"
+    | "dropdown"
+    | "rating"
+    | "yes_no";
   uiType?:
     | "input"
     | "textarea"
@@ -57,6 +64,8 @@ export interface Survey {
   updatedAt: string;
   publishedAt?: string;
   endsAt?: string;
+  maxResponses?: number;
+  thankYouMessage?: string;
   responseCount: number;
   questionCount: number;
 }
@@ -81,17 +90,17 @@ export interface SurveyResponse {
 // Component Props - Surveys
 export interface SurveyCardProps {
   survey: Survey & {
-    status?: 'draft' | 'published' | 'closed'
-    responseCount?: number
-    primaryColor?: string
-  }
-  onEdit: (id: string) => void
-  onPreview: (slug: string) => void
-  onShare: (slug: string) => void
-  onDelete: (id: string) => void
-  onDuplicate: (id: string) => void
-  onManualClose: (id: string) => void
-  onAutoExpire: (id: string) => void
+    status?: "draft" | "published" | "closed";
+    responseCount?: number;
+    primaryColor?: string;
+  };
+  onEdit: (id: string) => void;
+  onPreview: (slug: string) => void;
+  onShare: (slug: string) => void;
+  onDelete: (id: string) => void;
+  onDuplicate: (id: string) => void;
+  onManualClose: (id: string) => void;
+  onAutoExpire: (id: string) => void;
 }
 
 export interface SurveyDetailsFormProps {
@@ -140,14 +149,14 @@ export interface CreateSurveyModalProps {
 }
 
 export interface SurveysGridProps {
-  surveys: Survey[]
-  onEdit: (id: string) => void
-  onPreview: (slug: string) => void
-  onShare: (slug: string) => void
-  onDelete: (id: string) => void
-  onDuplicate: (id: string) => void
-  onManualClose: (id: string) => void
-  onAutoExpire: (id: string) => void
+  surveys: Survey[];
+  onEdit: (id: string) => void;
+  onPreview: (slug: string) => void;
+  onShare: (slug: string) => void;
+  onDelete: (id: string) => void;
+  onDuplicate: (id: string) => void;
+  onManualClose: (id: string) => void;
+  onAutoExpire: (id: string) => void;
 }
 
 // Component Props - Survey Builder
@@ -199,8 +208,8 @@ export interface SurveyState {
 
 // Survey progress
 export interface ProgressState {
-  current: number
-  total: number
-  percentage: number
-  isComplete: boolean
+  current: number;
+  total: number;
+  percentage: number;
+  isComplete: boolean;
 }

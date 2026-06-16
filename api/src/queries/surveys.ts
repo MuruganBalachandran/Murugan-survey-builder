@@ -7,6 +7,7 @@ const SURVEY_SELECT = `
   SELECT
     s.id, s.user_id, s.title, s.description, s.slug,
     s.primary_color, s.logo_url, s.status, s.published_at, s.ends_at,
+    s.max_responses, s.thank_you_message,
     s.created_at, s.updated_at,
     COUNT(DISTINCT r.id) AS response_count,
     COUNT(DISTINCT q.id) AS question_count
@@ -27,6 +28,8 @@ const mapSurvey = (row: any): Survey => ({
   status: row.status,
   publishedAt: row.published_at,
   endsAt: row.ends_at ?? undefined,
+  maxResponses: row.max_responses ?? undefined,
+  thankYouMessage: row.thank_you_message ?? undefined,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
   responseCount: Number(row.response_count ?? 0),
@@ -46,7 +49,7 @@ export const createSurvey = async (
 
     await db
       .prepare(
-        "INSERT INTO surveys (id, user_id, title, description, slug, primary_color, logo_url, status, published_at, ends_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO surveys (id, user_id, title, description, slug, primary_color, logo_url, status, published_at, ends_at, max_responses, thank_you_message, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       )
       .bind(
         survey.id,
@@ -59,6 +62,8 @@ export const createSurvey = async (
         survey.status ?? "draft",
         survey.publishedAt ?? null,
         survey.endsAt ?? null,
+        survey.maxResponses ?? null,
+        survey.thankYouMessage ?? null,
         now,
         now,
       )
@@ -280,6 +285,14 @@ export const updateSurvey = async (
     if (updates.endsAt !== undefined) {
       fields.push("ends_at = ?");
       values.push(updates.endsAt);
+    }
+    if (updates.maxResponses !== undefined) {
+      fields.push("max_responses = ?");
+      values.push(updates.maxResponses ?? null);
+    }
+    if (updates.thankYouMessage !== undefined) {
+      fields.push("thank_you_message = ?");
+      values.push(updates.thankYouMessage ?? null);
     }
 
     // push id

@@ -2,6 +2,7 @@
 import type { Context } from "hono";
 
 import {
+  countResponsesBySurveyId,
   createResponse,
   findResponsesBySurveyId,
   findSurveyById,
@@ -48,6 +49,17 @@ export const submitSurveyResponse = async (c: Context): Promise<Response> => {
       );
     }
 
+    if (survey.maxResponses) {
+      const count = await countResponsesBySurveyId(db, surveyId);
+      if (count >= survey.maxResponses) {
+        await updateSurvey(db, surveyId, { status: "closed" });
+        return c.json<ApiResponse<null>>(
+          { success: false, message: "Survey has reached its response limit" },
+          HTTP_STATUS.FORBIDDEN,
+        );
+      }
+    }
+
     const body = (await c.req.json()) as {
       answers: { questionId: string; value: string | string[] | number }[];
     };
@@ -74,6 +86,13 @@ export const submitSurveyResponse = async (c: Context): Promise<Response> => {
         { success: false, message: "Failed to submit response" },
         HTTP_STATUS.INTERNAL_SERVER_ERROR,
       );
+    }
+
+    if (survey.maxResponses) {
+      const newCount = await countResponsesBySurveyId(db, surveyId);
+      if (newCount >= survey.maxResponses) {
+        await updateSurvey(db, surveyId, { status: "closed" });
+      }
     }
 
     return c.json<ApiResponse<SurveyResponse>>(

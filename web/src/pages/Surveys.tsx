@@ -46,6 +46,7 @@ import {
 import { CalendarIcon, FilterIcon, SortIcon } from "@/utils/icons";
 import {
   isMultipleChoiceQuestion,
+  isValidMaxResponses,
   isValidQuestionOptions,
   isValidQuestionTitle,
   isValidSurveyDescription,
@@ -134,7 +135,8 @@ export const SurveysPage = () => {
       (activeSurvey.primaryColor || "").toLowerCase() !==
         surveyForm.primaryColor.toLowerCase() ||
       (activeSurvey.logoUrl || "") !== surveyForm.logoUrl.trim() ||
-      (activeSurvey.endsAt || "") !== (surveyForm.endsAt || "")
+      (activeSurvey.endsAt || "") !== (surveyForm.endsAt || "") ||
+      String(activeSurvey.maxResponses ?? "") !== surveyForm.maxResponses
     );
   }, [activeSurvey, surveyForm]);
 
@@ -212,6 +214,7 @@ export const SurveysPage = () => {
       primaryColor: currentSurvey.primaryColor || "#6366F1",
       logoUrl: currentSurvey.logoUrl || "",
       endsAt: currentSurvey.endsAt || "",
+      maxResponses: String(currentSurvey.maxResponses ?? ""),
     });
   }, [currentSurvey?.id, currentSurvey?.endsAt, selectedSurveyId]);
 
@@ -361,6 +364,13 @@ export const SurveysPage = () => {
       nextErrors.description = "Description must be 5-100 characters";
     }
 
+    if (
+      surveyForm.maxResponses !== "" &&
+      !isValidMaxResponses(surveyForm.maxResponses)
+    ) {
+      nextErrors.maxResponses = "Response limit must be between 1 and 10,000";
+    }
+
     setSurveyErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
@@ -411,30 +421,31 @@ export const SurveysPage = () => {
   const handleDuplicateSurvey = async (surveyId: string) => {
     const result = await dispatch(fetchSurveyById(surveyId));
     if (result.type !== fetchSurveyById.fulfilled.type) {
-      toast.error('Failed to load survey for duplication');
+      toast.error("Failed to load survey for duplication");
       return;
     }
     const source = result.payload as SurveyRecord & { questions?: Question[] };
     setSurveyForm({
       title: `${source.title} (copy)`,
-      description: source.description || '',
-      primaryColor: source.primaryColor || '#6366F1',
-      logoUrl: source.logoUrl || '',
+      description: source.description || "",
+      primaryColor: source.primaryColor || "#6366F1",
+      logoUrl: source.logoUrl || "",
       endsAt: defaultSurveyForm().endsAt,
+      maxResponses: "",
     });
     setPendingTemplateQuestions(
       (source.questions ?? []).map((q) => ({
         type: q.type,
-        uiType: q.uiType ?? 'input',
+        uiType: q.uiType ?? "input",
         title: q.title,
-        description: q.description || '',
+        description: q.description || "",
         required: q.required,
         options: q.options ?? [],
       })),
     );
     setSurveyErrors({});
     setCreateStep(1);
-    setLogoFileName('');
+    setLogoFileName("");
     setSelectedSurveyId(null);
     setCreateSurveyId(null);
     setIsQuestionComposerOpen(false);
@@ -585,6 +596,9 @@ export const SurveysPage = () => {
           primaryColor: surveyForm.primaryColor,
           logoUrl: surveyForm.logoUrl.trim() || undefined,
           endsAt: surveyForm.endsAt || undefined,
+          maxResponses: surveyForm.maxResponses
+            ? Number(surveyForm.maxResponses)
+            : undefined,
         }),
       );
       if (result.type === updateSurveyDetails.fulfilled.type) {
@@ -807,6 +821,9 @@ export const SurveysPage = () => {
           status: "published",
           publishedAt: activeSurvey.publishedAt || new Date().toISOString(),
           endsAt: surveyForm.endsAt || undefined,
+          maxResponses: surveyForm.maxResponses
+            ? Number(surveyForm.maxResponses)
+            : undefined,
         }),
       );
       if (result.type === updateSurveyDetails.fulfilled.type) {
@@ -928,6 +945,7 @@ export const SurveysPage = () => {
                   { value: "all", label: "All status" },
                   { value: "published", label: "Published" },
                   { value: "draft", label: "Draft" },
+                  { value: "closed", label: "Closed" },
                 ]}
               />
 
@@ -1108,6 +1126,10 @@ export const SurveysPage = () => {
         onPreviewSurvey={handlePreviewSurvey}
         endsAt={surveyForm.endsAt}
         onEndsAtChange={(value) => handleSurveyFormChange("endsAt", value)}
+        maxResponses={surveyForm.maxResponses}
+        onMaxResponsesChange={(value) =>
+          handleSurveyFormChange("maxResponses", value)
+        }
         onManualClose={() => activeSurvey && handleManualClose(activeSurvey.id)}
         onSelectTemplate={handleSelectTemplate}
         onBlankSurvey={handleBlankSurvey}
@@ -1134,6 +1156,10 @@ export const SurveysPage = () => {
         onManualClose={() => activeSurvey && handleManualClose(activeSurvey.id)}
         endsAt={surveyForm.endsAt}
         onEndsAtChange={(value) => handleSurveyFormChange("endsAt", value)}
+        maxResponses={surveyForm.maxResponses}
+        onMaxResponsesChange={(value) =>
+          handleSurveyFormChange("maxResponses", value)
+        }
         onSurveyFormChange={handleSurveyFormChange}
         onLogoUpload={handleLogoUpload}
         onAddQuestion={openAddQuestionDrawer}

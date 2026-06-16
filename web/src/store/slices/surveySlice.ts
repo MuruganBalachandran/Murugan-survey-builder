@@ -102,6 +102,8 @@ export const updateSurveyDetails = createAsyncThunk(
       status?: "draft" | "published" | "closed";
       publishedAt?: string;
       endsAt?: string;
+      maxResponses?: number | null;
+      thankYouMessage?: string;
     },
     { rejectWithValue },
   ) => {

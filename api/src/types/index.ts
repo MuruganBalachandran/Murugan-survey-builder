@@ -56,6 +56,8 @@ export interface Survey {
   updatedAt: string;
   publishedAt?: string;
   endsAt?: string;
+  maxResponses?: number;
+  thankYouMessage?: string;
   responseCount: number;
   questionCount: number;
 }

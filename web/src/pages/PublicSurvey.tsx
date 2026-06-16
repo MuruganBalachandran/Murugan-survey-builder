@@ -48,6 +48,7 @@ export const PublicSurveyPage = () => {
   const { slug } = useParams({ from: "/survey/$slug" });
   const [survey, setSurvey] = useState<SurveyWithQuestions | null>(null);
   const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [started, setStarted] = useState(false);
@@ -90,10 +91,10 @@ export const PublicSurveyPage = () => {
       if (result.success && result.data) {
         setSurvey(result.data);
       } else {
-        toast.error("Survey not found");
+        setNotFound(true);
       }
     } catch {
-      toast.error("Failed to load survey");
+      setNotFound(true);
     } finally {
       setLoading(false);
     }
@@ -225,7 +226,7 @@ export const PublicSurveyPage = () => {
     );
   }
 
-  if (!survey) {
+  if (notFound) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-6">
         <div className="max-w-md text-center">
@@ -233,10 +234,19 @@ export const PublicSurveyPage = () => {
           <p className="mt-2 text-gray-600">
             The survey you're looking for doesn't exist.
           </p>
+          <a
+            href="/"
+            className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-violet-600 hover:text-violet-700"
+          >
+            <ArrowLeftIcon />
+            Back to home
+          </a>
         </div>
       </div>
     );
   }
+
+  if (!survey) return null;
 
   const isClosed =
     survey.status === "closed" ||
@@ -336,7 +346,8 @@ export const PublicSurveyPage = () => {
               </div>
               {isClosed && (
                 <p className="text-sm font-medium text-red-500">
-                  <strong>{survey.title}</strong> is no longer accepting responses.
+                  <strong>{survey.title}</strong> is no longer accepting
+                  responses.
                 </p>
               )}
             </div>

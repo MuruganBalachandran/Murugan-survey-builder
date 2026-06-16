@@ -214,8 +214,8 @@ export const getPublicSurvey = async (c: Context): Promise<Response> => {
       );
     }
 
-    // check if survey is published
-    if (survey.status !== "published") {
+    // check if survey is published or closed — return data either way so the public page can render
+    if (survey.status === "draft") {
       return c.json<ApiResponse<null>>(
         { success: false, message: "Survey not found" },
         HTTP_STATUS.NOT_FOUND,
@@ -282,6 +282,8 @@ export const updateSurveyDetails = async (c: Context): Promise<Response> => {
       status?: SurveyStatus;
       publishedAt?: string;
       endsAt?: string;
+      maxResponses?: number | null;
+      thankYouMessage?: string;
     };
 
     // validate fields and return errors if any
@@ -308,6 +310,14 @@ export const updateSurveyDetails = async (c: Context): Promise<Response> => {
       publishedAt:
         body.publishedAt !== undefined ? body.publishedAt : survey.publishedAt,
       endsAt: body.endsAt !== undefined ? body.endsAt : survey.endsAt,
+      maxResponses:
+        body.maxResponses !== undefined
+          ? (body.maxResponses ?? undefined)
+          : survey.maxResponses,
+      thankYouMessage:
+        body.thankYouMessage !== undefined
+          ? body.thankYouMessage
+          : survey.thankYouMessage,
       slug: survey.slug,
     });
 

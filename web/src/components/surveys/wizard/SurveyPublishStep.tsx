@@ -7,12 +7,12 @@ import { getSurveyUrl } from "@/utils/common/survey";
 
 // region helpers
 const getNowLocal = () => {
-  const now = new Date()
-  now.setSeconds(0, 0)
+  const now = new Date();
+  now.setSeconds(0, 0);
   return new Date(now.getTime() - now.getTimezoneOffset() * 60000)
     .toISOString()
-    .slice(0, 16)
-}
+    .slice(0, 16);
+};
 // endregion
 
 // region component
@@ -25,8 +25,12 @@ export const SurveyPublishStep = ({
   isPublishing,
   endsAt,
   onEndsAtChange,
+  maxResponses,
+  onMaxResponsesChange,
+  onMaxResponsesBlur,
+  maxResponsesError,
 }: SurveyPublishStepProps) => {
-  const countdown = useCountdown(endsAt)
+  const countdown = useCountdown(endsAt);
 
   return (
     <div className="space-y-6">
@@ -48,6 +52,37 @@ export const SurveyPublishStep = ({
               : "Draft"}
         </div>
 
+        {/* response count limit */}
+        <div className="mt-5">
+          <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500">
+            Response count limit
+          </label>
+          <input
+            type="number"
+            min="1"
+            max="10000"
+            value={maxResponses ?? ""}
+            onChange={(e) => onMaxResponsesChange?.(e.target.value)}
+            onBlur={onMaxResponsesBlur}
+            placeholder="e.g. 1000"
+            className={`mt-2 w-full rounded-xl border bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-100 ${
+              maxResponsesError
+                ? "border-red-400 focus:border-red-400"
+                : "border-gray-200 focus:border-violet-400"
+            }`}
+          />
+          {maxResponsesError ? (
+            <p className="mt-1.5 text-xs font-medium text-red-600">
+              {maxResponsesError}
+            </p>
+          ) : maxResponses && maxResponses !== "" ? (
+            <p className="mt-1.5 text-xs font-medium text-violet-600">
+              Survey closes after {maxResponses}{" "}
+              {Number(maxResponses) === 1 ? "response" : "responses"}
+            </p>
+          ) : null}
+        </div>
+
         {/* response limit end date/time */}
         <div className="mt-5">
           <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -58,10 +93,13 @@ export const SurveyPublishStep = ({
             value={endsAt ? endsAt.slice(0, 16) : ""}
             min={getNowLocal()}
             onChange={(e) => {
-              if (!e.target.value) { onEndsAtChange?.(""); return }
-              const picked = new Date(e.target.value)
-              if (picked <= new Date()) return
-              onEndsAtChange?.(picked.toISOString())
+              if (!e.target.value) {
+                onEndsAtChange?.("");
+                return;
+              }
+              const picked = new Date(e.target.value);
+              if (picked <= new Date()) return;
+              onEndsAtChange?.(picked.toISOString());
             }}
             className="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
           />
