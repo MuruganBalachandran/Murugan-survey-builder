@@ -215,6 +215,14 @@ export const getPublicSurvey = async (c: Context): Promise<Response> => {
     }
 
     // check if survey is published
+    if (survey.status !== "published") {
+      return c.json<ApiResponse<null>>(
+        { success: false, message: "Survey not found" },
+        HTTP_STATUS.NOT_FOUND,
+      );
+    }
+
+    // perform find questions by survey id and return survey with questions
     const questions = await findQuestionsBysurveyId(db, survey.id);
     const surveyWithQuestions: SurveyWithQuestions = { ...survey, questions };
 
