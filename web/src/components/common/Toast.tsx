@@ -1,41 +1,7 @@
 // region imports
 import { useEffect, useState } from 'react'
 import { subscribeToToasts, type ToastMessage, type ToastVariant, toast } from '@/lib/toast'
-
-// endregion
-
-// region constants
-
-// per-variant visual styles — icon, colours, aria description
-const variantStyles: Record<
-  ToastVariant,
-  { icon: string; iconClassName: string; accentClassName: string; description: string }
-> = {
-  success: {
-    icon: '✓',
-    iconClassName: 'bg-emerald-100 text-emerald-700',
-    accentClassName: 'bg-emerald-500',
-    description: 'Success',
-  },
-  error: {
-    icon: '×',
-    iconClassName: 'bg-red-100 text-red-700',
-    accentClassName: 'bg-red-500',
-    description: 'Error',
-  },
-  warning: {
-    icon: '!',
-    iconClassName: 'bg-amber-100 text-amber-700',
-    accentClassName: 'bg-amber-500',
-    description: 'Warning',
-  },
-  info: {
-    icon: 'i',
-    iconClassName: 'bg-violet-100 text-violet-700',
-    accentClassName: 'bg-gradient-to-r from-violet-600 to-blue-500',
-    description: 'Information',
-  },
-}
+import { getToastVariantStyles } from '@/utils/common'
 // endregion
 
 // region ToastItem component
@@ -44,7 +10,7 @@ const ToastItem = ({ message }: { message: ToastMessage }) => {
   const [isLeaving, setIsLeaving] = useState(false)
   // endregion
 
-  const styles = variantStyles[message.variant]
+  const styles = getToastVariantStyles(message.variant)
 
   // region effects
 

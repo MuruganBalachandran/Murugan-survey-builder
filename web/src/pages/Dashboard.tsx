@@ -86,7 +86,7 @@ export const DashboardPage = () => {
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
   const { user, isAuthenticated } = useAppSelector((state) => state.auth)
-  const { surveys, isLoading } = useAppSelector((state) => state.survey)
+  const { surveys, surveysTotal, isLoading } = useAppSelector((state) => state.survey)
   const [responses, setResponses] = useState<DashboardResponse[]>([])
   const [responsesLoading, setResponsesLoading] = useState(false)
 
@@ -98,13 +98,13 @@ export const DashboardPage = () => {
       navigate({ to: '/login' })
       return
     }
-    dispatch(fetchUserSurveys())
+    dispatch(fetchUserSurveys({ pageSize: 100 }))
   }, [dispatch, isAuthenticated, navigate])
 
   // re-fetch surveys when the tab regains focus to keep data fresh
   useEffect(() => {
     if (!isAuthenticated) return
-    const refreshSurveys = () => dispatch(fetchUserSurveys())
+    const refreshSurveys = () => dispatch(fetchUserSurveys({ pageSize: 100 }))
     window.addEventListener('focus', refreshSurveys)
     return () => window.removeEventListener('focus', refreshSurveys)
   }, [dispatch, isAuthenticated])
@@ -250,10 +250,10 @@ export const DashboardPage = () => {
         </section>
 
         {/* stat cards row */}
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <StatCard
             label="Surveys"
-            value={surveys.length.toLocaleString()}
+            value={surveysTotal.toLocaleString()}
             detail="Total surveys created"
             icon={<DashboardSurveyIcon />}
             iconClassName="bg-violet-50 text-violet-600"
@@ -273,8 +273,15 @@ export const DashboardPage = () => {
             iconClassName="bg-green-50 text-green-600"
           />
           <StatCard
+            label="Closed"
+            value={surveys.filter((s) => s.status === 'closed').length.toLocaleString()}
+            detail="No longer accepting responses"
+            icon={<CompletionIcon />}
+            iconClassName="bg-gray-100 text-gray-600"
+          />
+          <StatCard
             label="Drafts"
-            value={surveys.filter((s) => s.status !== 'published').length.toLocaleString()}
+            value={surveys.filter((s) => s.status === 'draft').length.toLocaleString()}
             detail="In progress surveys"
             icon={<DraftIcon />}
             iconClassName="bg-amber-50 text-amber-600"

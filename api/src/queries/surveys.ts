@@ -6,7 +6,7 @@ import type { Survey, SurveyListParams } from "../types";
 const SURVEY_SELECT = `
   SELECT
     s.id, s.user_id, s.title, s.description, s.slug,
-    s.primary_color, s.logo_url, s.status, s.published_at,
+    s.primary_color, s.logo_url, s.status, s.published_at, s.ends_at,
     s.created_at, s.updated_at,
     COUNT(DISTINCT r.id) AS response_count,
     COUNT(DISTINCT q.id) AS question_count
@@ -26,6 +26,7 @@ const mapSurvey = (row: any): Survey => ({
   logoUrl: row.logo_url,
   status: row.status,
   publishedAt: row.published_at,
+  endsAt: row.ends_at ?? undefined,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
   responseCount: Number(row.response_count ?? 0),
@@ -45,7 +46,7 @@ export const createSurvey = async (
 
     await db
       .prepare(
-        "INSERT INTO surveys (id, user_id, title, description, slug, primary_color, logo_url, status, published_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO surveys (id, user_id, title, description, slug, primary_color, logo_url, status, published_at, ends_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       )
       .bind(
         survey.id,
@@ -57,6 +58,7 @@ export const createSurvey = async (
         survey.logoUrl ?? null,
         survey.status ?? "draft",
         survey.publishedAt ?? null,
+        survey.endsAt ?? null,
         now,
         now,
       )
@@ -274,6 +276,10 @@ export const updateSurvey = async (
     if (updates.publishedAt !== undefined) {
       fields.push("published_at = ?");
       values.push(updates.publishedAt);
+    }
+    if (updates.endsAt !== undefined) {
+      fields.push("ends_at = ?");
+      values.push(updates.endsAt);
     }
 
     // push id

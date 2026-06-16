@@ -55,6 +55,7 @@ export interface Survey {
   createdAt: string;
   updatedAt: string;
   publishedAt?: string;
+  endsAt?: string;
   responseCount: number;
   questionCount: number;
 }

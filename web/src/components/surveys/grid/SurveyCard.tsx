@@ -1,68 +1,55 @@
 // region imports
 
-import { useNavigate } from '@tanstack/react-router'
-import { useMemo, useState } from 'react'
-import type { SurveyCardProps } from '@/types'
-import { PreviewIcon, ResponseIcon, ShareIcon, SurveyCardEditIcon, TrashIcon } from '@/utils/icons'
-
-// endregion
-
-// region helpers
-
-// human-readable label for each survey status
-const statusLabel = (status?: string) => {
-  switch (status) {
-    case 'published':
-      return 'Published'
-    case 'closed':
-      return 'Closed'
-    case 'archived':
-      return 'Archived'
-    default:
-      return 'Draft'
-  }
-}
-
-// tailwind classes for the status badge colour
-const statusTone = (status?: string) => {
-  switch (status) {
-    case 'published':
-      return 'bg-emerald-50 text-emerald-700'
-    case 'closed':
-      return 'bg-gray-100 text-gray-700'
-    case 'archived':
-      return 'bg-amber-50 text-amber-700'
-    default:
-      return 'bg-violet-50 text-violet-700'
-  }
-}
-
-// truncate long descriptions with an ellipsis
-const truncateDescription = (description: string, limit = 98) => {
-  if (description.length <= limit) return description
-  return `${description.slice(0, limit).trimEnd()}...`
-}
+import { useNavigate } from "@tanstack/react-router";
+import type { SurveyCardProps } from "@/types";
+import { useCountdown } from "@/hooks/useCountdown";
+import {
+  CloseCircleIcon,
+  PreviewIcon,
+  ResponseIcon,
+  ShareIcon,
+  SurveyCardEditIcon,
+  TrashIcon,
+} from "@/utils/icons";
+import { statusLabel, statusTone, truncateDescription } from "@/utils/common";
 
 // endregion
 
 // region component
-export const SurveyCard = ({ survey, onEdit, onPreview, onShare, onDelete }: SurveyCardProps) => {
-  const navigate = useNavigate()
-
-  // region state
-  const [showMore, setShowMore] = useState(false)
-  // endregion
+export const SurveyCard = ({
+  survey,
+  onEdit,
+  onPreview,
+  onShare,
+  onDelete,
+  onManualClose,
+  onAutoExpire,
+}: SurveyCardProps) => {
+  const navigate = useNavigate();
 
   // region derived data
-  const titleInitial = survey.title?.trim()?.[0]?.toUpperCase() ?? '?'
-  const accentColor = survey.primaryColor || '#6366F1'
-  const canExpand = (survey.description?.length ?? 0) > 98
+  const titleInitial = survey.title?.trim()?.[0]?.toUpperCase() ?? "?";
+  const accentColor = survey.primaryColor || "#6366F1";
+  const description = survey.description
+    ? truncateDescription(survey.description)
+    : "No description added.";
+  const countdown = useCountdown(
+    survey.status === 'published' ? survey.endsAt : undefined,
+    () => onAutoExpire(survey.id),
+  )
 
-  // truncate or expand description based on toggle state
-  const description = useMemo(() => {
-    if (!survey.description) return ''
-    return showMore ? survey.description : truncateDescription(survey.description)
-  }, [showMore, survey.description])
+  const countdownDisplay = survey.status === 'closed'
+    ? survey.endsAt ? 'Ended' : null
+    : countdown || null
+
+  const timelineLabel = countdownDisplay
+    ?? (survey.status === 'published' ? 'Accepting responses' : 'Not published yet')
+
+  const timelineColor = countdownDisplay === 'Ended'
+    ? 'text-red-500'
+    : survey.status === 'published'
+      ? 'text-emerald-600'
+      : 'text-gray-400'
   // endregion
 
   // region render
@@ -90,8 +77,12 @@ export const SurveyCard = ({ survey, onEdit, onPreview, onShare, onDelete }: Sur
               )}
             </div>
             <div className="min-w-0">
-              <h3 className="truncate text-lg font-semibold text-gray-900">{survey.title}</h3>
-              <p className="mt-1 truncate text-xs text-gray-500">formcraft.io/s/{survey.slug}</p>
+              <h3 className="truncate text-lg font-semibold text-gray-900">
+                {survey.title}
+              </h3>
+              <p className="mt-1 truncate text-xs text-gray-500">
+                formcraft.io/s/{survey.slug}
+              </p>
             </div>
           </div>
 
@@ -113,34 +104,33 @@ export const SurveyCard = ({ survey, onEdit, onPreview, onShare, onDelete }: Sur
           </div>
         </div>
 
-        {/* expandable description with read-more toggle */}
-        {survey.description && (
-          <div className="mt-3">
-            <p className="text-sm leading-6 text-gray-600">
-              {description}{' '}
-              {canExpand && (
-                <button
-                  type="button"
-                  onClick={() => setShowMore((current) => !current)}
-                  className="font-medium text-violet-600 transition-colors hover:text-violet-700"
-                >
-                  {showMore ? 'Show less' : 'Read more'}
-                </button>
-              )}
-            </p>
-          </div>
-        )}
+        {/* description — capped at 50 chars, fallback when empty */}
+        <div className="mt-3">
+          <p className={`text-sm leading-6 ${survey.description ? "text-gray-600" : "italic text-gray-400"}`}>
+            {description}
+          </p>
+        </div>
 
         <div className="mt-4 flex items-center gap-2 text-sm text-gray-600">
           <span className="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
           <span>{survey.responseCount ?? 0} responses</span>
         </div>
 
-        {/* action toolbar — responses, preview, share, delete */}
+        {/* timeline — countdown, ended, or default status label */}
+        <p className={`mt-1.5 text-xs font-medium ${timelineColor}`}>
+          {timelineLabel}
+        </p>
+
+        {/* action toolbar — responses, preview, share, manual close, delete */}
         <div className="mt-5 flex items-center gap-2 border-t border-gray-100 pt-4">
           <button
             type="button"
-            onClick={() => navigate({ to: '/surveys/$id/responses', params: { id: survey.id } })}
+            onClick={() =>
+              navigate({
+                to: "/surveys/$id/responses",
+                params: { id: survey.id },
+              })
+            }
             className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-700 transition-colors hover:bg-gray-50"
             aria-label="View responses"
             title="View responses"
@@ -161,13 +151,35 @@ export const SurveyCard = ({ survey, onEdit, onPreview, onShare, onDelete }: Sur
           {/* share disabled until survey is published */}
           <button
             type="button"
-            onClick={() => survey.status === 'published' && onShare(survey.slug)}
-            disabled={survey.status !== 'published'}
+            onClick={() =>
+              survey.status === "published" && onShare(survey.slug)
+            }
+            disabled={survey.status !== "published"}
             className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
             aria-label="Share survey"
-            title={survey.status === 'published' ? 'Share survey' : 'Publish before sharing'}
+            title={
+              survey.status === "published"
+                ? "Share survey"
+                : "Publish before sharing"
+            }
           >
             <ShareIcon />
+          </button>
+
+          {/* manual close — only actionable for published surveys */}
+          <button
+            type="button"
+            onClick={() => onManualClose(survey.id)}
+            disabled={survey.status !== "published"}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-amber-600 transition-colors hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-40"
+            aria-label="Close survey"
+            title={
+              survey.status === "published"
+                ? "Close survey"
+                : "Only published surveys can be closed"
+            }
+          >
+            <CloseCircleIcon />
           </button>
 
           <button
@@ -182,7 +194,7 @@ export const SurveyCard = ({ survey, onEdit, onPreview, onShare, onDelete }: Sur
         </div>
       </div>
     </article>
-  )
+  );
   // endregion
-}
+};
 // endregion

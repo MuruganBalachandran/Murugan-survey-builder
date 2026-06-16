@@ -1,15 +1,15 @@
 // region imports
 
-import { useParams } from '@tanstack/react-router'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { Textarea } from '@/components/ui/Textarea'
-import { toast } from '@/lib/toast'
-import { submitResponse } from '@/services/api/responses'
-import { getPublicSurvey } from '@/services/api/surveys'
-import type { Answer, Question, SurveyWithQuestions } from '@/types/survey'
-import { ArrowLeftIcon, CheckLargeIcon, ProgressIcon } from '@/utils/icons'
+import { useParams } from "@tanstack/react-router";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Textarea } from "@/components/ui/Textarea";
+import { toast } from "@/lib/toast";
+import { submitResponse } from "@/services/api/responses";
+import { getPublicSurvey } from "@/services/api/surveys";
+import type { Answer, Question, SurveyWithQuestions } from "@/types/survey";
+import { ArrowLeftIcon, CheckLargeIcon, ProgressIcon } from "@/utils/icons";
 
 // endregion
 
@@ -17,182 +17,198 @@ import { ArrowLeftIcon, CheckLargeIcon, ProgressIcon } from '@/utils/icons'
 
 // resolves the correct input widget for a question, falling back to uiType then type
 const getQuestionUiType = (question: Question) => {
-  if (question.uiType) return question.uiType
+  if (question.uiType) return question.uiType;
 
   switch (question.type) {
-    case 'long_text':
-      return 'textarea'
-    case 'multiple_choice':
-      return 'radio'
-    case 'checkbox_group':
-      return 'checkbox_group'
-    case 'dropdown':
-      return 'select'
-    case 'rating':
-      return 'buttons'
-    case 'yes_no':
-      return 'toggle'
-    case 'short_text':
+    case "long_text":
+      return "textarea";
+    case "multiple_choice":
+      return "radio";
+    case "checkbox_group":
+      return "checkbox_group";
+    case "dropdown":
+      return "select";
+    case "rating":
+      return "buttons";
+    case "yes_no":
+      return "toggle";
+    case "short_text":
     default:
-      return 'input'
+      return "input";
   }
-}
+};
 
 // placeholder for future conditional-logic visibility; always visible for now
-const isQuestionVisible = (_question: Question) => true
+const isQuestionVisible = (_question: Question) => true;
 
 // endregion
 
 // region component
 export const PublicSurveyPage = () => {
-  const { slug } = useParams({ from: '/survey/$slug' })
-  const [survey, setSurvey] = useState<SurveyWithQuestions | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [submitting, setSubmitting] = useState(false)
-  const [submitted, setSubmitted] = useState(false)
-  const [started, setStarted] = useState(false)
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const [answers, setAnswers] = useState<Record<string, string | string[] | number>>({})
+  const { slug } = useParams({ from: "/survey/$slug" });
+  const [survey, setSurvey] = useState<SurveyWithQuestions | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [started, setStarted] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [answers, setAnswers] = useState<
+    Record<string, string | string[] | number>
+  >({});
   // ref used to programmatically focus the active question's input after transition
-  const stepInputRef = useRef<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null>(
-    null,
-  )
+  const stepInputRef = useRef<
+    HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null
+  >(null);
 
   // region effects
 
   // load survey when slug changes
   useEffect(() => {
-    loadSurvey()
-  }, [slug])
+    loadSurvey();
+  }, [slug]);
 
   // auto-focus the input of the current question after each step change
   useEffect(() => {
-    if (!started || submitted || loading || !survey?.questions?.length) return
-    const currentQuestion = survey.questions[currentIndex]
-    if (!currentQuestion) return
+    if (!started || submitted || loading || !survey?.questions?.length) return;
+    const currentQuestion = survey.questions[currentIndex];
+    if (!currentQuestion) return;
     // defer to next tick so the element is mounted before focus
     const timeout = window.setTimeout(() => {
-      stepInputRef.current?.focus()
-    }, 0)
-    return () => window.clearTimeout(timeout)
-  }, [currentIndex, loading, started, submitted, survey])
+      stepInputRef.current?.focus();
+    }, 0);
+    return () => window.clearTimeout(timeout);
+  }, [currentIndex, loading, started, submitted, survey]);
 
   // endregion
 
   // region functions
 
   const loadSurvey = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const result = await getPublicSurvey(slug)
+      const result = await getPublicSurvey(slug);
       if (result.success && result.data) {
-        setSurvey(result.data)
+        setSurvey(result.data);
       } else {
-        toast.error('Survey not found')
+        toast.error("Survey not found");
       }
     } catch {
-      toast.error('Failed to load survey')
+      toast.error("Failed to load survey");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // endregion
 
   // region derived data
 
-  const brandColor = survey?.primaryColor || '#6366F1'
+  const brandColor = survey?.primaryColor || "#6366F1";
   // filter out any hidden questions (future conditional logic hook)
-  const questions = useMemo(() => (survey?.questions || []).filter(isQuestionVisible), [survey])
-  const currentQuestion = questions[currentIndex]
+  const questions = useMemo(
+    () => (survey?.questions || []).filter(isQuestionVisible),
+    [survey],
+  );
+  const currentQuestion = questions[currentIndex];
   // progress as a percentage of completed steps
   const progress = questions.length
-    ? Math.round(((currentIndex + (submitted ? 1 : 0)) / questions.length) * 100)
-    : 0
-  const currentAnswer = currentQuestion ? answers[currentQuestion.id] : undefined
-  const currentUiType = currentQuestion ? getQuestionUiType(currentQuestion) : undefined
+    ? Math.round(
+        ((currentIndex + (submitted ? 1 : 0)) / questions.length) * 100,
+      )
+    : 0;
+  const currentAnswer = currentQuestion
+    ? answers[currentQuestion.id]
+    : undefined;
+  const currentUiType = currentQuestion
+    ? getQuestionUiType(currentQuestion)
+    : undefined;
 
   // whether the respondent may advance to the next question
   const canGoNext = useMemo(() => {
-    if (!currentQuestion) return false
-    if (!currentQuestion.required) return true
+    if (!currentQuestion) return false;
+    if (!currentQuestion.required) return true;
 
-    if (currentUiType === 'checkbox_group') {
-      return Array.isArray(currentAnswer) ? currentAnswer.length > 0 : Boolean(currentAnswer)
+    if (currentUiType === "checkbox_group") {
+      return Array.isArray(currentAnswer)
+        ? currentAnswer.length > 0
+        : Boolean(currentAnswer);
     }
 
-    return typeof currentAnswer === 'string'
+    return typeof currentAnswer === "string"
       ? currentAnswer.trim().length > 0
-      : currentAnswer !== undefined
-  }, [currentAnswer, currentQuestion, currentUiType])
+      : currentAnswer !== undefined;
+  }, [currentAnswer, currentQuestion, currentUiType]);
 
   // endregion
 
   // region handlers
 
-  const handleAnswerChange = (questionId: string, value: string | string[] | number) => {
-    setAnswers((prev) => ({ ...prev, [questionId]: value }))
-  }
+  const handleAnswerChange = (
+    questionId: string,
+    value: string | string[] | number,
+  ) => {
+    setAnswers((prev) => ({ ...prev, [questionId]: value }));
+  };
 
   const handleStart = () => {
-    setStarted(true)
-  }
+    setStarted(true);
+  };
 
   const handlePrevious = () => {
-    setCurrentIndex((current) => Math.max(0, current - 1))
-  }
+    setCurrentIndex((current) => Math.max(0, current - 1));
+  };
 
   const handleNext = async () => {
-    if (!currentQuestion) return
+    if (!currentQuestion) return;
     if (currentQuestion.required && !canGoNext) {
-      toast.error('Please answer this question')
-      return
+      toast.error("Please answer this question");
+      return;
     }
 
     // advance to next question or submit if on the last one
     if (currentIndex < questions.length - 1) {
-      setCurrentIndex((current) => current + 1)
-      return
+      setCurrentIndex((current) => current + 1);
+      return;
     }
 
-    await handleSubmit()
-  }
+    await handleSubmit();
+  };
 
   const handleSubmit = async () => {
-    if (!survey) return
+    if (!survey) return;
 
-    setSubmitting(true)
+    setSubmitting(true);
     try {
       // map answers state to the API shape
       const responseAnswers: Answer[] = questions.map((question) => ({
         questionId: question.id,
-        value: answers[question.id] || '',
-      }))
+        value: answers[question.id] || "",
+      }));
 
-      const result = await submitResponse(survey.id, responseAnswers)
+      const result = await submitResponse(survey.id, responseAnswers);
       if (result.success) {
-        setSubmitted(true)
-        toast.success('Thank you for your response!')
+        setSubmitted(true);
+        toast.success("Thank you for your response!");
       } else {
-        toast.error('Failed to submit response')
+        toast.error("Failed to submit response");
       }
     } catch {
-      toast.error('Error submitting response')
+      toast.error("Error submitting response");
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
-  }
+  };
 
   // allow Enter key to advance through questions (except inside textareas)
   const handleKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key !== 'Enter') return
-    const target = event.target as HTMLElement | null
-    if (target?.tagName === 'TEXTAREA') return
+    if (event.key !== "Enter") return;
+    const target = event.target as HTMLElement | null;
+    if (target?.tagName === "TEXTAREA") return;
     if (started && !submitted) {
-      event.preventDefault()
-      void handleNext()
+      event.preventDefault();
+      void handleNext();
     }
-  }
+  };
 
   // endregion
 
@@ -206,7 +222,7 @@ export const PublicSurveyPage = () => {
           <p className="mt-4 text-gray-600">Loading survey...</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (!survey) {
@@ -214,11 +230,17 @@ export const PublicSurveyPage = () => {
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-6">
         <div className="max-w-md text-center">
           <h1 className="text-2xl font-bold text-gray-900">Survey not found</h1>
-          <p className="mt-2 text-gray-600">The survey you're looking for doesn't exist.</p>
+          <p className="mt-2 text-gray-600">
+            The survey you're looking for doesn't exist.
+          </p>
         </div>
       </div>
-    )
+    );
   }
+
+  const isClosed =
+    survey.status === "closed" ||
+    (!!survey.endsAt && new Date(survey.endsAt) < new Date());
 
   // endregion
 
@@ -236,12 +258,17 @@ export const PublicSurveyPage = () => {
             <div className="py-12 text-center">
               <div
                 className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full"
-                style={{ backgroundColor: `${brandColor}18`, color: brandColor }}
+                style={{
+                  backgroundColor: `${brandColor}18`,
+                  color: brandColor,
+                }}
               >
                 <CheckLargeIcon />
               </div>
               <h2 className="text-3xl font-bold text-gray-900">Thank you</h2>
-              <p className="mt-3 text-gray-600">Your response has been recorded successfully.</p>
+              <p className="mt-3 text-gray-600">
+                Your response has been recorded successfully.
+              </p>
             </div>
           ) : !started ? (
             /* survey cover / intro screen */
@@ -295,13 +322,23 @@ export const PublicSurveyPage = () => {
                   variant="primary"
                   size="lg"
                   onClick={handleStart}
-                  style={{
-                    background: `linear-gradient(135deg, ${brandColor} 0%, ${brandColor}cc 100%)`,
-                  }}
+                  disabled={isClosed}
+                  style={
+                    isClosed
+                      ? undefined
+                      : {
+                          background: `linear-gradient(135deg, ${brandColor} 0%, ${brandColor}cc 100%)`,
+                        }
+                  }
                 >
-                  Start Survey
+                  {isClosed ? "Survey closed" : "Start Survey"}
                 </Button>
               </div>
+              {isClosed && (
+                <p className="text-sm font-medium text-red-500">
+                  <strong>{survey.title}</strong> is no longer accepting responses.
+                </p>
+              )}
             </div>
           ) : currentQuestion ? (
             /* single-question step */
@@ -329,10 +366,15 @@ export const PublicSurveyPage = () => {
                     <div className="h-2 w-36 overflow-hidden rounded-full bg-gray-100">
                       <div
                         className="h-full rounded-full transition-all duration-300"
-                        style={{ width: `${progress}%`, backgroundColor: brandColor }}
+                        style={{
+                          width: `${progress}%`,
+                          backgroundColor: brandColor,
+                        }}
                       />
                     </div>
-                    <span className="text-xs font-semibold text-gray-500">{progress}%</span>
+                    <span className="text-xs font-semibold text-gray-500">
+                      {progress}%
+                    </span>
                   </div>
                 </div>
 
@@ -340,102 +382,124 @@ export const PublicSurveyPage = () => {
                 <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100 sm:hidden">
                   <div
                     className="h-full rounded-full transition-all duration-300"
-                    style={{ width: `${progress}%`, backgroundColor: brandColor }}
+                    style={{
+                      width: `${progress}%`,
+                      backgroundColor: brandColor,
+                    }}
                   />
                 </div>
               </div>
 
               <div className="space-y-4">
-                {currentUiType === 'input' && (
+                {currentUiType === "input" && (
                   <Input
                     ref={stepInputRef as React.RefObject<HTMLInputElement>}
-                    value={String(currentAnswer || '')}
-                    onChange={(event) => handleAnswerChange(currentQuestion.id, event.target.value)}
+                    value={String(currentAnswer || "")}
+                    onChange={(event) =>
+                      handleAnswerChange(currentQuestion.id, event.target.value)
+                    }
                     placeholder="Your answer..."
                     autoFocus
                   />
                 )}
 
-                {currentUiType === 'textarea' && (
+                {currentUiType === "textarea" && (
                   <Textarea
                     ref={stepInputRef as React.RefObject<HTMLTextAreaElement>}
-                    value={String(currentAnswer || '')}
-                    onChange={(event) => handleAnswerChange(currentQuestion.id, event.target.value)}
+                    value={String(currentAnswer || "")}
+                    onChange={(event) =>
+                      handleAnswerChange(currentQuestion.id, event.target.value)
+                    }
                     placeholder="Your answer..."
                     rows={6}
                     autoFocus
                   />
                 )}
 
-                {currentUiType === 'radio' && (
+                {currentUiType === "radio" && (
                   <div className="grid gap-3">
                     {currentQuestion.options?.map((option) => (
                       <label
                         key={option}
                         className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition-all ${
                           currentAnswer === option
-                            ? 'border-violet-500 bg-violet-50'
-                            : 'border-gray-200 bg-white hover:border-gray-300'
+                            ? "border-violet-500 bg-violet-50"
+                            : "border-gray-200 bg-white hover:border-gray-300"
                         }`}
                       >
                         <input
                           type="radio"
                           name={currentQuestion.id}
                           checked={currentAnswer === option}
-                          onChange={() => handleAnswerChange(currentQuestion.id, option)}
+                          onChange={() =>
+                            handleAnswerChange(currentQuestion.id, option)
+                          }
                           className="h-4 w-4 text-violet-600 focus:ring-violet-500"
                           autoFocus={option === currentQuestion.options?.[0]}
                         />
-                        <span className="text-sm font-medium text-gray-800">{option}</span>
+                        <span className="text-sm font-medium text-gray-800">
+                          {option}
+                        </span>
                       </label>
                     ))}
                   </div>
                 )}
 
-                {currentUiType === 'checkbox_group' && (
+                {currentUiType === "checkbox_group" && (
                   <div className="grid gap-3">
                     {currentQuestion.options?.map((option) => {
                       const selected = Array.isArray(currentAnswer)
                         ? currentAnswer.includes(option)
-                        : false
+                        : false;
                       return (
                         <label
                           key={option}
                           className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition-all ${
                             selected
-                              ? 'border-violet-500 bg-violet-50'
-                              : 'border-gray-200 bg-white hover:border-gray-300'
+                              ? "border-violet-500 bg-violet-50"
+                              : "border-gray-200 bg-white hover:border-gray-300"
                           }`}
                         >
                           <input
                             type="checkbox"
                             checked={selected}
                             onChange={(event) => {
-                              const current = Array.isArray(currentAnswer) ? currentAnswer : []
+                              const current = Array.isArray(currentAnswer)
+                                ? currentAnswer
+                                : [];
                               // add or remove option from the selected array
                               if (event.target.checked) {
-                                handleAnswerChange(currentQuestion.id, [...current, option])
+                                handleAnswerChange(currentQuestion.id, [
+                                  ...current,
+                                  option,
+                                ]);
                               } else {
                                 handleAnswerChange(
                                   currentQuestion.id,
                                   current.filter((item) => item !== option),
-                                )
+                                );
                               }
                             }}
                             className="h-4 w-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
                           />
-                          <span className="text-sm font-medium text-gray-800">{option}</span>
+                          <span className="text-sm font-medium text-gray-800">
+                            {option}
+                          </span>
                         </label>
-                      )
+                      );
                     })}
                   </div>
                 )}
 
-                {currentUiType === 'select' && (
+                {currentUiType === "select" && (
                   <select
                     ref={stepInputRef as React.RefObject<HTMLSelectElement>}
-                    value={typeof currentAnswer === 'string' ? currentAnswer : ''}
-                    onChange={(event) => handleAnswerChange(currentQuestion.id, event.target.value)}
+                    value={
+                      typeof currentAnswer === "string" ? currentAnswer : ""
+                    }
+                    onChange={(event) =>
+                      handleAnswerChange(currentQuestion.id, event.target.value)
+                    }
                     className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
                     autoFocus
                   >
@@ -451,20 +515,24 @@ export const PublicSurveyPage = () => {
                 )}
 
                 {/* 1-5 rating buttons */}
-                {currentUiType === 'buttons' && (
+                {currentUiType === "buttons" && (
                   <div className="flex flex-wrap gap-3">
                     {[1, 2, 3, 4, 5].map((rating) => (
                       <button
                         key={rating}
                         type="button"
-                        onClick={() => handleAnswerChange(currentQuestion.id, rating)}
+                        onClick={() =>
+                          handleAnswerChange(currentQuestion.id, rating)
+                        }
                         className={`h-12 w-12 rounded-full border text-sm font-semibold transition-all ${
                           currentAnswer === rating
-                            ? 'border-transparent text-white shadow-md'
-                            : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                            ? "border-transparent text-white shadow-md"
+                            : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
                         }`}
                         style={
-                          currentAnswer === rating ? { backgroundColor: brandColor } : undefined
+                          currentAnswer === rating
+                            ? { backgroundColor: brandColor }
+                            : undefined
                         }
                       >
                         {rating}
@@ -474,26 +542,30 @@ export const PublicSurveyPage = () => {
                 )}
 
                 {/* yes / no rendered as radio pair */}
-                {currentUiType === 'toggle' && (
+                {currentUiType === "toggle" && (
                   <div className="grid gap-3 sm:grid-cols-2">
-                    {['Yes', 'No'].map((option) => (
+                    {["Yes", "No"].map((option) => (
                       <label
                         key={option}
                         className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition-all ${
                           currentAnswer === option
-                            ? 'border-violet-500 bg-violet-50'
-                            : 'border-gray-200 bg-white hover:border-gray-300'
+                            ? "border-violet-500 bg-violet-50"
+                            : "border-gray-200 bg-white hover:border-gray-300"
                         }`}
                       >
                         <input
                           type="radio"
                           name={currentQuestion.id}
                           checked={currentAnswer === option}
-                          onChange={() => handleAnswerChange(currentQuestion.id, option)}
+                          onChange={() =>
+                            handleAnswerChange(currentQuestion.id, option)
+                          }
                           className="h-4 w-4 text-violet-600 focus:ring-violet-500"
-                          autoFocus={option === 'Yes'}
+                          autoFocus={option === "Yes"}
                         />
-                        <span className="text-sm font-medium text-gray-800">{option}</span>
+                        <span className="text-sm font-medium text-gray-800">
+                          {option}
+                        </span>
                       </label>
                     ))}
                   </div>
@@ -519,12 +591,16 @@ export const PublicSurveyPage = () => {
                     onClick={handleNext}
                     isLoading={submitting}
                     disabled={!canGoNext}
-                    icon={currentIndex < questions.length - 1 ? undefined : <CheckLargeIcon />}
+                    icon={
+                      currentIndex < questions.length - 1 ? undefined : (
+                        <CheckLargeIcon />
+                      )
+                    }
                     style={{
                       background: `linear-gradient(135deg, ${brandColor} 0%, ${brandColor}cc 100%)`,
                     }}
                   >
-                    {currentIndex < questions.length - 1 ? 'Next' : 'Submit'}
+                    {currentIndex < questions.length - 1 ? "Next" : "Submit"}
                   </Button>
                 </div>
               </div>
@@ -533,7 +609,7 @@ export const PublicSurveyPage = () => {
         </div>
       </div>
     </div>
-  )
+  );
   // endregion
-}
+};
 // endregion

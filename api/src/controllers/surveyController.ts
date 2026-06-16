@@ -34,9 +34,10 @@ export const createNewSurvey = async (c: Context): Promise<Response> => {
     const body = (await c.req.json()) as {
       title: string;
       description?: string;
+      endsAt?: string;
     };
     // destructure title and description from body
-    const { title, description } = body;
+    const { title, description, endsAt } = body;
 
     // validate title
     const titleError = validateSurveyTitle(title);
@@ -62,6 +63,7 @@ export const createNewSurvey = async (c: Context): Promise<Response> => {
       primaryColor: DEFAULT_PRIMARY_COLOR,
       logoUrl: undefined,
       status: "draft",
+      endsAt: endsAt ?? undefined,
     });
 
     // if survey not found return error
@@ -97,7 +99,7 @@ export const getUserSurveys = async (c: Context): Promise<Response> => {
     // pagination and filtering details
     const page = Math.max(1, Number(c.req.query("page") ?? 1));
     const pageSize = Math.min(
-      50,
+      200,
       Math.max(1, Number(c.req.query("pageSize") ?? 6)),
     );
     const search = c.req.query("search") ?? "";
@@ -271,6 +273,7 @@ export const updateSurveyDetails = async (c: Context): Promise<Response> => {
       logoUrl?: string;
       status?: SurveyStatus;
       publishedAt?: string;
+      endsAt?: string;
     };
 
     // validate fields and return errors if any
@@ -296,6 +299,7 @@ export const updateSurveyDetails = async (c: Context): Promise<Response> => {
       status: body.status || survey.status,
       publishedAt:
         body.publishedAt !== undefined ? body.publishedAt : survey.publishedAt,
+      endsAt: body.endsAt !== undefined ? body.endsAt : survey.endsAt,
       slug: survey.slug,
     });
 

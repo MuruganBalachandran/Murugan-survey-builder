@@ -15,6 +15,7 @@ export interface CustomModalProps {
   isLoading?: boolean
   children?: ReactNode
   icon?: ReactNode
+  zIndex?: number
 }
 
 export interface VariantStyles {

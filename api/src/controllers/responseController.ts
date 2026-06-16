@@ -5,6 +5,7 @@ import {
   createResponse,
   findResponsesBySurveyId,
   findSurveyById,
+  updateSurvey,
 } from "../queries";
 import type { ApiResponse, SurveyResponse } from "../types";
 import { generateId, HTTP_STATUS } from "../utils";
@@ -32,9 +33,17 @@ export const submitSurveyResponse = async (c: Context): Promise<Response> => {
       );
     }
 
-    if (survey.status !== 'published') {
+    if (survey.status !== "published") {
       return c.json<ApiResponse<null>>(
-        { success: false, message: 'Survey is not accepting responses' },
+        { success: false, message: "Survey is not accepting responses" },
+        HTTP_STATUS.FORBIDDEN,
+      );
+    }
+
+    if (survey.endsAt && new Date(survey.endsAt) < new Date()) {
+      await updateSurvey(db, surveyId, { status: "closed" });
+      return c.json<ApiResponse<null>>(
+        { success: false, message: "Survey has ended" },
         HTTP_STATUS.FORBIDDEN,
       );
     }

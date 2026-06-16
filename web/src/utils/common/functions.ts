@@ -1,5 +1,5 @@
 // region imports
-import type { ModalVariant, ToastVariant } from '@/types'
+import type { ModalVariant, ToastVariant, VariantStyles, VariantToastStyles } from '@/types'
 // endregion
 
 // region color utilities
@@ -239,15 +239,6 @@ export const readFileAsDataUrl = (file: File) =>
 // endregion
 
 // region modal variant utilities
-
-// modal variant style structure
-export interface VariantStyles {
-  iconBg: string
-  iconColor: string
-  confirmButtonClass: string
-}
-
-// get modal styles by variant
 export const getModalVariantStyles = (variant: ModalVariant): VariantStyles => {
   const baseClasses = 'h-12 w-12 flex items-center justify-center rounded-full'
 
@@ -301,16 +292,6 @@ export const getModalVariantStyles = (variant: ModalVariant): VariantStyles => {
 // endregion
 
 // region toast variant utilities
-
-// toast variant style structure
-export interface VariantToastStyles {
-  icon: string
-  iconClassName: string
-  accentClassName: string
-  description: string
-}
-
-// get toast styles by variant
 export const getToastVariantStyles = (variant: ToastVariant): VariantToastStyles => {
   const toastStyles: Record<ToastVariant, VariantToastStyles> = {
     success: {

@@ -1,5 +1,5 @@
 // region imports
-import type { PaginationItem, QuestionType, QuestionUiType } from '@/types'
+import type { PaginationItem, ProgressState, QuestionType, QuestionUiType } from '@/types'
 // endregion
 
 // region question type utilities
@@ -128,31 +128,27 @@ export const normalizeQuestionType = (type: QuestionType) => {
 // endregion
 
 // region survey status utilities
-// get human-readable status label for survey
 export const statusLabel = (status?: string): string => {
   switch (status) {
-    case 'published':
-      return 'Published'
-    case 'closed':
-      return 'Closed'
-    case 'archived':
-      return 'Archived'
-    default:
-      return 'Draft'
+    case 'published': return 'Published'
+    case 'closed': return 'Closed'
+    default: return 'Draft'
   }
 }
+
+export const statusTone = (status?: string): string => {
+  switch (status) {
+    case 'published': return 'bg-emerald-50 text-emerald-700'
+    case 'closed': return 'bg-gray-100 text-gray-700'
+    default: return 'bg-violet-50 text-violet-700'
+  }
+}
+
+export const truncateDescription = (text: string, limit = 50): string =>
+  text.length > limit ? `${text.slice(0, limit)}...` : text
 // endregion
 
 // region survey progress utilities
-// survey progress state
-export interface ProgressState {
-  current: number
-  total: number
-  percentage: number
-  isComplete: boolean
-}
-
-// calculate survey progress
 export function calculateProgress(answeredCount: number, totalQuestions: number): ProgressState {
   const current = Math.min(answeredCount, totalQuestions)
 

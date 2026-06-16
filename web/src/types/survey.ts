@@ -1,72 +1,87 @@
 // Question
 export interface Question {
-  id: string
-  surveyId: string
+  id: string;
+  surveyId: string;
   type:
-    | 'short_text'
-    | 'long_text'
-    | 'multiple_choice'
-    | 'checkbox_group'
-    | 'dropdown'
-    | 'rating'
-    | 'yes_no'
-  uiType?: 'input' | 'textarea' | 'radio' | 'checkbox_group' | 'select' | 'buttons' | 'toggle'
-  title: string
-  description?: string
-  options?: string[]
-  required: boolean
-  order: number
-  createdAt: string
-  updatedAt: string
+    | "short_text"
+    | "long_text"
+    | "multiple_choice"
+    | "checkbox_group"
+    | "dropdown"
+    | "rating"
+    | "yes_no";
+  uiType?:
+    | "input"
+    | "textarea"
+    | "radio"
+    | "checkbox_group"
+    | "select"
+    | "buttons"
+    | "toggle";
+  title: string;
+  description?: string;
+  options?: string[];
+  required: boolean;
+  order: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export type QuestionPayload = {
-  type: 'short_text' | 'long_text' | 'multiple_choice' | 'rating' | 'yes_no'
-  uiType?: 'input' | 'textarea' | 'radio' | 'checkbox_group' | 'select' | 'buttons' | 'toggle'
-  title: string
-  description?: string
-  options?: string[]
-  required?: boolean
-}
+  type: "short_text" | "long_text" | "multiple_choice" | "checkbox_group" | "dropdown" | "rating" | "yes_no";
+  uiType?:
+    | "input"
+    | "textarea"
+    | "radio"
+    | "checkbox_group"
+    | "select"
+    | "buttons"
+    | "toggle";
+  title: string;
+  description?: string;
+  options?: string[];
+  required?: boolean;
+};
 
 // Survey
 export interface Survey {
-  id: string
-  userId: string
-  title: string
-  description?: string
-  slug: string
-  primaryColor: string
-  logoUrl?: string
-  status: 'draft' | 'published' | 'closed' | 'archived'
-  createdAt: string
-  updatedAt: string
-  publishedAt?: string
-  responseCount: number
-  questionCount: number
+  id: string;
+  userId: string;
+  title: string;
+  description?: string;
+  slug: string;
+  primaryColor: string;
+  logoUrl?: string;
+  status: "draft" | "published" | "closed";
+  createdAt: string;
+  updatedAt: string;
+  publishedAt?: string;
+  endsAt?: string;
+  responseCount: number;
+  questionCount: number;
 }
 
 export interface SurveyWithQuestions extends Survey {
-  questions: Question[]
+  questions: Question[];
 }
 
 // Response / Answer
 export interface Answer {
-  questionId: string
-  value: string | string[] | number
+  questionId: string;
+  value: string | string[] | number;
 }
 
 export interface SurveyResponse {
-  id: string
-  surveyId: string
-  answers: Answer[]
-  submittedAt: string
+  id: string;
+  surveyId: string;
+  answers: Answer[];
+  submittedAt: string;
 }
 
 // Component Props - Surveys
 export interface SurveyCardProps {
   survey: Survey & {
-    status?: 'draft' | 'published' | 'closed' | 'archived'
+    status?: 'draft' | 'published' | 'closed'
     responseCount?: number
     primaryColor?: string
   }
@@ -74,51 +89,53 @@ export interface SurveyCardProps {
   onPreview: (slug: string) => void
   onShare: (slug: string) => void
   onDelete: (id: string) => void
+  onManualClose: (id: string) => void
+  onAutoExpire: (id: string) => void
 }
 
 export interface SurveyDetailsFormProps {
-  title: string
-  description: string
-  onTitleChange: (value: string) => void
-  onDescriptionChange: (value: string) => void
+  title: string;
+  description: string;
+  onTitleChange: (value: string) => void;
+  onDescriptionChange: (value: string) => void;
 }
 
 export interface BrandingFormProps {
-  primaryColor: string
-  logoUrl: string
-  logoFileName?: string
-  onColorChange: (value: string) => void
-  onLogoUrlChange: (value: string) => void
-  onLogoUpload: (file: File | null) => void
+  primaryColor: string;
+  logoUrl: string;
+  logoFileName?: string;
+  onColorChange: (value: string) => void;
+  onLogoUrlChange: (value: string) => void;
+  onLogoUpload: (file: File | null) => void;
 }
 
 export interface EmptySurveysStateProps {
-  onCreateClick: () => void
+  onCreateClick: () => void;
 }
 
 export interface ShareSectionProps {
-  slug: string
-  onCopyLink: () => void
-  disabled?: boolean
+  slug: string;
+  onCopyLink: () => void;
+  disabled?: boolean;
 }
 
 export interface ShareSurveyModalProps {
-  survey: { title: string; slug: string } | null
-  onClose: () => void
-  onCopy: (slug: string) => void
+  survey: { title: string; slug: string } | null;
+  onClose: () => void;
+  onCopy: (slug: string) => void;
 }
 
 export interface ShareSurveyModalProps {
-  survey: { title: string; slug: string } | null
-  onClose: () => void
-  onCopy: (slug: string) => void
+  survey: { title: string; slug: string } | null;
+  onClose: () => void;
+  onCopy: (slug: string) => void;
 }
 
 export interface CreateSurveyModalProps {
-  isOpen: boolean
-  isLoading: boolean
-  onClose: () => void
-  onSubmit: (title: string, description?: string) => Promise<void>
+  isOpen: boolean;
+  isLoading: boolean;
+  onClose: () => void;
+  onSubmit: (title: string, description?: string) => Promise<void>;
 }
 
 export interface SurveysGridProps {
@@ -127,51 +144,61 @@ export interface SurveysGridProps {
   onPreview: (slug: string) => void
   onShare: (slug: string) => void
   onDelete: (id: string) => void
+  onManualClose: (id: string) => void
+  onAutoExpire: (id: string) => void
 }
 
 // Component Props - Survey Builder
 export interface QuestionTypeOption {
-  id: string
-  label: string
-  icon: React.ReactNode
-  description?: string
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+  description?: string;
 }
 
 export interface AddQuestionModalProps {
-  isOpen: boolean
-  isLoading: boolean
-  onClose: () => void
+  isOpen: boolean;
+  isLoading: boolean;
+  onClose: () => void;
   onSubmit: (
-    type: 'short_text' | 'multiple_choice' | 'rating',
+    type: "short_text" | "multiple_choice" | "rating",
     title: string,
     description?: string,
     options?: string[],
-  ) => Promise<void>
+  ) => Promise<void>;
 }
 
 export interface QuestionsListProps {
-  questions: Question[]
-  isEmpty?: boolean
-  surveyId: string
+  questions: Question[];
+  isEmpty?: boolean;
+  surveyId: string;
 }
 
 // Component Props - Survey Responses
 export interface ResponsesListProps {
-  responses: SurveyResponse[]
-  questions: Question[]
-  isEmpty?: boolean
+  responses: SurveyResponse[];
+  questions: Question[];
+  isEmpty?: boolean;
 }
 
 export interface ResponsesSummaryProps {
-  totalResponses: number
-  totalQuestions: number
-  responseRate?: number
+  totalResponses: number;
+  totalQuestions: number;
+  responseRate?: number;
 }
 
 // Store State
 export interface SurveyState {
-  surveys: Survey[]
-  currentSurvey: SurveyWithQuestions | null
-  isLoading: boolean
-  error: string | null
+  surveys: Survey[];
+  currentSurvey: SurveyWithQuestions | null;
+  isLoading: boolean;
+  error: string | null;
+}
+
+// Survey progress
+export interface ProgressState {
+  current: number
+  total: number
+  percentage: number
+  isComplete: boolean
 }
