@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { AppLayout } from '@/components/Layout/AppLayout'
 import { Button } from '@/components/ui/Button'
 import { useAppDispatch, useAppSelector } from '@/hooks/redux'
+import { ResponsesOverTimeChart } from '@/components/surveyResponses/ResponsesOverTimeChart'
 import { getSurveyResponses } from '@/services/api/responses'
 import { fetchUserSurveys } from '@/store/slices/surveySlice'
 import type { DashboardResponse, StatCardProps } from '@/types'
@@ -212,8 +213,6 @@ export const DashboardPage = () => {
 
   if (!isAuthenticated) return null
 
-  // scale bar chart heights relative to the busiest day
-  const maxDailyResponses = Math.max(...dashboardData.weekDays.map((day) => day.count), 1)
   // scale progress bars relative to the top-performing survey
   const maxSurveyResponses = Math.max(
     ...dashboardData.topSurveys.map((survey) => survey.responseCount ?? 0),
@@ -349,52 +348,10 @@ export const DashboardPage = () => {
 
         {/* weekly bar chart + top surveys side-by-side */}
         <section className="grid gap-6 xl:grid-cols-[1.55fr_0.85fr]">
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">Responses over time</h2>
-                <p className="mt-1 text-sm text-gray-500">
-                  Submission activity for the current week
-                </p>
-              </div>
-              <span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700">
-                {dashboardData.responsesThisWeek} this week
-              </span>
-            </div>
-
-            <div className="mt-8 flex h-64 items-end gap-3 sm:gap-5">
-              {dashboardData.weekDays.map((day) => {
-                // minimum bar height of 4% keeps empty days visible
-                const height =
-                  day.count === 0 ? 4 : Math.max(12, (day.count / maxDailyResponses) * 100)
-
-                return (
-                  <div
-                    key={day.label}
-                    className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-3"
-                  >
-                    <span className="text-xs font-semibold text-gray-600">{day.count}</span>
-                    <div className="flex h-48 w-full items-end rounded-xl bg-gray-50 px-1.5 pt-2">
-                      <div
-                        className={`w-full rounded-lg transition-all duration-500 ${
-                          day.isToday
-                            ? 'bg-gradient-to-t from-violet-600 to-indigo-400'
-                            : 'bg-gradient-to-t from-violet-300 to-violet-200'
-                        }`}
-                        style={{ height: `${height}%` }}
-                        title={`${day.label}: ${day.count} responses`}
-                      />
-                    </div>
-                    <span
-                      className={`text-xs font-medium ${day.isToday ? 'text-violet-700' : 'text-gray-500'}`}
-                    >
-                      {day.label}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
+          <ResponsesOverTimeChart
+            days={dashboardData.weekDays}
+            badge={`${dashboardData.responsesThisWeek} this week`}
+          />
 
           <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
             <div className="flex items-start justify-between gap-4">

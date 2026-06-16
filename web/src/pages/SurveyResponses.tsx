@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AppLayout } from "@/components/Layout/AppLayout";
 import { QuestionCharts } from "@/components/surveyResponses/QuestionCharts";
 import { ResponsesList } from "@/components/surveyResponses/ResponsesList";
+import { ResponsesOverTimeChart } from "@/components/surveyResponses/ResponsesOverTimeChart";
 import { ResponsesSummary } from "@/components/surveyResponses/ResponsesSummary";
 import { Button } from "@/components/ui/Button";
 import { useAppDispatch, useAppSelector } from "@/hooks/redux";
@@ -88,6 +89,30 @@ export const SurveyResponsesPage = () => {
     const totalFields = responses.length * totalQuestions;
     return Math.round((answeredFields / totalFields) * 100);
   }, [currentSurvey, responses]);
+
+  // build per-day counts for the current Mon–Sun week
+  const weekDays = useMemo(() => {
+    const now = new Date();
+    const day = now.getDay();
+    const weekStart = new Date(now);
+    weekStart.setHours(0, 0, 0, 0);
+    weekStart.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
+    return Array.from({ length: 7 }, (_, i) => {
+      const date = new Date(weekStart);
+      date.setDate(weekStart.getDate() + i);
+      const next = new Date(date);
+      next.setDate(date.getDate() + 1);
+      const count = responses.filter((r) => {
+        const t = new Date(r.submittedAt);
+        return t >= date && t < next;
+      }).length;
+      return {
+        label: date.toLocaleDateString(undefined, { weekday: "short" }),
+        count,
+        isToday: date.toDateString() === now.toDateString(),
+      };
+    });
+  }, [responses]);
 
   // endregion
 
@@ -206,6 +231,12 @@ export const SurveyResponsesPage = () => {
               totalResponses={responses.length}
               totalQuestions={currentSurvey.questions.length}
               responseRate={responseRate}
+            />
+
+            <ResponsesOverTimeChart
+              days={weekDays}
+              subtitle="Submission activity for this survey this week"
+              badge={`${responses.length} total`}
             />
 
             <QuestionCharts

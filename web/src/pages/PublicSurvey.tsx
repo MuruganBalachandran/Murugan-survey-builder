@@ -9,6 +9,7 @@ import { toast } from "@/lib/toast";
 import { submitResponse } from "@/services/api/responses";
 import { getPublicSurvey } from "@/services/api/surveys";
 import type { Answer, Question, SurveyWithQuestions } from "@/types/survey";
+import { StarRating } from "@/components/ui/StarRating";
 import { ArrowLeftIcon, CheckLargeIcon, ProgressIcon } from "@/utils/icons";
 
 // endregion
@@ -525,31 +526,17 @@ export const PublicSurveyPage = () => {
                   </select>
                 )}
 
-                {/* 1-5 rating buttons */}
+                {/* 1-5 rating stars */}
                 {currentUiType === "buttons" && (
-                  <div className="flex flex-wrap gap-3">
-                    {[1, 2, 3, 4, 5].map((rating) => (
-                      <button
-                        key={rating}
-                        type="button"
-                        onClick={() =>
-                          handleAnswerChange(currentQuestion.id, rating)
-                        }
-                        className={`h-12 w-12 rounded-full border text-sm font-semibold transition-all ${
-                          currentAnswer === rating
-                            ? "border-transparent text-white shadow-md"
-                            : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
-                        }`}
-                        style={
-                          currentAnswer === rating
-                            ? { backgroundColor: brandColor }
-                            : undefined
-                        }
-                      >
-                        {rating}
-                      </button>
-                    ))}
-                  </div>
+                  <StarRating
+                    value={typeof currentAnswer === "number" ? currentAnswer : 0}
+                    color={brandColor}
+                    size={36}
+                    interactive
+                    onChange={(rating) =>
+                      handleAnswerChange(currentQuestion.id, rating)
+                    }
+                  />
                 )}
 
                 {/* yes / no rendered as radio pair */}
