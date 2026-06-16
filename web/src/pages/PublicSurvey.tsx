@@ -191,6 +191,8 @@ export const PublicSurveyPage = () => {
       if (result.success) {
         setSubmitted(true);
         toast.success("Thank you for your response!");
+      } else if (result.message?.toLowerCase().includes("already submitted")) {
+        toast.error("You have already submitted a response to this survey.");
       } else {
         toast.error("Failed to submit response");
       }

@@ -56,6 +56,8 @@ export const VALID_QUESTION_TYPES = [
 // region rate limit constants
 export const RATE_LIMIT_WINDOW_MS = 5 * 60 * 1000 // 5 minutes
 export const RATE_LIMIT_MAX_REQUESTS = 5
+export const SUBMIT_RATE_LIMIT_WINDOW_MS = 24 * 60 * 60 * 1000 // 24 hours
+export const SUBMIT_RATE_LIMIT_MAX_REQUESTS = 1
 // endregion
 
 // region password hashing constants
