@@ -92,6 +92,13 @@ export type QuestionUiType =
   | "buttons"
   | "toggle";
 
+// conditional logic rule — a question is shown only when this condition is met
+export interface VisibleIf {
+  questionId: string;
+  operator: "equals" | "not_equals";
+  value: string;
+}
+
 export interface Question {
   id: string;
   surveyId: string;
@@ -102,6 +109,11 @@ export interface Question {
   options?: string[];
   required: boolean;
   order: number;
+  // character limits — applied to short_text and long_text responses
+  minLength?: number;
+  maxLength?: number;
+  // conditional logic — question is hidden unless this rule evaluates to true
+  visibleIf?: VisibleIf;
   createdAt: string;
   updatedAt: string;
 }

@@ -10,6 +10,7 @@ import { submitResponse } from "@/services/api/responses";
 import { getPublicSurvey } from "@/services/api/surveys";
 import type { Answer, Question, SurveyWithQuestions } from "@/types/survey";
 import { StarRating } from "@/components/ui/StarRating";
+import { CharCounter } from "@/components/ui/CharCounter";
 import { ArrowLeftIcon, CheckLargeIcon, ProgressIcon } from "@/utils/icons";
 
 // endregion
@@ -37,6 +38,19 @@ const getQuestionUiType = (question: Question) => {
     default:
       return "input";
   }
+};
+
+// evaluates a visibleIf rule against the current answers map
+const evaluateVisibleIf = (
+  visibleIf: { questionId: string; operator: "equals" | "not_equals"; value: string } | undefined,
+  answers: Record<string, string | string[] | number>,
+): boolean => {
+  if (!visibleIf) return true;
+  const answer = answers[visibleIf.questionId];
+  const answerStr = Array.isArray(answer) ? answer.join(", ") : String(answer ?? "");
+  return visibleIf.operator === "equals"
+    ? answerStr === visibleIf.value
+    : answerStr !== visibleIf.value;
 };
 
 // placeholder for future conditional-logic visibility; always visible for now
@@ -108,8 +122,11 @@ export const PublicSurveyPage = () => {
   const brandColor = survey?.primaryColor || "#6366F1";
   // filter out any hidden questions (future conditional logic hook)
   const questions = useMemo(
-    () => (survey?.questions || []).filter(isQuestionVisible),
-    [survey],
+    () =>
+      (survey?.questions || []).filter(
+        (q) => isQuestionVisible(q) && evaluateVisibleIf(q.visibleIf, answers),
+      ),
+    [survey, answers],
   );
   const currentQuestion = questions[currentIndex];
   // progress as a percentage of completed steps
@@ -164,6 +181,17 @@ export const PublicSurveyPage = () => {
     if (!currentQuestion) return;
     if (currentQuestion.required && !canGoNext) {
       toast.error("Please answer this question");
+      return;
+    }
+
+    // enforce character limits for text questions
+    const textAnswer = typeof currentAnswer === "string" ? currentAnswer.trim() : "";
+    if (textAnswer && currentQuestion.minLength && textAnswer.length < currentQuestion.minLength) {
+      toast.error(`Please enter at least ${currentQuestion.minLength} characters`);
+      return;
+    }
+    if (textAnswer && currentQuestion.maxLength && textAnswer.length > currentQuestion.maxLength) {
+      toast.error(`Please keep your answer under ${currentQuestion.maxLength} characters`);
       return;
     }
 
@@ -406,28 +434,46 @@ export const PublicSurveyPage = () => {
 
               <div className="space-y-4">
                 {currentUiType === "input" && (
-                  <Input
-                    ref={stepInputRef as React.RefObject<HTMLInputElement>}
-                    value={String(currentAnswer || "")}
-                    onChange={(event) =>
-                      handleAnswerChange(currentQuestion.id, event.target.value)
-                    }
-                    placeholder="Your answer..."
-                    autoFocus
-                  />
+                  <>
+                    <Input
+                      ref={stepInputRef as React.RefObject<HTMLInputElement>}
+                      value={String(currentAnswer || "")}
+                      onChange={(event) =>
+                        handleAnswerChange(currentQuestion.id, event.target.value)
+                      }
+                      placeholder="Your answer..."
+                      autoFocus
+                    />
+                    {currentQuestion.maxLength && (
+                      <CharCounter
+                        value={String(currentAnswer || "")}
+                        max={currentQuestion.maxLength}
+                        min={currentQuestion.minLength}
+                      />
+                    )}
+                  </>
                 )}
 
                 {currentUiType === "textarea" && (
-                  <Textarea
-                    ref={stepInputRef as React.RefObject<HTMLTextAreaElement>}
-                    value={String(currentAnswer || "")}
-                    onChange={(event) =>
-                      handleAnswerChange(currentQuestion.id, event.target.value)
-                    }
-                    placeholder="Your answer..."
-                    rows={6}
-                    autoFocus
-                  />
+                  <>
+                    <Textarea
+                      ref={stepInputRef as React.RefObject<HTMLTextAreaElement>}
+                      value={String(currentAnswer || "")}
+                      onChange={(event) =>
+                        handleAnswerChange(currentQuestion.id, event.target.value)
+                      }
+                      placeholder="Your answer..."
+                      rows={6}
+                      autoFocus
+                    />
+                    {currentQuestion.maxLength && (
+                      <CharCounter
+                        value={String(currentAnswer || "")}
+                        max={currentQuestion.maxLength}
+                        min={currentQuestion.minLength}
+                      />
+                    )}
+                  </>
                 )}
 
                 {currentUiType === "radio" && (

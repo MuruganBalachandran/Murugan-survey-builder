@@ -14,6 +14,7 @@ import type {
   Question,
   QuestionType,
   QuestionUiType,
+  VisibleIf,
 } from "../types";
 import { generateId, HTTP_STATUS, validateQuestion } from "../utils";
 // endregion
@@ -25,6 +26,7 @@ export const addQuestion = async (c: Context): Promise<Response> => {
     const user = c.get("user");
     const surveyId = c.req.param("surveyId") || "";
 
+    // validate survey id
     if (!surveyId) {
       return c.json<ApiResponse<null>>(
         { success: false, message: "Invalid survey ID" },
@@ -32,6 +34,7 @@ export const addQuestion = async (c: Context): Promise<Response> => {
       );
     }
 
+    // fetch survey and check ownership
     const survey = await findSurveyById(db, surveyId);
     if (!survey) {
       return c.json<ApiResponse<null>>(
@@ -47,6 +50,7 @@ export const addQuestion = async (c: Context): Promise<Response> => {
       );
     }
 
+    // destructure body — includes new char limit and conditional logic fields
     const body = (await c.req.json()) as {
       type: QuestionType;
       uiType?: QuestionUiType;
@@ -54,20 +58,21 @@ export const addQuestion = async (c: Context): Promise<Response> => {
       description?: string;
       options?: string[];
       required?: boolean;
+      minLength?: number;
+      maxLength?: number;
+      visibleIf?: VisibleIf;
     };
 
+    // validate core question fields
     const validationErrors = validateQuestion(body);
     if (Object.keys(validationErrors).length > 0) {
       return c.json<ApiResponse<null>>(
-        {
-          success: false,
-          message: "Validation failed",
-          errors: validationErrors,
-        },
+        { success: false, message: "Validation failed", errors: validationErrors },
         HTTP_STATUS.BAD_REQUEST,
       );
     }
 
+    // place new question at the end of the existing list
     const existingQuestions = await findQuestionsBysurveyId(db, surveyId);
     const question = await createQuestion(db, {
       id: generateId(),
@@ -79,6 +84,9 @@ export const addQuestion = async (c: Context): Promise<Response> => {
       options: body.options,
       required: body.required ?? false,
       order: existingQuestions.length,
+      minLength: body.minLength,
+      maxLength: body.maxLength,
+      visibleIf: body.visibleIf,
     });
 
     if (!question) {
@@ -110,6 +118,7 @@ export const updateQuestionDetails = async (c: Context): Promise<Response> => {
     const surveyId = c.req.param("surveyId") || "";
     const questionId = c.req.param("questionId") || "";
 
+    // validate ids
     if (!surveyId || !questionId) {
       return c.json<ApiResponse<null>>(
         { success: false, message: "Invalid survey or question ID" },
@@ -117,6 +126,7 @@ export const updateQuestionDetails = async (c: Context): Promise<Response> => {
       );
     }
 
+    // check survey ownership
     const survey = await findSurveyById(db, surveyId);
     if (!survey || survey.userId !== user.userId) {
       return c.json<ApiResponse<null>>(
@@ -125,6 +135,7 @@ export const updateQuestionDetails = async (c: Context): Promise<Response> => {
       );
     }
 
+    // destructure body — includes new char limit and conditional logic fields
     const body = (await c.req.json()) as {
       type?: QuestionType;
       uiType?: QuestionUiType;
@@ -132,8 +143,12 @@ export const updateQuestionDetails = async (c: Context): Promise<Response> => {
       description?: string;
       options?: string[];
       required?: boolean;
+      minLength?: number;
+      maxLength?: number;
+      visibleIf?: VisibleIf | null;
     };
 
+    // fetch existing question to fill in missing fields for validation
     const existingQuestion = await findQuestionById(db, questionId);
     if (!existingQuestion) {
       return c.json<ApiResponse<null>>(
@@ -142,6 +157,7 @@ export const updateQuestionDetails = async (c: Context): Promise<Response> => {
       );
     }
 
+    // validate merged question fields
     const validationErrors = validateQuestion({
       type: body.type ?? existingQuestion.type,
       title: body.title ?? existingQuestion.title,
@@ -151,11 +167,7 @@ export const updateQuestionDetails = async (c: Context): Promise<Response> => {
 
     if (Object.keys(validationErrors).length > 0) {
       return c.json<ApiResponse<null>>(
-        {
-          success: false,
-          message: "Validation failed",
-          errors: validationErrors,
-        },
+        { success: false, message: "Validation failed", errors: validationErrors },
         HTTP_STATUS.BAD_REQUEST,
       );
     }
@@ -190,6 +202,7 @@ export const deleteQuestionById = async (c: Context): Promise<Response> => {
     const surveyId = c.req.param("surveyId") || "";
     const questionId = c.req.param("questionId") || "";
 
+    // validate ids
     if (!surveyId || !questionId) {
       return c.json<ApiResponse<null>>(
         { success: false, message: "Invalid survey or question ID" },
@@ -197,6 +210,7 @@ export const deleteQuestionById = async (c: Context): Promise<Response> => {
       );
     }
 
+    // check survey ownership
     const survey = await findSurveyById(db, surveyId);
     if (!survey || survey.userId !== user.userId) {
       return c.json<ApiResponse<null>>(
@@ -205,6 +219,7 @@ export const deleteQuestionById = async (c: Context): Promise<Response> => {
       );
     }
 
+    // delete and return result
     const deleted = await deleteQuestion(db, questionId);
     if (!deleted) {
       return c.json<ApiResponse<null>>(
@@ -234,6 +249,7 @@ export const reorderSurveyQuestions = async (c: Context): Promise<Response> => {
     const user = c.get("user");
     const surveyId = c.req.param("surveyId") || "";
 
+    // validate survey id
     if (!surveyId) {
       return c.json<ApiResponse<null>>(
         { success: false, message: "Invalid survey ID" },
@@ -241,6 +257,7 @@ export const reorderSurveyQuestions = async (c: Context): Promise<Response> => {
       );
     }
 
+    // check survey ownership
     const survey = await findSurveyById(db, surveyId);
     if (!survey || survey.userId !== user.userId) {
       return c.json<ApiResponse<null>>(
@@ -251,6 +268,7 @@ export const reorderSurveyQuestions = async (c: Context): Promise<Response> => {
 
     const body = (await c.req.json()) as { questionIds: string[] };
 
+    // validate questionIds array
     if (!Array.isArray(body.questionIds)) {
       return c.json<ApiResponse<null>>(
         {
@@ -262,6 +280,7 @@ export const reorderSurveyQuestions = async (c: Context): Promise<Response> => {
       );
     }
 
+    // reorder and return updated list
     const reordered = await reorderQuestions(db, surveyId, body.questionIds);
     if (!reordered) {
       return c.json<ApiResponse<null>>(

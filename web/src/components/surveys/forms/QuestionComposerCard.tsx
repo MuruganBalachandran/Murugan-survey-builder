@@ -1,11 +1,17 @@
 // region imports
 import { useEffect, useState } from 'react'
+import { CharCounter } from '@/components/ui/CharCounter'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import type { QuestionComposerProps, QuestionType } from '@/types'
 import { normalizeQuestionType, questionTypeLabel } from '@/utils/common/survey'
 import { QUESTION_TYPES } from '@/utils/constants'
+// endregion
+
+// region helpers
+const isTextField = (type: string) =>
+  type === 'short_text' || type === 'long_text'
 // endregion
 
 // region component
@@ -18,6 +24,7 @@ export const QuestionComposerCard = ({
   onClose,
   onSave,
   onChange,
+  questions,
 }: QuestionComposerProps) => {
   // region state
 
@@ -151,6 +158,7 @@ export const QuestionComposerCard = ({
               placeholder="Add helper text for respondents"
               className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
             />
+            <CharCounter value={form?.description || ''} max={200} />
           </div>
 
           <label className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
@@ -221,6 +229,94 @@ export const QuestionComposerCard = ({
               {errors?.options && (
                 <p className="mt-2 text-sm font-medium text-red-600">{errors.options}</p>
               )}
+            </div>
+          )}
+
+          {/* char limits — only for text question types */}
+          {isTextField(form?.type || '') && (
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                label="Min characters"
+                type="number"
+                min={0}
+                value={form?.minLength || ''}
+                onChange={(e) =>
+                  onChange?.((current) => ({ ...current, minLength: e.target.value }))
+                }
+                placeholder="e.g. 10"
+              />
+              <Input
+                label="Max characters"
+                type="number"
+                min={1}
+                value={form?.maxLength || ''}
+                onChange={(e) =>
+                  onChange?.((current) => ({ ...current, maxLength: e.target.value }))
+                }
+                placeholder="e.g. 500"
+              />
+            </div>
+          )}
+
+          {/* conditional logic — show this question only when a prior answer matches */}
+          {questions && questions.length > 0 && (
+            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">
+                Show this question only if
+              </p>
+              <div className="space-y-3">
+                <Select
+                  label="Question"
+                  value={form?.visibleIf?.questionId || ''}
+                  onChange={(e) =>
+                    onChange?.((current) => ({
+                      ...current,
+                      visibleIf: e.target.value
+                        ? { questionId: e.target.value, operator: current.visibleIf?.operator ?? 'equals', value: current.visibleIf?.value ?? '' }
+                        : null,
+                    }))
+                  }
+                  options={[
+                    { value: '', label: 'No condition (always show)' },
+                    ...questions
+                      .filter((q) => q.id !== form?.id)
+                      .map((q) => ({ value: q.id, label: q.title })),
+                  ]}
+                />
+                {form?.visibleIf?.questionId && (
+                  <>
+                    <Select
+                      label="Operator"
+                      value={form.visibleIf.operator}
+                      onChange={(e) =>
+                        onChange?.((current) => ({
+                          ...current,
+                          visibleIf: current.visibleIf
+                            ? { ...current.visibleIf, operator: e.target.value as 'equals' | 'not_equals' }
+                            : null,
+                        }))
+                      }
+                      options={[
+                        { value: 'equals', label: 'equals' },
+                        { value: 'not_equals', label: 'does not equal' },
+                      ]}
+                    />
+                    <Input
+                      label="Value"
+                      value={form.visibleIf.value}
+                      onChange={(e) =>
+                        onChange?.((current) => ({
+                          ...current,
+                          visibleIf: current.visibleIf
+                            ? { ...current.visibleIf, value: e.target.value }
+                            : null,
+                        }))
+                      }
+                      placeholder="e.g. Yes"
+                    />
+                  </>
+                )}
+              </div>
             </div>
           )}
 

@@ -334,6 +334,10 @@ export const SurveysPage = () => {
         question.options.length > 0
           ? question.options.map((option) => option)
           : ["", ""],
+      // pre-fill character limits and conditional logic from saved question
+      minLength: String(question.minLength ?? ""),
+      maxLength: String(question.maxLength ?? ""),
+      visibleIf: question.visibleIf ?? null,
     });
     setIsQuestionComposerOpen(true);
   };
@@ -733,6 +737,9 @@ export const SurveysPage = () => {
         questionForm.type === "dropdown"
           ? cleanedOptions
           : undefined,
+      minLength: questionForm.minLength ? Number(questionForm.minLength) : undefined,
+      maxLength: questionForm.maxLength ? Number(questionForm.maxLength) : undefined,
+      visibleIf: questionForm.visibleIf ?? undefined,
     };
 
     setIsSavingQuestion(true);

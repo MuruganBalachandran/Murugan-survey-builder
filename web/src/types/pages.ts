@@ -54,6 +54,9 @@ export interface QuestionFormState {
   description: string;
   options: string[];
   required: boolean;
+  minLength: string;
+  maxLength: string;
+  visibleIf: { questionId: string; operator: "equals" | "not_equals"; value: string } | null;
 }
 
 export interface QuestionComposerProps {
@@ -63,6 +66,7 @@ export interface QuestionComposerProps {
   form?: QuestionFormState;
   errors?: Record<string, string>;
   isSaving?: boolean;
+  questions?: Question[];
   onClose: () => void;
   onSave: () => void;
   onChange?: (

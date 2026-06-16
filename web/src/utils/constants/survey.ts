@@ -21,6 +21,9 @@ export const DEFAULT_QUESTION_FORM = {
   description: "",
   required: false,
   options: ["", ""],
+  minLength: "",
+  maxLength: "",
+  visibleIf: null,
 };
 
 // Brand color swatches

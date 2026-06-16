@@ -1,4 +1,10 @@
 // Question
+export interface VisibleIf {
+  questionId: string;
+  operator: "equals" | "not_equals";
+  value: string;
+}
+
 export interface Question {
   id: string;
   surveyId: string;
@@ -23,6 +29,9 @@ export interface Question {
   options?: string[];
   required: boolean;
   order: number;
+  minLength?: number;
+  maxLength?: number;
+  visibleIf?: VisibleIf;
   createdAt: string;
   updatedAt: string;
 }
@@ -48,6 +57,11 @@ export type QuestionPayload = {
   description?: string;
   options?: string[];
   required?: boolean;
+  // character limits for text responses — set by survey creator
+  minLength?: number;
+  maxLength?: number;
+  // conditional logic — question shown only when this rule evaluates to true
+  visibleIf?: VisibleIf | null;
 };
 
 // Survey

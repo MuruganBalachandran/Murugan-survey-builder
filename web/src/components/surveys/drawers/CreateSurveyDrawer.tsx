@@ -286,6 +286,7 @@ export const CreateSurveyDrawer = ({
               form={questionForm}
               errors={questionErrors}
               isSaving={isSavingQuestion}
+              questions={activeQuestions}
               onClose={onCloseComposer}
               onSave={onSaveQuestion}
               onChange={onQuestionFormChange}
