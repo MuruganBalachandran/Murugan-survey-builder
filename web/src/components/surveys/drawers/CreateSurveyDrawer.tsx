@@ -9,13 +9,14 @@ import { SurveyBasicsStep } from "../wizard/SurveyBasicsStep";
 import { SurveyBrandingStep } from "../wizard/SurveyBrandingStep";
 import { SurveyPublishStep } from "../wizard/SurveyPublishStep";
 import { SurveyQuestionsStep } from "../wizard/SurveyQuestionsStep";
+import { SurveyTemplatesStep } from "../wizard/SurveyTemplatesStep";
 
 // endregion
 
 // region types
 interface Props {
   isOpen: boolean;
-  createStep: 1 | 2 | 3 | 4;
+  createStep: 0 | 1 | 2 | 3 | 4;
   activeSurvey: SurveyRecord | null;
   activeQuestions: Question[];
   surveyForm: {
@@ -59,11 +60,14 @@ interface Props {
   onManualClose: () => void;
   onCopySurveyLink: (slug: string) => void;
   onPreviewSurvey: (slug: string) => void;
+  onSelectTemplate: (templateId: string) => void;
+  onBlankSurvey: () => void;
 }
 // endregion
 
 // region titles
 const STEP_TITLES: Record<number, string> = {
+  0: "Choose a template",
   1: "Create survey",
   2: "Add brand",
   3: "Add questions",
@@ -71,6 +75,7 @@ const STEP_TITLES: Record<number, string> = {
 };
 
 const STEP_DESCRIPTIONS: Record<number, string> = {
+  0: "Pick a template to get started quickly, or start blank.",
   1: "Start with the survey title and description.",
   2: "Add your brand color and logo.",
   3: "Add questions without leaving this drawer.",
@@ -118,6 +123,8 @@ export const CreateSurveyDrawer = ({
   endsAt,
   onEndsAtChange,
   onManualClose,
+  onSelectTemplate,
+  onBlankSurvey,
 }: Props) => (
   <OffCanvas
     isOpen={isOpen}
@@ -126,73 +133,82 @@ export const CreateSurveyDrawer = ({
     description={STEP_DESCRIPTIONS[createStep] ?? ""}
     size="xl"
     footer={
-      <div className="flex w-full items-center justify-between gap-4">
-        <Button
-          variant="tertiary"
-          onClick={onWizardBack}
-          disabled={createStep === 1}
-        >
-          Back
-        </Button>
-
-        {/* step indicator pills */}
-        <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-2">
-          {[1, 2, 3, 4].map((step) => (
-            <span
-              key={step}
-              className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${
-                createStep === step
-                  ? "bg-violet-600 text-white"
-                  : "bg-white text-gray-500"
-              }`}
-            >
-              {step}
-            </span>
-          ))}
-        </div>
-
-        {createStep < 4 ? (
+      createStep === 0 ? undefined : (
+        <div className="flex w-full items-center justify-between gap-4">
           <Button
-            variant="primary"
-            onClick={onWizardNext}
-            isLoading={isSavingSurvey}
-            disabled={createStep === 1 ? !surveyForm.title.trim() : false}
+            variant="tertiary"
+            onClick={onWizardBack}
+            disabled={createStep === 0}
           >
-            Next
+            Back
           </Button>
-        ) : (
-          <div className="flex gap-3">
-            <Button variant="secondary" onClick={onWizardFinish}>
-              Done
-            </Button>
-            <Button
-              variant="tertiary"
-              onClick={onManualClose}
-              disabled={!activeSurvey || activeSurvey.status !== "published"}
-            >
-              Manual close
-            </Button>
+
+          {/* step indicator pills */}
+          <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-2">
+            {[1, 2, 3, 4].map((step) => (
+              <span
+                key={step}
+                className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${
+                  createStep === step
+                    ? "bg-violet-600 text-white"
+                    : "bg-white text-gray-500"
+                }`}
+              >
+                {step}
+              </span>
+            ))}
+          </div>
+
+          {createStep < 4 ? (
             <Button
               variant="primary"
-              onClick={onPublish}
-              isLoading={isPublishingSurvey}
-              disabled={
-                !activeSurvey ||
-                activeQuestions.length === 0 ||
-                activeSurvey.status === "published"
-              }
+              onClick={onWizardNext}
+              isLoading={isSavingSurvey}
+              disabled={createStep === 1 ? !surveyForm.title.trim() : false}
             >
-              {activeSurvey?.status === "published"
-                ? "Published"
-                : "Publish survey"}
+              Next
             </Button>
-          </div>
-        )}
-      </div>
+          ) : (
+            <div className="flex gap-3">
+              <Button variant="secondary" onClick={onWizardFinish}>
+                Done
+              </Button>
+              <Button
+                variant="tertiary"
+                onClick={onManualClose}
+                disabled={!activeSurvey || activeSurvey.status !== "published"}
+              >
+                Manual close
+              </Button>
+              <Button
+                variant="primary"
+                onClick={onPublish}
+                isLoading={isPublishingSurvey}
+                disabled={
+                  !activeSurvey ||
+                  activeQuestions.length === 0 ||
+                  activeSurvey.status === "published"
+                }
+              >
+                {activeSurvey?.status === "published"
+                  ? "Published"
+                  : "Publish survey"}
+              </Button>
+            </div>
+          )}
+        </div>
+      )
     }
   >
     <div className="space-y-6">
       <div className="rounded-3xl border border-gray-200 bg-white p-4 shadow-sm">
+        {createStep === 0 && (
+          <SurveyTemplatesStep
+            onSelect={onSelectTemplate}
+            onBlank={onBlankSurvey}
+          />
+        )}
+
         {createStep === 1 && (
           <SurveyBasicsStep
             title={surveyForm.title}

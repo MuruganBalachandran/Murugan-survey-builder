@@ -1,0 +1,186 @@
+import type { QuestionFormState } from "@/types";
+
+// region types
+export interface SurveyTemplate {
+  id: string;
+  label: string;
+  description: string;
+  primaryColor: string;
+  questions: Omit<QuestionFormState, "id">[];
+}
+// endregion
+
+// region templates
+export const SURVEY_TEMPLATES: SurveyTemplate[] = [
+  {
+    id: "customer_feedback",
+    label: "Customer Feedback",
+    description: "Measure satisfaction and collect product feedback.",
+    primaryColor: "#6366F1",
+    questions: [
+      {
+        type: "rating",
+        uiType: "buttons",
+        title: "How satisfied are you with our product?",
+        description: "",
+        required: true,
+        options: [],
+      },
+      {
+        type: "yes_no",
+        uiType: "toggle",
+        title: "Would you recommend us to a friend?",
+        description: "",
+        required: true,
+        options: [],
+      },
+      {
+        type: "multiple_choice",
+        uiType: "radio",
+        title: "Which feature do you use most?",
+        description: "",
+        required: false,
+        options: ["Dashboard", "Surveys", "Analytics", "Exports"],
+      },
+      {
+        type: "long_text",
+        uiType: "textarea",
+        title: "What could we improve?",
+        description: "",
+        required: false,
+        options: [],
+      },
+    ],
+  },
+  {
+    id: "event_registration",
+    label: "Event Registration",
+    description: "Collect attendee details and preferences.",
+    primaryColor: "#10B981",
+    questions: [
+      {
+        type: "short_text",
+        uiType: "input",
+        title: "Full name",
+        description: "",
+        required: true,
+        options: [],
+      },
+      {
+        type: "short_text",
+        uiType: "input",
+        title: "Email address",
+        description: "",
+        required: true,
+        options: [],
+      },
+      {
+        type: "dropdown",
+        uiType: "select",
+        title: "Which session will you attend?",
+        description: "",
+        required: true,
+        options: ["Morning (9am)", "Afternoon (2pm)", "Evening (6pm)"],
+      },
+      {
+        type: "checkbox_group",
+        uiType: "checkbox_group",
+        title: "Dietary requirements",
+        description: "",
+        required: false,
+        options: ["Vegetarian", "Vegan", "Gluten-free", "None"],
+      },
+    ],
+  },
+  {
+    id: "job_application",
+    label: "Job Application",
+    description: "Screen candidates with a quick application form.",
+    primaryColor: "#F59E0B",
+    questions: [
+      {
+        type: "short_text",
+        uiType: "input",
+        title: "Full name",
+        description: "",
+        required: true,
+        options: [],
+      },
+      {
+        type: "dropdown",
+        uiType: "select",
+        title: "Role you are applying for",
+        description: "",
+        required: true,
+        options: [
+          "Frontend Engineer",
+          "Backend Engineer",
+          "Designer",
+          "Product Manager",
+        ],
+      },
+      {
+        type: "multiple_choice",
+        uiType: "radio",
+        title: "Years of experience",
+        description: "",
+        required: true,
+        options: ["0-1 years", "2-3 years", "4-6 years", "7+ years"],
+      },
+      {
+        type: "long_text",
+        uiType: "textarea",
+        title: "Why do you want to join us?",
+        description: "",
+        required: true,
+        options: [],
+      },
+    ],
+  },
+  {
+    id: "employee_pulse",
+    label: "Employee Pulse",
+    description: "Quick check-in on team morale and engagement.",
+    primaryColor: "#8B5CF6",
+    questions: [
+      {
+        type: "rating",
+        uiType: "buttons",
+        title: "How happy are you at work this week?",
+        description: "",
+        required: true,
+        options: [],
+      },
+      {
+        type: "yes_no",
+        uiType: "toggle",
+        title: "Do you feel supported by your manager?",
+        description: "",
+        required: true,
+        options: [],
+      },
+      {
+        type: "checkbox_group",
+        uiType: "checkbox_group",
+        title: "What areas need improvement?",
+        description: "",
+        required: false,
+        options: [
+          "Communication",
+          "Work-life balance",
+          "Tools",
+          "Team collaboration",
+        ],
+      },
+      {
+        type: "long_text",
+        uiType: "textarea",
+        title: "Any other feedback for the team?",
+        description: "",
+        required: false,
+        options: [],
+      },
+    ],
+  },
+];
+// endregion

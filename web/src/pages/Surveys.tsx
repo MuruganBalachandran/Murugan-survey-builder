@@ -41,6 +41,7 @@ import {
   DEFAULT_QUESTION_FORM,
   DEFAULT_SURVEY_FORM as defaultSurveyForm,
   SURVEY_PAGE_SIZE,
+  SURVEY_TEMPLATES,
 } from "@/utils/constants";
 import { CalendarIcon, FilterIcon, SortIcon } from "@/utils/icons";
 import {
@@ -75,8 +76,11 @@ export const SurveysPage = () => {
 
   const [selectedSurveyId, setSelectedSurveyId] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [createStep, setCreateStep] = useState<1 | 2 | 3 | 4>(1);
+  const [createStep, setCreateStep] = useState<0 | 1 | 2 | 3 | 4>(0);
   const [createSurveyId, setCreateSurveyId] = useState<string | null>(null);
+  const [pendingTemplateQuestions, setPendingTemplateQuestions] = useState<
+    Omit<QuestionFormState, "id">[]
+  >([]);
   const [isQuestionComposerOpen, setIsQuestionComposerOpen] = useState(false);
   const [questionMode, setQuestionMode] = useState<"create" | "edit">("create");
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(
@@ -105,7 +109,6 @@ export const SurveysPage = () => {
     Survey,
     "title" | "slug"
   > | null>(null);
-
 
   const pageSize = SURVEY_PAGE_SIZE;
 
@@ -259,7 +262,7 @@ export const SurveysPage = () => {
 
   const closeCreateWizard = () => {
     setIsCreateOpen(false);
-    setCreateStep(1);
+    setCreateStep(0);
     setSelectedSurveyId(null);
     setCreateSurveyId(null);
     setIsQuestionComposerOpen(false);
@@ -269,16 +272,18 @@ export const SurveysPage = () => {
     setLogoFileName("");
     setSurveyForm(defaultSurveyForm());
     setSurveyErrors({});
+    setPendingTemplateQuestions([]);
   };
 
   const openCreateDrawer = () => {
     setSurveyForm(defaultSurveyForm());
     setSurveyErrors({});
-    setCreateStep(1);
+    setCreateStep(0);
     setLogoFileName("");
     setSelectedSurveyId(null);
     setCreateSurveyId(null);
     setIsQuestionComposerOpen(false);
+    setPendingTemplateQuestions([]);
     setIsCreateOpen(true);
   };
 
@@ -403,6 +408,26 @@ export const SurveysPage = () => {
     setSurveyForm((current) => ({ ...current, logoUrl: nextLogoUrl }));
   };
 
+  // pre-fill form from a template and advance to step 1
+  const handleSelectTemplate = (templateId: string) => {
+    const template = SURVEY_TEMPLATES.find((t) => t.id === templateId);
+    if (!template) return;
+    setSurveyForm((current) => ({
+      ...current,
+      title: template.label,
+      description: template.description,
+      primaryColor: template.primaryColor,
+    }));
+    setPendingTemplateQuestions(template.questions);
+    setCreateStep(1);
+  };
+
+  // start blank — just advance to step 1 with default form
+  const handleBlankSurvey = () => {
+    setPendingTemplateQuestions([]);
+    setCreateStep(1);
+  };
+
   // advance the create wizard, creating or updating the survey at step 2
   const handleWizardNext = async () => {
     if (createStep === 1) {
@@ -459,6 +484,30 @@ export const SurveysPage = () => {
 
           surveyIdToRefresh = createdSurveyId;
           setCreateSurveyId(createdSurveyId);
+
+          // seed template questions if user picked a template
+          if (pendingTemplateQuestions.length > 0) {
+            for (const q of pendingTemplateQuestions) {
+              const mapped = normalizeQuestionType(q.type);
+              await dispatch(
+                addQuestionToSurvey({
+                  surveyId: createdSurveyId,
+                  type: mapped.type,
+                  uiType: mapped.uiType,
+                  title: q.title,
+                  description: q.description || undefined,
+                  required: q.required,
+                  options:
+                    q.type === "multiple_choice" ||
+                    q.type === "checkbox_group" ||
+                    q.type === "dropdown"
+                      ? q.options.filter(Boolean)
+                      : undefined,
+                }),
+              );
+            }
+            setPendingTemplateQuestions([]);
+          }
         }
 
         await refreshData(surveyIdToRefresh);
@@ -482,7 +531,7 @@ export const SurveysPage = () => {
   };
 
   const handleWizardBack = () => {
-    setCreateStep((current) => Math.max(1, current - 1) as 1 | 2 | 3);
+    setCreateStep((current) => Math.max(0, current - 1) as 0 | 1 | 2 | 3);
   };
 
   // save edits to an existing survey from the edit drawer
@@ -674,13 +723,15 @@ export const SurveysPage = () => {
   };
 
   const handleAutoExpire = async (surveyId: string) => {
-    const survey = surveys.find((s) => s.id === surveyId)
-    if (!survey || survey.status !== 'published') return
-    const result = await dispatch(updateSurveyDetails({ id: surveyId, status: 'closed' }))
+    const survey = surveys.find((s) => s.id === surveyId);
+    if (!survey || survey.status !== "published") return;
+    const result = await dispatch(
+      updateSurveyDetails({ id: surveyId, status: "closed" }),
+    );
     if (result.type === updateSurveyDetails.fulfilled.type) {
-      await refreshData(surveyId)
+      await refreshData(surveyId);
     }
-  }
+  };
 
   const handleManualClose = async (surveyId: string) => {
     const survey = surveys.find((s) => s.id === surveyId) ?? activeSurvey;
@@ -1024,6 +1075,8 @@ export const SurveysPage = () => {
         endsAt={surveyForm.endsAt}
         onEndsAtChange={(value) => handleSurveyFormChange("endsAt", value)}
         onManualClose={() => activeSurvey && handleManualClose(activeSurvey.id)}
+        onSelectTemplate={handleSelectTemplate}
+        onBlankSurvey={handleBlankSurvey}
       />
 
       <EditSurveyDrawer

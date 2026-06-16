@@ -22,10 +22,10 @@ export interface StatCardProps {
 
 // Surveys page types
 export type SurveyRecord = Survey & {
-  primaryColor?: string
-  responseCount?: number
-  questionCount?: number
-  questions?: Question[]
+  primaryColor?: string;
+  responseCount?: number;
+  questionCount?: number;
+  questions?: Question[];
 };
 
 export type QuestionType =
@@ -123,3 +123,8 @@ export interface SurveyPublishStepProps {
 }
 
 export type PaginationItem = number | "ellipsis";
+
+export interface SurveyTemplatesStepProps {
+  onSelect: (templateId: string) => void;
+  onBlank: () => void;
+}
