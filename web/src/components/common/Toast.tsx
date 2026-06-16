@@ -1,6 +1,7 @@
 // region imports
 import { useEffect, useState } from 'react'
-import { subscribeToToasts, toast, type ToastMessage, type ToastVariant } from '@/lib/toast'
+import { subscribeToToasts, type ToastMessage, type ToastVariant, toast } from '@/lib/toast'
+
 // endregion
 
 // region constants

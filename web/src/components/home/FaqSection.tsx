@@ -55,11 +55,16 @@ export const FaqSection = () => {
           {/* accordion items — native <details> for zero-JS expand/collapse */}
           <div className="mt-5 grid gap-3">
             {activeSection?.items.map((faq) => (
-              <details key={faq.question} className="group rounded-2xl border border-gray-200 bg-gray-50 p-5">
+              <details
+                key={faq.question}
+                className="group rounded-2xl border border-gray-200 bg-gray-50 p-5"
+              >
                 <summary className="cursor-pointer list-none text-base font-semibold text-gray-900">
                   <span className="flex items-center justify-between gap-4">
                     {faq.question}
-                    <span className="text-violet-600 transition-transform group-open:rotate-45">+</span>
+                    <span className="text-violet-600 transition-transform group-open:rotate-45">
+                      +
+                    </span>
                   </span>
                 </summary>
                 <p className="mt-3 text-sm leading-6 text-gray-600">{faq.answer}</p>

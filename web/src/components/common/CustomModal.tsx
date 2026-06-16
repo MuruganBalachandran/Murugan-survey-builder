@@ -1,6 +1,7 @@
 // region imports
 import { Button } from '@/components/ui/Button'
 import type { CustomModalProps, ModalVariant, VariantStyles } from '@/types'
+
 // endregion
 
 // region helpers
@@ -10,15 +11,35 @@ const getVariantStyles = (variant: ModalVariant): VariantStyles => {
   const base = 'h-12 w-12 flex items-center justify-center rounded-full'
   switch (variant) {
     case 'danger':
-      return { iconBg: `${base} bg-red-100`, iconColor: 'text-red-600', confirmButtonClass: 'bg-red-600 hover:bg-red-700' }
+      return {
+        iconBg: `${base} bg-red-100`,
+        iconColor: 'text-red-600',
+        confirmButtonClass: 'bg-red-600 hover:bg-red-700',
+      }
     case 'warning':
-      return { iconBg: `${base} bg-yellow-100`, iconColor: 'text-yellow-600', confirmButtonClass: 'bg-yellow-600 hover:bg-yellow-700' }
+      return {
+        iconBg: `${base} bg-yellow-100`,
+        iconColor: 'text-yellow-600',
+        confirmButtonClass: 'bg-yellow-600 hover:bg-yellow-700',
+      }
     case 'success':
-      return { iconBg: `${base} bg-emerald-100`, iconColor: 'text-emerald-600', confirmButtonClass: 'bg-emerald-600 hover:bg-emerald-700' }
+      return {
+        iconBg: `${base} bg-emerald-100`,
+        iconColor: 'text-emerald-600',
+        confirmButtonClass: 'bg-emerald-600 hover:bg-emerald-700',
+      }
     case 'info':
-      return { iconBg: `${base} bg-blue-100`, iconColor: 'text-blue-600', confirmButtonClass: 'bg-blue-600 hover:bg-blue-700' }
+      return {
+        iconBg: `${base} bg-blue-100`,
+        iconColor: 'text-blue-600',
+        confirmButtonClass: 'bg-blue-600 hover:bg-blue-700',
+      }
     default:
-      return { iconBg: `${base} bg-violet-100`, iconColor: 'text-violet-600', confirmButtonClass: 'bg-violet-600 hover:bg-violet-700' }
+      return {
+        iconBg: `${base} bg-violet-100`,
+        iconColor: 'text-violet-600',
+        confirmButtonClass: 'bg-violet-600 hover:bg-violet-700',
+      }
   }
 }
 
@@ -91,7 +112,14 @@ export const CustomModal = ({
                 className="text-gray-400 transition-colors hover:text-gray-600"
                 aria-label="Close modal"
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <line x1="18" y1="6" x2="6" y2="18" />
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>

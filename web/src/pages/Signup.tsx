@@ -1,8 +1,9 @@
 // region imports
-import { useEffect } from 'react'
+
 import { Link, useNavigate } from '@tanstack/react-router'
-import { useAppSelector } from '@/hooks/redux'
+import { useEffect } from 'react'
 import { SignupForm } from '@/components/auth/SignupForm'
+import { useAppSelector } from '@/hooks/redux'
 // endregion
 
 // region component
@@ -27,7 +28,9 @@ export const SignupPage = () => {
             S
           </div>
           <p className="app-eyebrow">SurveyBuilder</p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-900">Create your account</h1>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-900">
+            Create your account
+          </h1>
           <p className="mt-2 text-sm text-gray-500">Start building polished surveys in minutes.</p>
         </div>
 
@@ -35,7 +38,10 @@ export const SignupPage = () => {
 
         <p className="text-center text-sm mt-6 text-gray-500">
           Already have an account?{' '}
-          <Link to="/login" className="font-medium text-violet-600 hover:text-violet-700 transition-colors">
+          <Link
+            to="/login"
+            className="font-medium text-violet-600 hover:text-violet-700 transition-colors"
+          >
             Sign in
           </Link>
         </p>

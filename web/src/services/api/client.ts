@@ -3,86 +3,46 @@ import axios from 'axios'
 // endregion
 
 // region constants
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787/api'
 
-// backend API base URL
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL ||
-  'http://localhost:8787/api'
-
-// prevent multiple session expiry events
+// Prevent multiple session-expiry events firing in the same error burst
 let sessionExpiryHandled = false
-
 // endregion
 
 // region api client
+// withCredentials: true — tells the browser to include the httpOnly cookie
+// on every request automatically. No manual token attachment needed.
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
-
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' },
+  withCredentials: true,
 })
 // endregion
 
-// region request interceptor
-apiClient.interceptors.request.use((config) => {
-  // fetch stored auth token
-  const token = localStorage.getItem('authToken')
-
-  // attach bearer token to request
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
-
-  return config
+// region response interceptors
+// Reset the expiry flag after any successful response
+apiClient.interceptors.response.use((response) => {
+  sessionExpiryHandled = false
+  return response
 })
 
-apiClient.interceptors.response.use(
-  (response) => {
-    // reset flag on any successful authenticated response
-    if (response.config.headers?.Authorization) {
-      sessionExpiryHandled = false
-    }
-    return response
-  },
-)
-
-// endregion
-
-// region response interceptor
+// Handle 401 — session expired or cookie missing
 apiClient.interceptors.response.use(
   (response) => response,
-
   (error) => {
-    // check if user has active session
-    const hasToken = Boolean(
-      localStorage.getItem('authToken'),
-    )
-
-    // handle expired or invalid session
     if (
       error.response?.status === 401 &&
-      hasToken &&
       !sessionExpiryHandled &&
       !error.config?.url?.includes('/auth/verify')
     ) {
       sessionExpiryHandled = true
-
-      // clear stored session token
-      localStorage.removeItem('authToken')
-
-      // notify application about session expiry
-      window.dispatchEvent(
-        new CustomEvent('auth:session-expired'),
-      )
+      // Notify the app — root layout listens and redirects to login
+      window.dispatchEvent(new CustomEvent('auth:session-expired'))
     }
 
     return Promise.reject(error)
   },
 )
-
 // endregion
 
-// region exports
 export default apiClient
-// endregion

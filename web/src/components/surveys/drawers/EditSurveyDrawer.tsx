@@ -1,12 +1,13 @@
 // region imports
 import { OffCanvas } from '@/components/common/OffCanvas'
 import { Button } from '@/components/ui/Button'
-import { SurveyDetailsForm } from '../forms/SurveyDetailsForm'
-import { BrandingForm } from '../forms/BrandingForm'
-import { QuestionComposerCard } from '../forms/QuestionComposerCard'
-import type { SurveyRecord, QuestionFormState } from '@/types'
+import type { QuestionFormState, SurveyRecord } from '@/types'
 import type { Question } from '@/types/survey'
 import { statusLabel } from '@/utils/common/survey'
+import { BrandingForm } from '../forms/BrandingForm'
+import { QuestionComposerCard } from '../forms/QuestionComposerCard'
+import { SurveyDetailsForm } from '../forms/SurveyDetailsForm'
+
 // endregion
 
 // region types
@@ -79,12 +80,19 @@ export const EditSurveyDrawer = ({
     isOpen={isOpen}
     onClose={onClose}
     title={activeSurvey?.title || 'Survey editor'}
-    description={activeSurvey ? 'Edit details, brand, and questions from one drawer.' : 'Loading survey...'}
+    description={
+      activeSurvey ? 'Edit details, brand, and questions from one drawer.' : 'Loading survey...'
+    }
     size="xl"
     zIndex={70}
     footer={
       <div className="flex gap-3">
-        <Button variant="primary" onClick={onSave} isLoading={isSavingSurvey} disabled={!hasEditChanges}>
+        <Button
+          variant="primary"
+          onClick={onSave}
+          isLoading={isSavingSurvey}
+          disabled={!hasEditChanges}
+        >
           Save changes
         </Button>
         {activeSurvey && activeSurvey.status !== 'published' && (
@@ -113,7 +121,9 @@ export const EditSurveyDrawer = ({
         <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-violet-600">Basic info</p>
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-violet-600">
+                Basic info
+              </p>
               <h3 className="mt-2 text-2xl font-bold text-gray-900">Survey details</h3>
               <p className="mt-2 text-sm text-gray-600">Update the title and description here.</p>
             </div>
@@ -135,9 +145,13 @@ export const EditSurveyDrawer = ({
         <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-violet-600">Brand info</p>
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-violet-600">
+                Brand info
+              </p>
               <h3 className="mt-2 text-2xl font-bold text-gray-900">Appearance</h3>
-              <p className="mt-2 text-sm text-gray-600">Pick the color and logo shown to respondents.</p>
+              <p className="mt-2 text-sm text-gray-600">
+                Pick the color and logo shown to respondents.
+              </p>
             </div>
           </div>
           <div className="mt-5">
@@ -156,9 +170,13 @@ export const EditSurveyDrawer = ({
         <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-violet-600">Questions</p>
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-violet-600">
+                Questions
+              </p>
               <h3 className="mt-2 text-2xl font-bold text-gray-900">Builder content</h3>
-              <p className="mt-2 text-sm text-gray-600">Add, remove, and reorder the survey questions.</p>
+              <p className="mt-2 text-sm text-gray-600">
+                Add, remove, and reorder the survey questions.
+              </p>
             </div>
             <Button variant="primary" onClick={onAddQuestion}>
               Add question
@@ -205,14 +223,19 @@ export const EditSurveyDrawer = ({
                             </span>
                           )}
                         </div>
-                        <p className="mt-3 text-base font-semibold text-gray-900">{question.title}</p>
+                        <p className="mt-3 text-base font-semibold text-gray-900">
+                          {question.title}
+                        </p>
                         {question.description && (
                           <p className="mt-1 text-sm text-gray-600">{question.description}</p>
                         )}
                         {question.type === 'multiple_choice' && question.options?.length ? (
                           <div className="mt-3 space-y-2">
                             {question.options.map((option, optionIndex) => (
-                              <div key={`${question.id}-${optionIndex}`} className="text-sm text-gray-700">
+                              <div
+                                key={`${question.id}-${optionIndex}`}
+                                className="text-sm text-gray-700"
+                              >
                                 • {option}
                               </div>
                             ))}

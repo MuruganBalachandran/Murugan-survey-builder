@@ -40,7 +40,9 @@ export const SurveyBasicsStep = ({
         placeholder="Tell respondents what this survey is for"
         className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
       />
-      {descriptionError && <p className="mt-1.5 text-xs font-medium text-red-600">{descriptionError}</p>}
+      {descriptionError && (
+        <p className="mt-1.5 text-xs font-medium text-red-600">{descriptionError}</p>
+      )}
     </div>
   </div>
   // endregion

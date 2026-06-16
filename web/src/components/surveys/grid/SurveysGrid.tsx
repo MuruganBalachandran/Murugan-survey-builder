@@ -1,10 +1,17 @@
 // region imports
-import { SurveyCard } from './SurveyCard'
+
 import type { SurveysGridProps } from '@/types'
+import { SurveyCard } from './SurveyCard'
 // endregion
 
 // region component
-export const SurveysGrid = ({ surveys, onEdit, onPreview, onShare, onDelete }: SurveysGridProps) => (
+export const SurveysGrid = ({
+  surveys,
+  onEdit,
+  onPreview,
+  onShare,
+  onDelete,
+}: SurveysGridProps) => (
   // responsive 1 → 2 → 3 column grid of survey cards
   <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
     {surveys.map((survey) => (

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
-import { Header } from './Header'
-import { Footer } from './Footer'
 import type { AppLayoutProps } from '@/types'
+import { Footer } from './Footer'
+import { Header } from './Header'
 
 export const AppLayout = ({ children }: AppLayoutProps) => {
   return (
@@ -10,9 +10,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
       <Header />
 
       {/* Main Content */}
-      <main className="flex-1">
-        {children}
-      </main>
+      <main className="flex-1">{children}</main>
 
       {/* Footer */}
       <Footer />

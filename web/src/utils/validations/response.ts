@@ -1,8 +1,5 @@
 // region imports
-import type {
-  Question,
-  Answer,
-} from '@/types/survey'
+import type { Answer, Question } from '@/types/survey'
 // endregion
 
 // region response validation types
@@ -15,37 +12,19 @@ export interface ResponseValidationResult {
 
 // region answer validation utilities
 // validate single answer
-export function validateAnswer(
-  answer: Answer,
-  question: Question,
-): string | null {
+export function validateAnswer(answer: Answer, question: Question): string | null {
   // validate required empty value
-  if (
-    question.required &&
-    !answer.value
-  ) {
+  if (question.required && !answer.value) {
     return 'This question is required'
   }
 
   // validate required string answer
-  if (
-    typeof answer.value ===
-      'string' &&
-    question.required &&
-    answer.value.trim()
-      .length === 0
-  ) {
+  if (typeof answer.value === 'string' && question.required && answer.value.trim().length === 0) {
     return 'This question is required'
   }
 
   // validate required array answer
-  if (
-    Array.isArray(
-      answer.value,
-    ) &&
-    question.required &&
-    answer.value.length === 0
-  ) {
+  if (Array.isArray(answer.value) && question.required && answer.value.length === 0) {
     return 'Please select at least one option'
   }
 
@@ -59,43 +38,30 @@ export function validateResponse(
   answers: Answer[],
   questions: Question[],
 ): ResponseValidationResult {
-  const errors: Record<
-    string,
-    string
-  > = {}
+  const errors: Record<string, string> = {}
 
   // validate all survey questions
   for (const question of questions) {
-    const answer =
-      answers.find(
-        (a) =>
-          a.questionId ===
-          question.id,
-      )
+    const answer = answers.find((a) => a.questionId === question.id)
 
-    const error =
-      validateAnswer(
-        answer || {
-          questionId:
-            question.id,
+    const error = validateAnswer(
+      answer || {
+        questionId: question.id,
 
-          value: '',
-        },
+        value: '',
+      },
 
-        question,
-      )
+      question,
+    )
 
     // store validation error
     if (error) {
-      errors[question.id] =
-        error
+      errors[question.id] = error
     }
   }
 
   return {
-    isValid:
-      Object.keys(errors)
-        .length === 0,
+    isValid: Object.keys(errors).length === 0,
 
     errors,
   }

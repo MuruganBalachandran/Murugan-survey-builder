@@ -1,4 +1,3 @@
-
 export const PUBLIC_ROUTES = ['/', '/login', '/signup', '/terms', '/privacy'] as const
 
 export const SIZE_CLASSES = {

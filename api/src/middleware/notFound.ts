@@ -1,20 +1,7 @@
 // region imports
 import type { Context } from 'hono'
-// endregion
-
-// region types
-interface NotFoundError {
-  code: 'NOT_FOUND'
-  path: string
-  method: string
-}
-
-interface NotFoundResponse {
-  success: false
-  message: string
-  error: NotFoundError
-  timestamp: string
-}
+import type { NotFoundResponse } from '../types'
+import { HTTP_STATUS } from '../utils'
 // endregion
 
 // region middleware
@@ -35,6 +22,6 @@ export const notFoundHandler = (c: Context): Response => {
   console.warn(`[NOT_FOUND] ${c.req.method} ${c.req.path}`)
 
   // return response
-  return c.json(response, 404)
+  return c.json(response, HTTP_STATUS.NOT_FOUND)
 }
 // endregion

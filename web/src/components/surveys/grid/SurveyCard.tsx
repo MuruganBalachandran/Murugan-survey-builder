@@ -1,8 +1,10 @@
 // region imports
-import { useMemo, useState } from 'react'
+
 import { useNavigate } from '@tanstack/react-router'
-import { SurveyCardEditIcon, PreviewIcon, ShareIcon, TrashIcon, ResponseIcon } from '@/utils/icons'
+import { useMemo, useState } from 'react'
 import type { SurveyCardProps } from '@/types'
+import { PreviewIcon, ResponseIcon, ShareIcon, SurveyCardEditIcon, TrashIcon } from '@/utils/icons'
+
 // endregion
 
 // region helpers
@@ -10,20 +12,28 @@ import type { SurveyCardProps } from '@/types'
 // human-readable label for each survey status
 const statusLabel = (status?: string) => {
   switch (status) {
-    case 'published': return 'Published'
-    case 'closed': return 'Closed'
-    case 'archived': return 'Archived'
-    default: return 'Draft'
+    case 'published':
+      return 'Published'
+    case 'closed':
+      return 'Closed'
+    case 'archived':
+      return 'Archived'
+    default:
+      return 'Draft'
   }
 }
 
 // tailwind classes for the status badge colour
 const statusTone = (status?: string) => {
   switch (status) {
-    case 'published': return 'bg-emerald-50 text-emerald-700'
-    case 'closed': return 'bg-gray-100 text-gray-700'
-    case 'archived': return 'bg-amber-50 text-amber-700'
-    default: return 'bg-violet-50 text-violet-700'
+    case 'published':
+      return 'bg-emerald-50 text-emerald-700'
+    case 'closed':
+      return 'bg-gray-100 text-gray-700'
+    case 'archived':
+      return 'bg-amber-50 text-amber-700'
+    default:
+      return 'bg-violet-50 text-violet-700'
   }
 }
 
@@ -44,7 +54,7 @@ export const SurveyCard = ({ survey, onEdit, onPreview, onShare, onDelete }: Sur
   // endregion
 
   // region derived data
-  const titleInitial = survey.title?.trim()?.[0]?.toUpperCase() || '?'
+  const titleInitial = survey.title?.trim()?.[0]?.toUpperCase() ?? '?'
   const accentColor = survey.primaryColor || '#6366F1'
   const canExpand = (survey.description?.length ?? 0) > 98
 
@@ -70,7 +80,11 @@ export const SurveyCard = ({ survey, onEdit, onPreview, onShare, onDelete }: Sur
               style={{ backgroundColor: accentColor }}
             >
               {survey.logoUrl ? (
-                <img src={survey.logoUrl} alt={`${survey.title} logo`} className="h-full w-full object-cover" />
+                <img
+                  src={survey.logoUrl}
+                  alt={`${survey.title} logo`}
+                  className="h-full w-full object-cover"
+                />
               ) : (
                 <span className="text-lg font-bold">{titleInitial}</span>
               )}
@@ -82,7 +96,9 @@ export const SurveyCard = ({ survey, onEdit, onPreview, onShare, onDelete }: Sur
           </div>
 
           <div className="flex shrink-0 items-start gap-2">
-            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusTone(survey.status)}`}>
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-semibold ${statusTone(survey.status)}`}
+            >
               {statusLabel(survey.status)}
             </span>
             <button

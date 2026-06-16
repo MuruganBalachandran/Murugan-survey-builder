@@ -1,10 +1,10 @@
-import { useNavigate, useLocation } from '@tanstack/react-router'
+import { useLocation, useNavigate } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import { CustomModal } from '@/components/common/CustomModal'
 import { useAppDispatch, useAppSelector } from '@/hooks/redux'
 import { logout } from '@/store/slices/authSlice'
-import { LogoutIcon, ChevronDownIcon, HomeIcon, NavSurveyIcon } from '@/utils/icons'
 import { NAVIGATION_LINKS } from '@/utils/constants'
+import { ChevronDownIcon, HomeIcon, LogoutIcon, NavSurveyIcon } from '@/utils/icons'
 
 export const Header = () => {
   const navigate = useNavigate()
@@ -51,7 +51,8 @@ export const Header = () => {
     setShowLogoutModal(false)
   }
 
-  const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/')
+  const isActive = (path: string) =>
+    location.pathname === path || location.pathname.startsWith(path + '/')
 
   const navLinks = NAVIGATION_LINKS.map((link) => ({
     ...link,
@@ -117,45 +118,47 @@ export const Header = () => {
                 </button>
               </div>
             ) : (
-            <div className="relative" ref={dropdownRef}>
-              <button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
-                aria-label="User menu"
-                aria-expanded={isDropdownOpen}
-              >
-                {/* User Initial Avatar */}
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-500">
-                  <span className="text-white font-semibold text-sm">{userInitial}</span>
-                </div>
-
-                {/* Chevron */}
-                <ChevronDownIcon />
-              </button>
-
-              {/* Dropdown Menu */}
-              {isDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg border border-gray-200 shadow-lg z-50 animate-fade-in">
-                  {/* User Info Section */}
-                  <div className="px-4 py-3 border-b border-gray-200">
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Account</p>
-                    <p className="mt-2 text-sm font-semibold text-gray-900">{user?.name}</p>
-                    <p className="text-xs text-gray-600 truncate">{user?.email}</p>
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+                  aria-label="User menu"
+                  aria-expanded={isDropdownOpen}
+                >
+                  {/* User Initial Avatar */}
+                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-500">
+                    <span className="text-white font-semibold text-sm">{userInitial}</span>
                   </div>
 
-                  {/* Logout Button */}
-                  <div className="p-2">
-                    <button
-                      onClick={handleLogoutClick}
-                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                    >
-                      <LogoutIcon />
-                      <span>Sign Out</span>
-                    </button>
+                  {/* Chevron */}
+                  <ChevronDownIcon />
+                </button>
+
+                {/* Dropdown Menu */}
+                {isDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg border border-gray-200 shadow-lg z-50 animate-fade-in">
+                    {/* User Info Section */}
+                    <div className="px-4 py-3 border-b border-gray-200">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                        Account
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-gray-900">{user?.name}</p>
+                      <p className="text-xs text-gray-600 truncate">{user?.email}</p>
+                    </div>
+
+                    {/* Logout Button */}
+                    <div className="p-2">
+                      <button
+                        onClick={handleLogoutClick}
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                      >
+                        <LogoutIcon />
+                        <span>Sign Out</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
             )}
           </div>
         </div>

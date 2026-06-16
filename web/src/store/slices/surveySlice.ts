@@ -1,7 +1,7 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
+import type { SurveyListParams } from '@/services/api/surveys'
 import * as surveyAPI from '@/services/api/surveys'
 import type { Survey, SurveyWithQuestions } from '@/types/survey'
-import type { SurveyListParams } from '@/services/api/surveys'
 
 export interface SurveyState {
   surveys: Survey[]

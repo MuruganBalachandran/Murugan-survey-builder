@@ -1,7 +1,7 @@
 // region imports
 import { Button } from '@/components/ui/Button'
-import { PlusIcon, NavSurveyIcon } from '@/utils/icons'
 import type { EmptySurveysStateProps } from '@/types'
+import { NavSurveyIcon, PlusIcon } from '@/utils/icons'
 // endregion
 
 // region component

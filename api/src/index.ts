@@ -1,11 +1,12 @@
-// imports
+// region imports
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
+import { errorHandler, notFoundHandler } from './middleware'
 import authRoutes from './routes/auth'
-import surveyRoutes from './routes/surveys'
 import questionRoutes from './routes/questions'
 import responseRoutes from './routes/responses'
-import { errorHandler, notFoundHandler } from './middleware'
+import surveyRoutes from './routes/surveys'
+// endregion
 
 // app initialization
 const app = new Hono<{ Bindings: Env }>()
@@ -14,13 +15,18 @@ const app = new Hono<{ Bindings: Env }>()
 // CORS middleware
 app.use(
   cors({
-    origin: '*',
+    origin: (origin, c) => {
+      const allowed = c.env.FRONTEND_URL
+      return origin === allowed ? origin : null
+    },
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
+    exposeHeaders: ['Set-Cookie'],
+    credentials: true,
   }),
 )
 
-// routes
+// region routes
 // health check route
 app.get('/api/health', (c) => c.json({ status: 'ok' }))
 
@@ -36,13 +42,13 @@ app.route('/api/surveys', questionRoutes)
 // response routes
 app.route('/api/surveys', responseRoutes)
 
-// error handling
-// 404 not found handler (must be last)
+// 404 route not found handler
 app.notFound(notFoundHandler)
 
-// global error handler (must be last)
+// global error handler
 app.onError(errorHandler)
+// endregion
 
-// export
+// region export
 export default app
-
+// endregion

@@ -1,65 +1,39 @@
 // region imports
 import type { Context, Next } from 'hono'
-import { verifyToken } from '../utils'
+import type { AuthContext, UnauthorizedResponse } from '../types'
+import { HTTP_STATUS, verifyToken } from '../utils'
 // endregion
 
-// region types
-export interface AuthContext {
-  userId: string
-  email: string
-}
-
-interface UnauthorizedResponse {
-  success: false
-  message: string
-}
-// endregion
+export type { AuthContext }
 
 // region middleware
 export const authMiddleware = async (c: Context, next: Next): Promise<Response | undefined> => {
   try {
-    //  extract token
-    const authHeader = c.req.header('Authorization')
+    // Read JWT from the httpOnly cookie set at login/signup
+    const cookie = c.req.header('Cookie') ?? ''
+    const match = cookie.match(/(?:^|;\s*)auth_token=([^;]+)/)
+    const token = match?.[1] ?? null
 
-    // check auth header format
-    if (!authHeader?.startsWith('Bearer ')) {
-      const response: UnauthorizedResponse = {
-        success: false,
-        message: 'Missing or invalid authorization header',
-      }
-      return c.json(response, 401)
+    if (!token) {
+      const response: UnauthorizedResponse = { success: false, message: 'Not authenticated' }
+      return c.json(response, HTTP_STATUS.UNAUTHORIZED)
     }
 
-    // 
-    const token = authHeader.substring(7)
+    const payload = await verifyToken(token, c.env)
 
-    // verify token
-    const payload = await verifyToken(token)
-
-    // if payload is invalid or token is expired
     if (!payload) {
-      const response: UnauthorizedResponse = {
-        success: false,
-        message: 'Invalid or expired token',
-      }
-      return c.json(response, 401)
+      const response: UnauthorizedResponse = { success: false, message: 'Invalid or expired token' }
+      return c.json(response, HTTP_STATUS.UNAUTHORIZED)
     }
 
-    // attach user to context
-    c.set('user', {
-      userId: payload.userId,
-      email: payload.email,
-    })
+    // Attach verified user identity to the request context
+    c.set('user', { userId: payload.userId, email: payload.email })
 
-    // move to next middleware or route handler
     await next()
   } catch (error) {
     console.error('Auth middleware error:', error)
-    const response: UnauthorizedResponse = {
-      success: false,
-      message: 'Authentication error',
-    }
-    return c.json(response, 401)
+    const response: UnauthorizedResponse = { success: false, message: 'Authentication error' }
+    return c.json(response, HTTP_STATUS.UNAUTHORIZED)
   }
 }
 // endregion

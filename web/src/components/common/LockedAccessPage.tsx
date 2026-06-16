@@ -1,7 +1,7 @@
 // region imports
 import { useNavigate } from '@tanstack/react-router'
-import { Button } from '@/components/ui/Button'
 import { AppLayout } from '@/components/Layout/AppLayout'
+import { Button } from '@/components/ui/Button'
 import { LockAccessIcon } from '@/utils/icons'
 // endregion
 
@@ -14,12 +14,13 @@ export const LockedAccessPage = () => {
     <AppLayout>
       <main className="app-page">
         <div className="relative min-h-[calc(100vh-10rem)] overflow-hidden rounded-[2rem] border border-white/70 bg-white/60 shadow-xl">
-
           {/* blurred dashboard preview shown behind the lock card */}
           <div className="pointer-events-none absolute inset-0 blur-sm opacity-90">
             <div className="grid h-full gap-6 p-6 lg:grid-cols-[1.3fr_0.7fr]">
               <section className="rounded-3xl bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600 p-8 text-white">
-                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-violet-100">Workspace</p>
+                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-violet-100">
+                  Workspace
+                </p>
                 <h1 className="mt-3 text-4xl font-bold">Survey analytics dashboard</h1>
                 <p className="mt-3 max-w-xl text-violet-100">
                   Manage surveys, track responses, and continue drafts from one place.
@@ -37,17 +38,22 @@ export const LockedAccessPage = () => {
                 <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
                   <h2 className="text-xl font-bold text-gray-900">Top surveys</h2>
                   <div className="mt-5 space-y-4">
-                    {['Customer Feedback', 'Workshop Survey', 'Employee Poll'].map((item, index) => (
-                      <div key={item}>
-                        <div className="flex justify-between text-sm">
-                          <span className="font-semibold text-gray-800">{item}</span>
-                          <span className="text-gray-500">{[124, 98, 72][index]} responses</span>
+                    {['Customer Feedback', 'Workshop Survey', 'Employee Poll'].map(
+                      (item, index) => (
+                        <div key={item}>
+                          <div className="flex justify-between text-sm">
+                            <span className="font-semibold text-gray-800">{item}</span>
+                            <span className="text-gray-500">{[124, 98, 72][index]} responses</span>
+                          </div>
+                          <div className="mt-2 h-2 rounded-full bg-violet-100">
+                            <div
+                              className="h-2 rounded-full bg-violet-500"
+                              style={{ width: `${80 - index * 16}%` }}
+                            />
+                          </div>
                         </div>
-                        <div className="mt-2 h-2 rounded-full bg-violet-100">
-                        <div className="h-2 rounded-full bg-violet-500" style={{ width: `${80 - index * 16}%` }} />
-                        </div>
-                      </div>
-                    ))}
+                      ),
+                    )}
                   </div>
                 </div>
                 <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
@@ -71,7 +77,8 @@ export const LockedAccessPage = () => {
               </div>
               <h1 className="mt-5 text-2xl font-bold text-gray-900">Sign in to access this page</h1>
               <p className="mt-2 text-sm leading-6 text-gray-600">
-                Dashboard and survey management are part of your private workspace. Public survey links still work without signing in.
+                Dashboard and survey management are part of your private workspace. Public survey
+                links still work without signing in.
               </p>
               <div className="mt-6 grid gap-3 sm:grid-cols-2">
                 <Button variant="primary" onClick={() => navigate({ to: '/login' })}>

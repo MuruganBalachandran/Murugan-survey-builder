@@ -1,13 +1,11 @@
 // region imports
 import { configureStore } from '@reduxjs/toolkit'
-import {
-  persistReducer,
-  persistStore,
-} from 'redux-persist'
+import { persistReducer, persistStore } from 'redux-persist'
 import authReducer from './slices/authSlice'
-import surveyReducer from './slices/surveySlice'
 import questionReducer from './slices/questionSlice'
 import responseReducer from './slices/responseSlice'
+import surveyReducer from './slices/surveySlice'
+
 // endregion
 
 // region persist config
@@ -15,23 +13,11 @@ const persistConfig = {
   key: 'root',
   // custom localStorage wrapper for redux persist
   storage: {
-    getItem: (key: string) =>
-      Promise.resolve(
-        localStorage.getItem(key),
-      ),
+    getItem: (key: string) => Promise.resolve(localStorage.getItem(key)),
 
-    setItem: (
-      key: string,
-      value: string,
-    ) =>
-      Promise.resolve(
-        localStorage.setItem(key, value),
-      ),
+    setItem: (key: string, value: string) => Promise.resolve(localStorage.setItem(key, value)),
 
-    removeItem: (key: string) =>
-      Promise.resolve(
-        localStorage.removeItem(key),
-      ),
+    removeItem: (key: string) => Promise.resolve(localStorage.removeItem(key)),
   },
   // persist only auth state
   whitelist: ['auth'],
@@ -39,10 +25,7 @@ const persistConfig = {
 // endregion
 
 // region persisted reducers
-const persistedAuthReducer = persistReducer(
-  persistConfig,
-  authReducer,
-)
+const persistedAuthReducer = persistReducer(persistConfig, authReducer)
 // endregion
 
 // region store
@@ -58,10 +41,7 @@ export const store = configureStore({
     getDefaultMiddleware({
       serializableCheck: {
         // ignore redux persist actions
-        ignoredActions: [
-          'persist/PERSIST',
-          'persist/REHYDRATE',
-        ],
+        ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
       },
     }),
 })
@@ -72,9 +52,6 @@ export const persistor = persistStore(store)
 // endregion
 
 // region types
-export type RootState = ReturnType<
-  typeof store.getState
->
-export type AppDispatch =
-  typeof store.dispatch
+export type RootState = ReturnType<typeof store.getState>
+export type AppDispatch = typeof store.dispatch
 // endregion

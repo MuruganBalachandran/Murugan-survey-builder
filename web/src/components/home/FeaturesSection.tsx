@@ -1,6 +1,8 @@
 // region imports
-import { AnalyticsIcon, BuilderIcon, HomeSurveyIcon } from '@/utils/icons'
+
 import { FEATURES } from '@/utils/constants'
+import { AnalyticsIcon, BuilderIcon, HomeSurveyIcon } from '@/utils/icons'
+
 // endregion
 
 // region constants

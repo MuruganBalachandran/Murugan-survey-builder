@@ -1,133 +1,70 @@
 // region imports
-import { pbkdf2 } from '@noble/hashes/pbkdf2'
-import { sha256 } from '@noble/hashes/sha256'
+import { pbkdf2 } from "@noble/hashes/pbkdf2";
+import { sha256 } from "@noble/hashes/sha256";
+import { bytesToHex, generateSalt } from "./commonFunctions";
+import {
+  PBKDF2_ITERATIONS,
+  PBKDF2_KEY_LENGTH,
+  SALT_BYTE_LENGTH,
+} from "./constants";
 // endregion
 
-// region constants
-
-// PBKDF2 iteration count
-const ITERATIONS = 100000
-
-// endregion
-
-// region helper functions
-
-// generate random salt for password hashing
-const generateSalt = (): string => {
-  const bytes = new Uint8Array(16)
-
-  crypto.getRandomValues(bytes)
-
-  return Array.from(bytes)
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('')
-}
-
-// convert byte array into hexadecimal string
-const bytesToHex = (bytes: Uint8Array): string => {
-  return Array.from(bytes)
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('')
-}
-
-// endregion
-
-// region hash password
-
-export const hashPassword = async (
-  password: string,
-): Promise<string> => {
+// region hashPassword
+// Hashes a plain-text password using PBKDF2-SHA256.
+// Stores the result as: iterations$salt$hash
+export const hashPassword = async (password: string): Promise<string> => {
   try {
-    // generate unique salt
-    const salt = generateSalt()
-
-    // encode password into bytes
-    const passwordBytes = new TextEncoder().encode(password)
-
-    // generate PBKDF2 hash
-    const hash = pbkdf2(
-      sha256,
-      passwordBytes,
-      salt,
-      {
-        c: ITERATIONS,
-        dkLen: 32,
-      },
-    )
-
-    // convert hash into hexadecimal string
-    const hashHex = bytesToHex(hash)
-
-    // store as: iterations$salt$hash
-    return `${ITERATIONS}$${salt}$${hashHex}`
+    const salt = generateSalt(SALT_BYTE_LENGTH);
+    const passwordBytes = new TextEncoder().encode(password);
+    const hash = pbkdf2(sha256, passwordBytes, salt, {
+      c: PBKDF2_ITERATIONS,
+      dkLen: PBKDF2_KEY_LENGTH,
+    });
+    return `${PBKDF2_ITERATIONS}$${salt}$${bytesToHex(hash)}`;
   } catch (error) {
-    console.error('Password hashing failed:', error)
-
-    throw new Error('Failed to hash password')
+    console.error("Password hashing failed:", error);
+    throw new Error("Failed to hash password");
   }
-}
-
+};
 // endregion
 
-// region compare password
-
+// region comparePassword
+// Rehashes the plain-text password with the stored salt and compares.
 export const comparePassword = async (
   plainPassword: string,
   hashedPassword: string,
 ): Promise<boolean> => {
   try {
-    // split stored password parts
-    const parts = hashedPassword.split('$')
+    const parts = hashedPassword.split("$");
 
-    // validate hash format
     if (parts.length !== 3) {
-      console.error('Invalid password hash format')
-
-      return false
+      console.error("Invalid password hash format");
+      return false;
     }
 
-    const [iterStr, salt, storedHash] = parts
+    const [iterStr, salt, storedHash] = parts;
 
-    // validate required values
     if (!iterStr || !salt || !storedHash) {
-      console.error('Password hash is missing required parts')
-
-      return false
+      console.error("Password hash is missing required parts");
+      return false;
     }
 
-    // parse iteration count
-    const iterations = parseInt(iterStr, 10)
-
+    const iterations = parseInt(iterStr, 10);
     if (isNaN(iterations)) {
-      console.error('Invalid iterations in password hash')
-
-      return false
+      console.error("Invalid iterations in password hash");
+      return false;
     }
 
-    // encode input password
-    const passwordBytes = new TextEncoder().encode(plainPassword)
+    const passwordBytes = new TextEncoder().encode(plainPassword);
+    const computedHash = pbkdf2(sha256, passwordBytes, salt, {
+      c: iterations,
+      dkLen: PBKDF2_KEY_LENGTH,
+    });
 
-    // generate comparison hash
-    const computedHash = pbkdf2(
-      sha256,
-      passwordBytes,
-      salt,
-      {
-        c: iterations,
-        dkLen: 32,
-      },
-    )
-
-    // convert computed hash into hexadecimal string
-    const computedHashHex = bytesToHex(computedHash)
-
-    // compare generated hash with stored hash
-    return computedHashHex === storedHash
+    return bytesToHex(computedHash) === storedHash;
   } catch (error) {
-    console.error('Password comparison failed:', error)
-
-    return false
+    console.error("Password comparison failed:", error);
+    return false;
   }
-}
-
+};
 // endregion

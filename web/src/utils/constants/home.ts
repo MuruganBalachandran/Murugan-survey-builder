@@ -36,15 +36,18 @@ export const FAQ_SECTIONS = [
     items: [
       {
         question: 'What is Survey Builder?',
-        answer: 'Survey Builder is a platform for creating and distributing surveys online. It helps you collect feedback, conduct research, and gather insights from your audience.',
+        answer:
+          'Survey Builder is a platform for creating and distributing surveys online. It helps you collect feedback, conduct research, and gather insights from your audience.',
       },
       {
         question: 'Do I need technical skills?',
-        answer: 'No! Survey Builder is designed for everyone. Our intuitive drag-and-drop interface makes it easy to create professional surveys without any coding knowledge.',
+        answer:
+          'No! Survey Builder is designed for everyone. Our intuitive drag-and-drop interface makes it easy to create professional surveys without any coding knowledge.',
       },
       {
         question: 'How much does it cost?',
-        answer: 'Survey Builder offers flexible pricing plans. Check our pricing page for details on free and premium options.',
+        answer:
+          'Survey Builder offers flexible pricing plans. Check our pricing page for details on free and premium options.',
       },
     ],
   },
@@ -53,15 +56,18 @@ export const FAQ_SECTIONS = [
     items: [
       {
         question: 'How many questions can I add?',
-        answer: 'You can add unlimited questions to your surveys. There\'s no limit on the number of questions per survey.',
+        answer:
+          "You can add unlimited questions to your surveys. There's no limit on the number of questions per survey.",
       },
       {
         question: 'What question types are available?',
-        answer: 'We support multiple question types including short text, long text, multiple choice, checkboxes, dropdowns, ratings, and more.',
+        answer:
+          'We support multiple question types including short text, long text, multiple choice, checkboxes, dropdowns, ratings, and more.',
       },
       {
         question: 'Can I preview my survey before sharing?',
-        answer: 'Yes! You can preview your survey at any time to see how it looks to respondents before publishing.',
+        answer:
+          'Yes! You can preview your survey at any time to see how it looks to respondents before publishing.',
       },
     ],
   },
@@ -70,7 +76,8 @@ export const FAQ_SECTIONS = [
     items: [
       {
         question: 'How do I collect responses?',
-        answer: 'Share your survey link via email, social media, or embed it on your website. Responses are collected automatically.',
+        answer:
+          'Share your survey link via email, social media, or embed it on your website. Responses are collected automatically.',
       },
       {
         question: 'Is there a limit on responses?',
@@ -78,7 +85,8 @@ export const FAQ_SECTIONS = [
       },
       {
         question: 'Can I export responses?',
-        answer: 'Yes! Export all your responses as CSV for further analysis in Excel or other tools.',
+        answer:
+          'Yes! Export all your responses as CSV for further analysis in Excel or other tools.',
       },
     ],
   },
@@ -87,15 +95,18 @@ export const FAQ_SECTIONS = [
     items: [
       {
         question: 'How do I reset my password?',
-        answer: 'Click "Forgot Password" on the login page and follow the instructions to reset your password.',
+        answer:
+          'Click "Forgot Password" on the login page and follow the instructions to reset your password.',
       },
       {
         question: 'Can I delete my account?',
-        answer: 'Yes, you can delete your account from your account settings. This action cannot be undone.',
+        answer:
+          'Yes, you can delete your account from your account settings. This action cannot be undone.',
       },
       {
         question: 'Is my data secure?',
-        answer: 'Yes! We use industry-standard encryption and security measures to protect your data.',
+        answer:
+          'Yes! We use industry-standard encryption and security measures to protect your data.',
       },
     ],
   },

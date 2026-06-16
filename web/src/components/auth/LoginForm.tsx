@@ -1,12 +1,12 @@
 // region Imports
 import { useState } from 'react'
-import type { LoginFormProps, LoginFormData, FieldErrors } from '@/types'
-import { toast } from '@/lib/toast'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useAppDispatch, useAppSelector } from '@/hooks/redux'
+import { toast } from '@/lib/toast'
 import { clearError, loginUser } from '@/store/slices/authSlice'
-import { MailIcon, LockIcon, EyeIcon, EyeOffIcon } from '@/utils/icons'
+import type { FieldErrors, LoginFormData, LoginFormProps } from '@/types'
+import { EyeIcon, EyeOffIcon, LockIcon, MailIcon } from '@/utils/icons'
 
 // endregion
 
@@ -23,9 +23,7 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
 
   // endregion
 
-
   // region Event Handlers
-
 
   /**
    * Handles input field changes and clears related errors
@@ -91,9 +89,7 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
 
   // endregion
 
-
   // region UI Render
-
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">

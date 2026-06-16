@@ -1,22 +1,14 @@
 // region imports
+
+import type { ApiResponse } from '@/types/common'
+import type { Answer, SurveyResponse } from '@/types/survey'
 import apiClient from './client'
-import type {
-  SurveyResponse,
-  Answer,
-} from '@/types/survey'
-import type {
-  ApiResponse,
-} from '@/types/common'
+
 // endregion
 
 // region exports
-export type {
-  SurveyResponse,
-  Answer,
-}
-export type {
-  ApiResponse,
-}
+export type { Answer, ApiResponse, SurveyResponse }
+
 // endregion
 
 // region helper functions
@@ -37,12 +29,12 @@ export const submitResponse = async (
 ): Promise<ApiResponse<SurveyResponse>> => {
   try {
     // submit public survey response
-    const response =
-      await apiClient.post<
-        ApiResponse<SurveyResponse>
-      >(`/surveys/${surveyId}/responses`, {
+    const response = await apiClient.post<ApiResponse<SurveyResponse>>(
+      `/surveys/${surveyId}/responses`,
+      {
         answers,
-      })
+      },
+    )
 
     return response.data
   } catch (error: any) {
@@ -57,10 +49,9 @@ export const getSurveyResponses = async (
 ): Promise<ApiResponse<SurveyResponse[]>> => {
   try {
     // fetch survey responses
-    const response =
-      await apiClient.get<
-        ApiResponse<SurveyResponse[]>
-      >(`/surveys/${surveyId}/responses`)
+    const response = await apiClient.get<ApiResponse<SurveyResponse[]>>(
+      `/surveys/${surveyId}/responses`,
+    )
 
     return response.data
   } catch (error: any) {

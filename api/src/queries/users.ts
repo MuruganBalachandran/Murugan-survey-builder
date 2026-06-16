@@ -1,111 +1,139 @@
-import type { User } from '../types'
+// region imports
+import type { User } from "../types";
+// endregion
 
-/**
- * User Queries
- */
+// Shared column list — avoids SELECT * and keeps mapping explicit
+const USER_COLUMNS = "id, email, name, password_hash, created_at, updated_at";
 
-export const findUserByEmail = async (db: D1Database, email: string): Promise<User | undefined> => {
-  try {
-    const result = await db
-      .prepare('SELECT * FROM users WHERE LOWER(email) = LOWER(?)')
-      .bind(email)
-      .first<any>()
+// Maps a raw D1 row to the typed User shape
+const mapUser = (row: any): User => ({
+  id: row.id,
+  email: row.email,
+  name: row.name,
+  passwordHash: row.password_hash,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+});
 
-    if (!result) return undefined
-
-    return {
-      id: result.id,
-      email: result.email,
-      name: result.name,
-      passwordHash: result.password_hash,
-      createdAt: result.created_at,
-      updatedAt: result.updated_at,
-    }
-  } catch (error) {
-    console.error('Find user by email error:', error)
-    return undefined
-  }
-}
-
-export const findUserById = async (db: D1Database, id: string): Promise<User | undefined> => {
-  try {
-    const result = await db.prepare('SELECT * FROM users WHERE id = ?').bind(id).first<any>()
-
-    if (!result) return undefined
-
-    return {
-      id: result.id,
-      email: result.email,
-      name: result.name,
-      passwordHash: result.password_hash,
-      createdAt: result.created_at,
-      updatedAt: result.updated_at,
-    }
-  } catch (error) {
-    console.error('Find user by id error:', error)
-    return undefined
-  }
-}
-
-export const createUser = async (
+// region findUserByEmail
+export const findUserByEmail = async (
   db: D1Database,
-  user: Omit<User, 'createdAt' | 'updatedAt'>,
+  email: string,
+  // returns User if found, otherwise undefined
 ): Promise<User | undefined> => {
   try {
-    const now = new Date().toISOString()
+    const result = await db
+      .prepare(`SELECT ${USER_COLUMNS} FROM users WHERE email = ?`)
+      // Replaces the ? placeholder.
+      .bind(email.toLowerCase())
+      .first<any>();
+
+    return result ? mapUser(result) : undefined;
+  } catch (error) {
+    console.error("findUserByEmail error:", error);
+    return undefined;
+  }
+};
+// endregion
+
+// region findUserById
+export const findUserById = async (
+  db: D1Database,
+  id: string,
+): Promise<User | undefined> => {
+  try {
+    const result = await db
+      .prepare(`SELECT ${USER_COLUMNS} FROM users WHERE id = ?`)
+      .bind(id)
+      // Runs the query and returns the first matching row.
+      .first<any>();
+
+    return result ? mapUser(result) : undefined;
+  } catch (error) {
+    console.error("findUserById error:", error);
+    return undefined;
+  }
+};
+// endregion
+
+// region createUser
+export const createUser = async (
+  db: D1Database,
+  // Takes a type User and removes the properties - createdAt and updatedAt.
+  user: Omit<User, "createdAt" | "updatedAt">,
+): Promise<User | undefined> => {
+  try {
+    const now = new Date().toISOString();
 
     await db
       .prepare(
-        'INSERT INTO users (id, email, name, password_hash, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+        "INSERT INTO users (id, email, name, password_hash, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
       )
-      .bind(user.id, user.email, user.name, user.passwordHash, now, now)
-      .run()
+      .bind(
+        user.id,
+        user.email.toLowerCase(),
+        user.name,
+        user.passwordHash,
+        now,
+        now,
+      )
+      // sends the INSERT command to D1.
+      .run();
 
-    return {
-      ...user,
-      createdAt: now,
-      updatedAt: now,
-    }
+    return { ...user, createdAt: now, updatedAt: now };
   } catch (error) {
-    console.error('Create user error:', error)
-    return undefined
+    console.error("createUser error:", error);
+    return undefined;
   }
-}
+};
+// endregion
 
+// region updateUser
 export const updateUser = async (
   db: D1Database,
   id: string,
-  updates: Partial<Omit<User, 'id'>>,
+  // Pick - Selects only email and name properties from User.
+  // Partial - Makes all properties optional
+  updates: Partial<Pick<User, "email" | "name" | "passwordHash">>,
 ): Promise<User | null> => {
   try {
-    const user = await findUserById(db, id)
-    if (!user) return null
+    const now = new Date().toISOString();
 
-    const now = new Date().toISOString()
+    // Build SET clause dynamically — only include fields that were provided
+    const fields: string[] = ["updated_at = ?"];
+    const values: any[] = [now];
 
-    await db
-      .prepare(
-        'UPDATE users SET email = ?, name = ?, password_hash = ?, updated_at = ? WHERE id = ?',
-      )
-      .bind(
-        updates.email ?? user.email,
-        updates.name ?? user.name,
-        updates.passwordHash ?? user.passwordHash,
-        now,
-        id,
-      )
-      .run()
-
-    return {
-      id,
-      email: updates.email ?? user.email,
-      name: updates.name ?? user.name,
-      passwordHash: updates.passwordHash ?? user.passwordHash,
-      createdAt: user.createdAt,
-      updatedAt: now,
+    // update fields and values
+    if (updates.email !== undefined) {
+      fields.push("email = ?");
+      values.push(updates.email.toLowerCase());
     }
+    if (updates.name !== undefined) {
+      fields.push("name = ?");
+      values.push(updates.name);
+    }
+    if (updates.passwordHash !== undefined) {
+      fields.push("password_hash = ?");
+      values.push(updates.passwordHash);
+    }
+
+    // push the id
+    values.push(id);
+
+    // query result
+    const result = await db
+      .prepare(
+        `UPDATE users SET ${fields.join(", ")} WHERE id = ? RETURNING ${USER_COLUMNS}`,
+      )
+      .bind(...values)
+      // Runs the query and returns the first matching row.
+
+      .first<any>();
+
+    return result ? mapUser(result) : null;
   } catch (error) {
-    console.error('Update user error:', error)
-    return null
+    console.error("updateUser error:", error);
+    return null;
   }
-}
+};
+// endregion

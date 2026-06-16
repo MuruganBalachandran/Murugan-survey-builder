@@ -1,5 +1,3 @@
-
-
 // Form defaults
 export const DEFAULT_SURVEY_FORM = {
   title: '',

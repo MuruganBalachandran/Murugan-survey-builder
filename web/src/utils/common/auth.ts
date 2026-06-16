@@ -1,40 +1,26 @@
 // region imports
-import type {
-  PasswordValidation,
-} from '@/types/auth'
+import type { PasswordValidation } from '@/types/auth'
 // endregion
 
 // region password validation utilities
 
 // validate password rules
-export const validatePasswordRules =
-  (
-    password: string,
-  ): PasswordValidation => ({
-    minLength:
-      password.length >= 8,
+export const validatePasswordRules = (password: string): PasswordValidation => ({
+  minLength: password.length >= 8,
 
-    hasLowercase:
-      /[a-z]/.test(password),
+  hasLowercase: /[a-z]/.test(password),
 
-    hasUppercase:
-      /[A-Z]/.test(password),
+  hasUppercase: /[A-Z]/.test(password),
 
-    hasSpecial:
-      /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(
-        password,
-      ),
-  })
+  hasSpecial: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password),
+})
 
 // check whether password is valid
-export const isPasswordValid =
-  (
-    validation: PasswordValidation,
-  ): boolean =>
-    validation.minLength &&
-    validation.hasLowercase &&
-    validation.hasUppercase &&
-    validation.hasSpecial
+export const isPasswordValid = (validation: PasswordValidation): boolean =>
+  validation.minLength &&
+  validation.hasLowercase &&
+  validation.hasUppercase &&
+  validation.hasSpecial
 
 // endregion
 

@@ -1,18 +1,22 @@
 // region imports
 import { forwardRef } from 'react'
 import { cn } from '@/lib/cn'
-import type { ButtonProps, ButtonVariant, ButtonSize } from '@/types'
+import type { ButtonProps, ButtonSize, ButtonVariant } from '@/types'
+
 // endregion
 
 // region constants
 
 // per-variant tailwind classes
 const variants: Record<ButtonVariant, string> = {
-  primary: 'bg-gradient-to-br from-indigo-500 to-indigo-400 text-white border-none shadow-[0_4px_24px_rgba(99,102,241,0.3),0_1px_0_rgba(255,255,255,0.1)_inset]',
+  primary:
+    'bg-gradient-to-br from-indigo-500 to-indigo-400 text-white border-none shadow-[0_4px_24px_rgba(99,102,241,0.3),0_1px_0_rgba(255,255,255,0.1)_inset]',
   secondary: 'bg-white/[0.04] text-[#C4C4D4] border border-white/10',
   tertiary: 'bg-transparent text-indigo-400 border-none shadow-none',
-  danger: 'bg-gradient-to-br from-red-500 to-red-600 text-white border-none shadow-[0_4px_24px_rgba(239,68,68,0.3),0_1px_0_rgba(255,255,255,0.1)_inset]',
-  success: 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-none shadow-[0_4px_24px_rgba(16,185,129,0.3),0_1px_0_rgba(255,255,255,0.1)_inset]',
+  danger:
+    'bg-gradient-to-br from-red-500 to-red-600 text-white border-none shadow-[0_4px_24px_rgba(239,68,68,0.3),0_1px_0_rgba(255,255,255,0.1)_inset]',
+  success:
+    'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-none shadow-[0_4px_24px_rgba(16,185,129,0.3),0_1px_0_rgba(255,255,255,0.1)_inset]',
 }
 
 // padding + font-size + border-radius per size token
@@ -75,7 +79,14 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
               fill="none"
               viewBox="0 0 24 24"
             >
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
               <path
                 className="opacity-75"
                 fill="currentColor"

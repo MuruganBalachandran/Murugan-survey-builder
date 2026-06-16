@@ -1,279 +1,378 @@
 // region imports
-import type { Context } from 'hono'
+import type { Context } from "hono";
 import {
   createSurvey,
   deleteSurvey,
   findQuestionsBysurveyId,
   findSurveyById,
   findSurveyBySlug,
-  findSurveysByUserId,
   findSurveysByUserIdPaginated,
   updateSurvey,
-} from '../queries'
-import { generateId, generateSlug } from '../utils/generators'
-import type { ApiResponse, Survey, SurveyWithQuestions } from '../types'
+} from "../queries";
+import type {
+  ApiResponse,
+  Survey,
+  SurveyStatus,
+  SurveyWithQuestions,
+} from "../types";
+import {
+  DEFAULT_PRIMARY_COLOR,
+  generateId,
+  generateSlug,
+  HTTP_STATUS,
+  validateSurveyTitle,
+  validateSurveyUpdate,
+} from "../utils";
 // endregion
 
 // region create survey
 export const createNewSurvey = async (c: Context): Promise<Response> => {
   try {
-    const db = c.env.DB
-    const user = c.get('user')
+    // db and user details
+    const db = c.env.DB;
+    const user = c.get("user");
+    const body = (await c.req.json()) as {
+      title: string;
+      description?: string;
+    };
+    // destructure title and description from body
+    const { title, description } = body;
 
-    const body = (await c.req.json()) as { title: string; description?: string }
-    const { title, description } = body
-
-    // Validate title only - description is optional
-    const { validateSurveyTitle } = await import('../utils')
-    const titleError = validateSurveyTitle(title)
+    // validate title
+    const titleError = validateSurveyTitle(title);
     if (titleError) {
       return c.json<ApiResponse<null>>(
-        { success: false, message: 'Validation failed', errors: { [titleError.field]: titleError.message } },
-        400,
-      )
+        {
+          success: false,
+          message: "Validation failed",
+          errors: { [titleError.field]: titleError.message },
+        },
+        HTTP_STATUS.BAD_REQUEST,
+      );
     }
 
-    // generate slug and ensure uniqueness
-    const slug = generateSlug(title)
+    // generate slug and create survey
+    const slug = generateSlug(title);
     const survey = await createSurvey(db, {
       id: generateId(),
       userId: user.userId,
       title: title.trim(),
       description: description?.trim(),
       slug,
-      primaryColor: '#6366F1',
+      primaryColor: DEFAULT_PRIMARY_COLOR,
       logoUrl: undefined,
-      status: 'draft',
-    })
+      status: "draft",
+    });
 
+    // if survey not found return error
     if (!survey) {
-      return c.json<ApiResponse<null>>({ success: false, message: 'Failed to create survey' }, 500)
+      return c.json<ApiResponse<null>>(
+        { success: false, message: "Failed to create survey" },
+        HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      );
     }
 
-    return c.json<ApiResponse<Survey>>({ success: true, message: 'Survey created', data: survey }, 201)
+    // return created survey
+    return c.json<ApiResponse<Survey>>(
+      { success: true, message: "Survey created", data: survey },
+      HTTP_STATUS.CREATED,
+    );
   } catch (error) {
-    console.error('Create survey error:', error)
-    return c.json<ApiResponse<null>>({ success: false, message: 'Internal server error' }, 500)
+    console.error("Create survey error:", error);
+    return c.json<ApiResponse<null>>(
+      { success: false, message: "Internal server error" },
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
+    );
   }
-}
+};
 // endregion
 
 // region get user surveys
 export const getUserSurveys = async (c: Context): Promise<Response> => {
   try {
-    const db = c.env.DB
-    const user = c.get('user')
+    // db and user details
+    const db = c.env.DB;
+    const user = c.get("user");
 
-    const page = Math.max(1, Number(c.req.query('page') ?? 1))
-    const pageSize = Math.min(50, Math.max(1, Number(c.req.query('pageSize') ?? 6)))
-    const search = c.req.query('search') ?? ''
-    const status = c.req.query('status') ?? 'all'
-    const dateRange = c.req.query('dateRange') ?? 'all'
-    const sort = c.req.query('sort') ?? 'newest'
+    // pagination and filtering details
+    const page = Math.max(1, Number(c.req.query("page") ?? 1));
+    const pageSize = Math.min(
+      50,
+      Math.max(1, Number(c.req.query("pageSize") ?? 6)),
+    );
+    const search = c.req.query("search") ?? "";
+    const status = c.req.query("status") ?? "all";
+    const dateRange = c.req.query("dateRange") ?? "all";
+    const sort = c.req.query("sort") ?? "newest";
 
-    const { surveys, total } = await findSurveysByUserIdPaginated(db, user.userId, {
-      page,
-      pageSize,
-      search,
-      status,
-      dateRange,
-      sort,
-    })
+    // fetch surveys based on user id and pagination/filtering details
+    const { surveys, total } = await findSurveysByUserIdPaginated(
+      db,
+      user.userId,
+      { page, pageSize, search, status, dateRange, sort },
+    );
 
-    return c.json<ApiResponse<{ surveys: Survey[]; total: number; page: number; pageSize: number }>>(
-      { success: true, message: 'Surveys retrieved', data: { surveys, total, page, pageSize } },
-      200,
-    )
+    return c.json<
+      ApiResponse<{
+        surveys: Survey[];
+        total: number;
+        page: number;
+        pageSize: number;
+      }>
+    >(
+      {
+        success: true,
+        message: "Surveys retrieved",
+        data: { surveys, total, page, pageSize },
+      },
+      HTTP_STATUS.OK,
+    );
   } catch (error) {
-    console.error('Get surveys error:', error)
-    return c.json<ApiResponse<null>>({ success: false, message: 'Internal server error' }, 500)
+    console.error("Get surveys error:", error);
+    return c.json<ApiResponse<null>>(
+      { success: false, message: "Internal server error" },
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
+    );
   }
-}
+};
 // endregion
 
 // region get survey by id
-
 export const getSurveyById = async (c: Context): Promise<Response> => {
   try {
-    // get db and user details
-    const db = c.env.DB
-    const user = c.get('user')
+    // db and user details
+    const db = c.env.DB;
+    const user = c.get("user");
+    const id = c.req.param("id") || "";
 
-    // check id
-    const id = c.req.param('id') || ''
+    // validate id
     if (!id) {
-      return c.json<ApiResponse<null>>({ success: false, message: 'Invalid survey ID' }, 400)
+      return c.json<ApiResponse<null>>(
+        { success: false, message: "Invalid survey ID" },
+        HTTP_STATUS.BAD_REQUEST,
+      );
     }
 
-    // find survey
-    const survey = await findSurveyById(db, id)
-
-    // if survey not found
+    // fetch survey by id
+    const survey = await findSurveyById(db, id);
     if (!survey) {
-      return c.json<ApiResponse<null>>({ success: false, message: 'Survey not found' }, 404)
+      return c.json<ApiResponse<null>>(
+        { success: false, message: "Survey not found" },
+        HTTP_STATUS.NOT_FOUND,
+      );
     }
 
-    // check whether the survey is users id
+    // check if survey belongs to user
     if (survey.userId !== user.userId) {
-      return c.json<ApiResponse<null>>({ success: false, message: 'Forbidden' }, 403)
+      return c.json<ApiResponse<null>>(
+        { success: false, message: "Forbidden" },
+        HTTP_STATUS.FORBIDDEN,
+      );
     }
 
-    // get questions and return
-    const questions = await findQuestionsBysurveyId(db, id)
-    const surveyWithQuestions: SurveyWithQuestions = { ...survey, questions }
+    // fetch questions for the survey and return survey with questions
+    const questions = await findQuestionsBysurveyId(db, id);
+    const surveyWithQuestions: SurveyWithQuestions = { ...survey, questions };
 
     return c.json<ApiResponse<SurveyWithQuestions>>(
-      { success: true, message: 'Survey retrieved', data: surveyWithQuestions },
-      200,
-    )
+      { success: true, message: "Survey retrieved", data: surveyWithQuestions },
+      HTTP_STATUS.OK,
+    );
   } catch (error) {
-    console.error('Get survey error:', error)
-    return c.json<ApiResponse<null>>({ success: false, message: 'Internal server error' }, 500)
+    console.error("Get survey error:", error);
+    return c.json<ApiResponse<null>>(
+      { success: false, message: "Internal server error" },
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
+    );
   }
-}
+};
 // endregion
 
 // region get public survey
-
 export const getPublicSurvey = async (c: Context): Promise<Response> => {
   try {
-    // get db details
-    const db = c.env.DB
-    const slug = c.req.param('slug') || ''
+    // db details and slug from request params
+    const db = c.env.DB;
+    const slug = c.req.param("slug") || "";
+
+    // validate slug
     if (!slug) {
-      return c.json<ApiResponse<null>>({ success: false, message: 'Invalid survey slug' }, 400)
+      return c.json<ApiResponse<null>>(
+        { success: false, message: "Invalid survey slug" },
+        HTTP_STATUS.BAD_REQUEST,
+      );
     }
 
-    // find survey
-    const survey = await findSurveyBySlug(db, slug)
-
-    // if survey not found
+    // fetch survey by slug
+    const survey = await findSurveyBySlug(db, slug);
     if (!survey) {
-      return c.json<ApiResponse<null>>({ success: false, message: 'Survey not found' }, 404)
+      return c.json<ApiResponse<null>>(
+        { success: false, message: "Survey not found" },
+        HTTP_STATUS.NOT_FOUND,
+      );
     }
 
-    // find questions
-    const questions = await findQuestionsBysurveyId(db, survey.id)
-    const surveyWithQuestions: SurveyWithQuestions = { ...survey, questions }
+    // check if survey is published
+    const questions = await findQuestionsBysurveyId(db, survey.id);
+    const surveyWithQuestions: SurveyWithQuestions = { ...survey, questions };
 
     return c.json<ApiResponse<SurveyWithQuestions>>(
-      { success: true, message: 'Survey retrieved', data: surveyWithQuestions },
-      200,
-    )
+      { success: true, message: "Survey retrieved", data: surveyWithQuestions },
+      HTTP_STATUS.OK,
+    );
   } catch (error) {
-    console.error('Get public survey error:', error)
-    return c.json<ApiResponse<null>>({ success: false, message: 'Internal server error' }, 500)
+    console.error("Get public survey error:", error);
+    return c.json<ApiResponse<null>>(
+      { success: false, message: "Internal server error" },
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
+    );
   }
-}
+};
 // endregion
 
 // region update survey
-// update survey
 export const updateSurveyDetails = async (c: Context): Promise<Response> => {
   try {
-    // get db and user details
-    const db = c.env.DB
-    const user = c.get('user')
+    // db and user details
+    const db = c.env.DB;
+    const user = c.get("user");
+    const id = c.req.param("id") || "";
 
     // validate id
-    const id = c.req.param('id') || ''
     if (!id) {
-      return c.json<ApiResponse<null>>({ success: false, message: 'Invalid survey ID' }, 400)
+      return c.json<ApiResponse<null>>(
+        { success: false, message: "Invalid survey ID" },
+        HTTP_STATUS.BAD_REQUEST,
+      );
     }
 
-    // get survey
-    const survey = await findSurveyById(db, id)
-
+    // fetch survey by id
+    const survey = await findSurveyById(db, id);
     if (!survey) {
-      return c.json<ApiResponse<null>>({ success: false, message: 'Survey not found' }, 404)
+      return c.json<ApiResponse<null>>(
+        { success: false, message: "Survey not found" },
+        HTTP_STATUS.NOT_FOUND,
+      );
     }
 
-    // check the survey for curr user
+    // check if survey belongs to user
     if (survey.userId !== user.userId) {
-      return c.json<ApiResponse<null>>({ success: false, message: 'Forbidden' }, 403)
+      return c.json<ApiResponse<null>>(
+        { success: false, message: "Forbidden" },
+        HTTP_STATUS.FORBIDDEN,
+      );
     }
 
-    // payload
+    // destructure fields from body
     const body = (await c.req.json()) as {
-      title?: string
-      description?: string
-      primaryColor?: string
-      logoUrl?: string
-      status?: 'draft' | 'published' | 'closed' | 'archived'
-      publishedAt?: string
-    }
+      title?: string;
+      description?: string;
+      primaryColor?: string;
+      logoUrl?: string;
+      status?: SurveyStatus;
+      publishedAt?: string;
+    };
 
-    // Validate updates
-    const { validateSurveyUpdate } = await import('../utils')
-    const validationErrors = validateSurveyUpdate(body)
+    // validate fields and return errors if any
+    const validationErrors = validateSurveyUpdate(body);
     if (Object.keys(validationErrors).length > 0) {
       return c.json<ApiResponse<null>>(
-        { success: false, message: 'Validation failed', errors: validationErrors },
-        400,
-      )
+        {
+          success: false,
+          message: "Validation failed",
+          errors: validationErrors,
+        },
+        HTTP_STATUS.BAD_REQUEST,
+      );
     }
 
-    // perform update query
+    // update survey
     const updatedSurvey = await updateSurvey(db, id, {
       title: body.title || survey.title,
-      description: body.description !== undefined ? body.description : survey.description,
+      description:
+        body.description !== undefined ? body.description : survey.description,
       primaryColor: body.primaryColor || survey.primaryColor,
       logoUrl: body.logoUrl !== undefined ? body.logoUrl : survey.logoUrl,
       status: body.status || survey.status,
-      publishedAt: body.publishedAt !== undefined ? body.publishedAt : survey.publishedAt,
+      publishedAt:
+        body.publishedAt !== undefined ? body.publishedAt : survey.publishedAt,
       slug: survey.slug,
-    })
+    });
 
-    // if failed
+    // if update failed return error
     if (!updatedSurvey) {
-      return c.json<ApiResponse<null>>({ success: false, message: 'Failed to update survey' }, 500)
+      return c.json<ApiResponse<null>>(
+        { success: false, message: "Failed to update survey" },
+        HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      );
     }
 
-    return c.json<ApiResponse<Survey>>({ success: true, message: 'Survey updated', data: updatedSurvey }, 200)
+    return c.json<ApiResponse<Survey>>(
+      { success: true, message: "Survey updated", data: updatedSurvey },
+      HTTP_STATUS.OK,
+    );
   } catch (error) {
-    console.error('Update survey error:', error)
-    return c.json<ApiResponse<null>>({ success: false, message: 'Internal server error' }, 500)
+    console.error("Update survey error:", error);
+    return c.json<ApiResponse<null>>(
+      { success: false, message: "Internal server error" },
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
+    );
   }
-}
+};
 // endregion
 
 // region delete survey
-// delete a survey
 export const deleteSurveyById = async (c: Context): Promise<Response> => {
   try {
-    // get db and user details
-    const db = c.env.DB
-    const user = c.get('user')
+    // db and user details
+    const db = c.env.DB;
+    const user = c.get("user");
+    const id = c.req.param("id") || "";
 
-    const id = c.req.param('id') || ''
+    // validate id
     if (!id) {
-      return c.json<ApiResponse<null>>({ success: false, message: 'Invalid survey ID' }, 400)
+      return c.json<ApiResponse<null>>(
+        { success: false, message: "Invalid survey ID" },
+        HTTP_STATUS.BAD_REQUEST,
+      );
     }
 
-    // find survey
-    const survey = await findSurveyById(db, id)
-
+    // fetch survey
+    const survey = await findSurveyById(db, id);
     if (!survey) {
-      return c.json<ApiResponse<null>>({ success: false, message: 'Survey not found' }, 404)
+      return c.json<ApiResponse<null>>(
+        { success: false, message: "Survey not found" },
+        HTTP_STATUS.NOT_FOUND,
+      );
     }
 
-    // check the survey on curr user
+    // check if survey belongs to user
     if (survey.userId !== user.userId) {
-      return c.json<ApiResponse<null>>({ success: false, message: 'Forbidden' }, 403)
+      return c.json<ApiResponse<null>>(
+        { success: false, message: "Forbidden" },
+        HTTP_STATUS.FORBIDDEN,
+      );
     }
 
     // perform delete
-    const deleted = await deleteSurvey(db, id)
-
+    const deleted = await deleteSurvey(db, id);
     if (!deleted) {
-      return c.json<ApiResponse<null>>({ success: false, message: 'Failed to delete survey' }, 500)
+      return c.json<ApiResponse<null>>(
+        { success: false, message: "Failed to delete survey" },
+        HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      );
     }
 
-    return c.json<ApiResponse<null>>({ success: true, message: 'Survey deleted' }, 200)
+    return c.json<ApiResponse<null>>(
+      { success: true, message: "Survey deleted" },
+      HTTP_STATUS.OK,
+    );
   } catch (error) {
-    console.error('Delete survey error:', error)
-    return c.json<ApiResponse<null>>({ success: false, message: 'Internal server error' }, 500)
+    console.error("Delete survey error:", error);
+    return c.json<ApiResponse<null>>(
+      { success: false, message: "Internal server error" },
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
+    );
   }
-}
+};
 // endregion
-

@@ -6,45 +6,27 @@ import apiClient from './client'
 export interface AuthResponse {
   success: boolean
   message: string
-  token?: string
-
+  // token is no longer returned — it lives in the httpOnly cookie
   user?: {
     id: string
     email: string
     name: string
   }
-
   errors?: Record<string, string>
 }
 // endregion
 
-// region helper functions
-// safely return API error response
-const handleApiError = (error: any) => {
-  if (error.response?.data) {
-    return error.response.data
-  }
-
+// region helpers
+const handleApiError = (error: any): AuthResponse => {
+  if (error.response?.data) return error.response.data
   throw error
 }
 // endregion
 
 // region login
-export const login = async (
-  email: string,
-  password: string,
-): Promise<AuthResponse> => {
+export const login = async (email: string, password: string): Promise<AuthResponse> => {
   try {
-    // authenticate user
-    const response =
-      await apiClient.post<AuthResponse>(
-        '/auth/login',
-        {
-          email,
-          password,
-        },
-      )
-
+    const response = await apiClient.post<AuthResponse>('/auth/login', { email, password })
     return response.data
   } catch (error: any) {
     return handleApiError(error)
@@ -60,18 +42,7 @@ export const signup = async (
   name: string,
 ): Promise<AuthResponse> => {
   try {
-    // register new user
-    const response =
-      await apiClient.post<AuthResponse>(
-        '/auth/signup',
-        {
-          email,
-          password,
-          confirmPassword,
-          name,
-        },
-      )
-
+    const response = await apiClient.post<AuthResponse>('/auth/signup', { email, password, confirmPassword, name })
     return response.data
   } catch (error: any) {
     return handleApiError(error)
@@ -80,21 +51,11 @@ export const signup = async (
 // endregion
 
 // region verify token
-export const verifyToken = async (
-  token: string,
-): Promise<AuthResponse> => {
+// No token argument — the browser sends the httpOnly cookie automatically
+// because withCredentials: true is set on the axios client.
+export const verifyToken = async (): Promise<AuthResponse> => {
   try {
-    // verify authentication token
-    const response =
-      await apiClient.get<AuthResponse>(
-        '/auth/verify',
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      )
-
+    const response = await apiClient.get<AuthResponse>('/auth/verify')
     return response.data
   } catch (error: any) {
     return handleApiError(error)
@@ -105,12 +66,7 @@ export const verifyToken = async (
 // region logout
 export const logout = async (): Promise<AuthResponse> => {
   try {
-    // logout current user
-    const response =
-      await apiClient.post<AuthResponse>(
-        '/auth/logout',
-      )
-
+    const response = await apiClient.post<AuthResponse>('/auth/logout')
     return response.data
   } catch (error: any) {
     return handleApiError(error)
@@ -118,6 +74,4 @@ export const logout = async (): Promise<AuthResponse> => {
 }
 // endregion
 
-// region exports
 export default apiClient
-// endregion

@@ -1,79 +1,88 @@
 // region imports
-import type { SurveyResponse } from '../types'
+import type { SurveyResponse } from "../types";
 // endregion
 
-// region create response
+// Shared column list — avoids SELECT * and makes the mapping explicit
+const RESPONSE_COLUMNS = "id, survey_id, answers, submitted_at";
+
+// Maps a raw D1 row to the typed SurveyResponse shape
+const mapResponse = (row: any): SurveyResponse => ({
+  id: row.id,
+  surveyId: row.survey_id,
+  answers: JSON.parse(row.answers ?? "[]"),
+  submittedAt: row.submitted_at,
+});
+
+// region createResponse
+
 export const createResponse = async (
   db: D1Database,
-  response: Omit<SurveyResponse, 'submittedAt'>,
+  response: Omit<SurveyResponse, "submittedAt">,
 ): Promise<SurveyResponse | undefined> => {
   try {
-    const now = new Date().toISOString()
-
+    const now = new Date().toISOString();
+    // Inserts a new survey response and returns the persisted record.
     await db
       .prepare(
-        'INSERT INTO survey_responses (id, survey_id, answers, submitted_at) VALUES (?, ?, ?, ?)',
+        "INSERT INTO survey_responses (id, survey_id, answers, submitted_at) VALUES (?, ?, ?, ?)",
       )
-      .bind(response.id, response.surveyId, JSON.stringify(response.answers), now)
-      .run()
+      .bind(
+        response.id,
+        response.surveyId,
+        JSON.stringify(response.answers),
+        now,
+      )
+      // sends the query to D1, returns void
+      .run();
 
-    return {
-      ...response,
-      submittedAt: now,
-    }
+    return { ...response, submittedAt: now };
   } catch (error) {
-    console.error('Create response error:', error)
-    return undefined
+    console.error("createResponse error:", error);
+    return undefined;
   }
-}
+};
 // endregion
 
-// region find response
+// region findResponseById
 export const findResponseById = async (
   db: D1Database,
   id: string,
 ): Promise<SurveyResponse | undefined> => {
   try {
+    // Fetches a single response by primary key.
     const result = await db
-      .prepare('SELECT * FROM survey_responses WHERE id = ?')
+      .prepare(`SELECT ${RESPONSE_COLUMNS} FROM survey_responses WHERE id = ?`)
       .bind(id)
-      .first<any>()
+      // returns a single row or undefined
+      .first<any>();
 
-    if (!result) return undefined
-
-    return {
-      id: result.id,
-      surveyId: result.survey_id,
-      answers: JSON.parse(result.answers),
-      submittedAt: result.submitted_at,
-    }
+    return result ? mapResponse(result) : undefined;
   } catch (error) {
-    console.error('Find response by id error:', error)
-    return undefined
+    console.error("findResponseById error:", error);
+    return undefined;
   }
-}
+};
 // endregion
 
-// region find response by survey
+// region findResponsesBySurveyId
 export const findResponsesBySurveyId = async (
   db: D1Database,
   surveyId: string,
 ): Promise<SurveyResponse[]> => {
   try {
+    // Returns all responses for a survey ordered by most recent first.
     const results = await db
-      .prepare('SELECT * FROM survey_responses WHERE survey_id = ? ORDER BY submitted_at DESC')
+      .prepare(
+        `SELECT ${RESPONSE_COLUMNS} FROM survey_responses WHERE survey_id = ? ORDER BY submitted_at DESC`,
+      )
       .bind(surveyId)
-      .all<any>()
+      // returns an array of all rows matching the surveyId
+      .all<any>();
 
-    return results.results.map((result) => ({
-      id: result.id,
-      surveyId: result.survey_id,
-      answers: JSON.parse(result.answers),
-      submittedAt: result.submitted_at,
-    }))
+    return results.results.map(mapResponse);
   } catch (error) {
-    console.error('Find responses by survey id error:', error)
-    return []
+    console.error("findResponsesBySurveyId error:", error);
+    return [];
   }
-}
+};
 // endregion

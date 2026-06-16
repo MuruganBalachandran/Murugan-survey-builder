@@ -8,9 +8,7 @@ import type { RadioGroupProps } from '@/types'
 export const RadioGroup = forwardRef<HTMLDivElement, RadioGroupProps>(
   ({ name, options, value, onChange, label, error, className, direction = 'vertical' }, ref) => (
     <div ref={ref} className="w-full">
-      {label && (
-        <label className="mb-3 block text-sm font-medium text-neutral-700">{label}</label>
-      )}
+      {label && <label className="mb-3 block text-sm font-medium text-neutral-700">{label}</label>}
 
       {/* stacked vertically by default, or inline when direction === 'horizontal' */}
       <div className={cn('space-y-3', direction === 'horizontal' && 'space-y-0 flex gap-6')}>

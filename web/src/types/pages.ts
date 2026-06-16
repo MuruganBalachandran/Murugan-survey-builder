@@ -1,4 +1,4 @@
-import type { Survey, SurveyResponse, Question } from './survey'
+import type { Question, Survey, SurveyResponse } from './survey'
 
 // Dashboard page types
 export interface DashboardResponse extends SurveyResponse {
@@ -29,9 +29,23 @@ export type SurveyRecord = Survey & {
   questions?: Question[]
 }
 
-export type QuestionType = 'short_text' | 'long_text' | 'multiple_choice' | 'checkbox_group' | 'dropdown' | 'rating' | 'yes_no'
+export type QuestionType =
+  | 'short_text'
+  | 'long_text'
+  | 'multiple_choice'
+  | 'checkbox_group'
+  | 'dropdown'
+  | 'rating'
+  | 'yes_no'
 
-export type QuestionUiType = 'input' | 'textarea' | 'radio' | 'checkbox_group' | 'select' | 'buttons' | 'toggle'
+export type QuestionUiType =
+  | 'input'
+  | 'textarea'
+  | 'radio'
+  | 'checkbox_group'
+  | 'select'
+  | 'buttons'
+  | 'toggle'
 
 export interface QuestionFormState {
   id?: string

@@ -1,181 +1,213 @@
 // region imports
-import type { Question } from '../types'
+import type { Question } from "../types";
 // endregion
 
-// region create question
+// Shared column list — avoids SELECT * and makes the mapping explicit
+const QUESTION_COLUMNS =
+  "id, survey_id, type, ui_type, title, description, options, required, order_index, created_at, updated_at";
+
+// Maps a raw D1 row to the typed Question shape
+const mapQuestion = (row: any): Question => ({
+  id: row.id,
+  surveyId: row.survey_id,
+  type: row.type,
+  uiType: row.ui_type ?? undefined,
+  title: row.title,
+  description: row.description ?? undefined,
+  options: row.options ? JSON.parse(row.options) : undefined,
+  required: row.required === 1,
+  order: row.order_index,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+});
+
+// region createQuestion
 export const createQuestion = async (
   db: D1Database,
-  question: Omit<Question, 'createdAt' | 'updatedAt'>,
+  question: Omit<Question, "createdAt" | "updatedAt">,
 ): Promise<Question | undefined> => {
   try {
-    const now = new Date().toISOString()
-
+    const now = new Date().toISOString();
+    // insert question
     await db
       .prepare(
-        'INSERT INTO questions (id, survey_id, type, ui_type, title, description, options, required, order_index, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        "INSERT INTO questions (id, survey_id, type, ui_type, title, description, options, required, order_index, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       )
       .bind(
         question.id,
         question.surveyId,
         question.type,
-        question.uiType || null,
+        question.uiType ?? null,
         question.title,
-        question.description || null,
+        question.description ?? null,
         question.options ? JSON.stringify(question.options) : null,
         question.required ? 1 : 0,
         question.order,
         now,
         now,
       )
-      .run()
+      // sends the query to D1
+      .run();
 
-    return {
-      ...question,
-      createdAt: now,
-      updatedAt: now,
-    }
+    return { ...question, createdAt: now, updatedAt: now };
   } catch (error) {
-    console.error('Create question error:', error)
-    return undefined
+    console.error("createQuestion error:", error);
+    return undefined;
   }
-}
+};
 // endregion
 
-
-// region find questions
+// region findQuestionsBysurveyId
 export const findQuestionsBysurveyId = async (
   db: D1Database,
   surveyId: string,
 ): Promise<Question[]> => {
   try {
+    // returns all questions for a survey, ordered by order_index
     const results = await db
-      .prepare('SELECT * FROM questions WHERE survey_id = ? ORDER BY order_index ASC')
+      .prepare(
+        `SELECT ${QUESTION_COLUMNS} FROM questions WHERE survey_id = ? ORDER BY order_index ASC`,
+      )
       .bind(surveyId)
-      .all<any>()
+      // returns an array of all rows matching the surveyId
+      .all<any>();
 
-    return results.results.map((result) => ({
-      id: result.id,
-      surveyId: result.survey_id,
-      type: result.type,
-      uiType: result.ui_type || undefined,
-      title: result.title,
-      description: result.description,
-      options: result.options ? JSON.parse(result.options) : undefined,
-      required: result.required === 1,
-      order: result.order_index,
-      createdAt: result.created_at,
-      updatedAt: result.updated_at,
-    }))
+    return results.results.map(mapQuestion);
   } catch (error) {
-    console.error('Find questions by survey id error:', error)
-    return []
+    console.error("findQuestionsBysurveyId error:", error);
+    return [];
   }
-}
+};
 // endregion
 
-// region find question
+// region findQuestionById
 export const findQuestionById = async (
   db: D1Database,
   id: string,
 ): Promise<Question | undefined> => {
   try {
+    // Fetches a single question by primary key.
     const result = await db
-      .prepare('SELECT * FROM questions WHERE id = ?')
+      .prepare(`SELECT ${QUESTION_COLUMNS} FROM questions WHERE id = ?`)
       .bind(id)
-      .first<any>()
+      // return s first matching row
+      .first<any>();
 
-    if (!result) return undefined
-
-    return {
-      id: result.id,
-      surveyId: result.survey_id,
-      type: result.type,
-      uiType: result.ui_type || undefined,
-      title: result.title,
-      description: result.description,
-      options: result.options ? JSON.parse(result.options) : undefined,
-      required: result.required === 1,
-      order: result.order_index,
-      createdAt: result.created_at,
-      updatedAt: result.updated_at,
-    }
+    return result ? mapQuestion(result) : undefined;
   } catch (error) {
-    console.error('Find question by id error:', error)
-    return undefined
+    console.error("findQuestionById error:", error);
+    return undefined;
   }
-}
+};
 // endregion
 
-// region update question
+// region updateQuestion
+// provided fields, then uses RETURNING to avoid a second SELECT round-trip.
 export const updateQuestion = async (
   db: D1Database,
   id: string,
-  updates: Partial<Omit<Question, 'id' | 'surveyId' | 'createdAt'>>,
+  updates: Partial<Omit<Question, "id" | "surveyId" | "createdAt">>,
 ): Promise<Question | null> => {
   try {
-    const question = await findQuestionById(db, id)
-    if (!question) return null
+    const now = new Date().toISOString();
 
-    const now = new Date().toISOString()
+    // define array to store field and values
+    const fields: string[] = ["updated_at = ?"];
+    const values: any[] = [now];
 
-    await db
-      .prepare(
-        'UPDATE questions SET type = ?, ui_type = ?, title = ?, description = ?, options = ?, required = ?, updated_at = ? WHERE id = ?',
-      )
-      .bind(
-        updates.type ?? question.type,
-        updates.uiType ?? question.uiType ?? null,
-        updates.title ?? question.title,
-        updates.description ?? question.description,
-        updates.options ? JSON.stringify(updates.options) : question.options ? JSON.stringify(question.options) : null,
-        updates.required !== undefined ? (updates.required ? 1 : 0) : (question.required ? 1 : 0),
-        now,
-        id,
-      )
-      .run()
-
-    return {
-      ...question,
-      ...updates,
-      type: updates.type ?? question.type,
-      uiType: updates.uiType ?? question.uiType,
-      updatedAt: now,
+    // update fields and values
+    if (updates.type !== undefined) {
+      fields.push("type = ?");
+      values.push(updates.type);
     }
+    if (updates.uiType !== undefined) {
+      fields.push("ui_type = ?");
+      values.push(updates.uiType);
+    }
+    if (updates.title !== undefined) {
+      fields.push("title = ?");
+      values.push(updates.title);
+    }
+    if (updates.description !== undefined) {
+      fields.push("description = ?");
+      values.push(updates.description);
+    }
+    if (updates.options !== undefined) {
+      fields.push("options = ?");
+      values.push(JSON.stringify(updates.options));
+    }
+    if (updates.required !== undefined) {
+      fields.push("required = ?");
+      values.push(updates.required ? 1 : 0);
+    }
+    if (updates.order !== undefined) {
+      fields.push("order_index = ?");
+      values.push(updates.order);
+    }
+
+    // push id
+    values.push(id);
+
+    // update the values
+    const row = await db
+      .prepare(
+        `UPDATE questions SET ${fields.join(", ")} WHERE id = ? RETURNING ${QUESTION_COLUMNS}`,
+      )
+      .bind(...values)
+      // returns first matching row
+      .first<any>();
+
+    return row ? mapQuestion(row) : null;
   } catch (error) {
-    console.error('Update question error:', error)
-    return null
+    console.error("updateQuestion error:", error);
+    return null;
   }
-}
+};
 // endregion
 
-// region delete question
-export const deleteQuestion = async (db: D1Database, id: string): Promise<boolean> => {
+// region deleteQuestion
+export const deleteQuestion = async (
+  db: D1Database,
+  id: string,
+): Promise<boolean> => {
   try {
-    await db.prepare('DELETE FROM questions WHERE id = ?').bind(id).run()
-    return true
+    // Deletes a single question by primary key.
+    await db
+      .prepare("DELETE FROM questions WHERE id = ?")
+      .bind(id)
+      // sends the query to D1, returns void
+      .run();
+    return true;
   } catch (error) {
-    console.error('Delete question error:', error)
-    return false
+    console.error("deleteQuestion error:", error);
+    return false;
   }
-}
+};
 // endregion
 
-// region reorder
+// region reorderQuestions
+// Updates the order_index of every question in a single batched write,
+// avoiding N sequential round-trips for N questions.
 export const reorderQuestions = async (
   db: D1Database,
   surveyId: string,
   questionIds: string[],
 ): Promise<boolean> => {
   try {
-    const statements = questionIds.map((id, index) =>
-      db.prepare('UPDATE questions SET order_index = ? WHERE id = ?').bind(index, id),
-    )
-
-    await db.batch(statements)
-    return true
+    // Build one UPDATE statement per question and execute as a batch
+    const statements = questionIds.map((qId, index) =>
+      db
+        .prepare(
+          "UPDATE questions SET order_index = ? WHERE id = ? AND survey_id = ?",
+        )
+        .bind(index, qId, surveyId),
+    );
+    // perform multiple database calls, batch() executes them in one operation.
+    await db.batch(statements);
+    return true;
   } catch (error) {
-    console.error('Reorder questions error:', error)
-    return false
+    console.error("reorderQuestions error:", error);
+    return false;
   }
-}
+};
 // endregion

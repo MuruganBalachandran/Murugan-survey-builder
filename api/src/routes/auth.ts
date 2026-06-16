@@ -1,27 +1,27 @@
 // region imports
-import { Hono } from 'hono'
-import { login, logout, signup, verify } from '../controllers/authController'
-import { authMiddleware, rateLimitMiddleware } from '../middleware'
+import { Hono } from "hono";
+import { login, logout, signup, verify } from "../controllers/authController";
+import { authMiddleware, rateLimitMiddleware } from "../middleware";
+
 // endregion
 
-// region routes initialization
-const authRoutes = new Hono()
-// endregion
+// routes initialization
+const authRoutes = new Hono();
 
-// region auth endpoints
+// region routes
 // section signup - rate limited
-authRoutes.post('/signup', rateLimitMiddleware, signup)
+authRoutes.post("/signup", rateLimitMiddleware, signup);
 
 // section login - rate limited
-authRoutes.post('/login', rateLimitMiddleware, login)
+authRoutes.post("/login", rateLimitMiddleware, login);
 
-// section verify token
-authRoutes.get('/verify', verify)
+// section verify token — protected by authMiddleware which handles cookie + JWT
+authRoutes.get('/verify', authMiddleware, verify)
 
 // section logout - protected and rate limited
-authRoutes.post('/logout', rateLimitMiddleware, authMiddleware, logout)
+authRoutes.post("/logout", rateLimitMiddleware, authMiddleware, logout);
 // endregion
 
 // region export
-export default authRoutes
+export default authRoutes;
 // endregion

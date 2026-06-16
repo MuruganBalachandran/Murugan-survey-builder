@@ -21,7 +21,10 @@ export const TermsOfServicePage = () => (
         </div>
         <div className="space-y-4 text-sm leading-7 text-gray-600">
           <p>SurveyBuilder is provided as a survey builder and response collection tool.</p>
-          <p>You are responsible for the surveys you create, the links you share, and the content you collect.</p>
+          <p>
+            You are responsible for the surveys you create, the links you share, and the content you
+            collect.
+          </p>
           <p>Do not use the service to collect unlawful, harmful, or misleading data.</p>
           <p>We may update these terms as the product evolves.</p>
         </div>

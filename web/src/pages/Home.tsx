@@ -1,11 +1,11 @@
 // region imports
 import { useNavigate } from '@tanstack/react-router'
-import { AppLayout } from '@/components/Layout/AppLayout'
 import { FaqSection } from '@/components/home/FaqSection'
 import { FeaturesSection } from '@/components/home/FeaturesSection'
 import { FinalCtaSection } from '@/components/home/FinalCtaSection'
 import { HomeHero } from '@/components/home/HomeHero'
 import { HowItWorksSection } from '@/components/home/HowItWorksSection'
+import { AppLayout } from '@/components/Layout/AppLayout'
 import { useAppSelector } from '@/hooks/redux'
 // endregion
 

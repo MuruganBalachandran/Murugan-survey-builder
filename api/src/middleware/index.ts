@@ -1,6 +1,6 @@
 // region exports
-export { authMiddleware, type AuthContext } from './auth'
-export { rateLimitMiddleware } from './rateLimit'
+export { type AuthContext, authMiddleware } from './auth'
 export { errorHandler } from './errorHandler'
 export { notFoundHandler } from './notFound'
+export { rateLimitMiddleware } from './rateLimit'
 // endregion

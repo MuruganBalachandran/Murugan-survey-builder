@@ -1,99 +1,71 @@
 // region imports
-import type { Context, Next } from 'hono'
-// endregion
-
-// region types
-interface RateLimitRecord {
-  count: number
-  resetAt: number
-}
-// endregion
-
-// region constants
-const WINDOW_MS = 5 * 60 * 1000 // 5 minutes
-const MAX_REQUESTS = 5
+import type { Context, Next } from "hono";
+import type { RateLimitRecord } from "../types";
+import {
+  HTTP_STATUS,
+  RATE_LIMIT_MAX_REQUESTS,
+  RATE_LIMIT_WINDOW_MS,
+} from "../utils/constants";
 // endregion
 
 // region in-memory store
-// stores temporary rate limit data
-const store = new Map<string, RateLimitRecord>()
+const store = new Map<string, RateLimitRecord>();
 // endregion
 
 // region helper functions
-
-// returns client IP address from request headers
-const getClientIp = (c: Context): string => {
-  return (
-    c.req.header('cf-connecting-ip') ||
-    c.req.header('x-forwarded-for')?.split(',')[0]?.trim() ||
-    c.req.header('x-real-ip') ||
-    'unknown'
-  )
-}
-
+const getClientIp = (c: Context): string =>
+  // header automatically added by Cloudflare.
+  c.req.header("cf-connecting-ip") ||
+  // Standard header used by proxies to forward the original client's IP address.
+  c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ||
+  // Some reverse proxies (such as Nginx) set:
+  c.req.header("x-real-ip") ||
+  "unknown";
 // endregion
 
 // region middleware
-
 export const rateLimitMiddleware = async (
   c: Context,
   next: Next,
 ): Promise<Response | void> => {
-  // unique identifier for tracking requests
-  const key = getClientIp(c)
+  // Determine the client's IP address using the helper function.
+  const key = getClientIp(c);
+  const now = Date.now();
 
-  // current timestamp
-  const now = Date.now()
+  // Check if there's an existing record for this IP and if the rate limit window has expired.
+  const record: RateLimitRecord =
+    !store.has(key) || now > store.get(key)!.resetAt
+      ? { count: 0, resetAt: now + RATE_LIMIT_WINDOW_MS }
+      : store.get(key)!;
 
-  // existing rate limit data for current user
-  const existing = store.get(key)
+  // Increment the request count and update the store with the new record.
+  record.count++;
+  // Update the store with the new record for the client's IP address.
+  store.set(key, record);
 
-  // create new rate limit window if:
-  // 1. user has no previous requests
-  // 2. previous window expired
-  if (!existing || now > existing.resetAt) {
-    store.set(key, {
-      count: 1,
-      resetAt: now + WINDOW_MS,
-    })
+  // Set rate limit headers to inform the client about their current usage and limits.
+  c.header("X-RateLimit-Limit", RATE_LIMIT_MAX_REQUESTS.toString());
+  // Calculate the remaining requests and ensure it doesn't go negative, then set the header.
+  c.header(
+    "X-RateLimit-Remaining",
+    Math.max(0, RATE_LIMIT_MAX_REQUESTS - record.count).toString(),
+  );
 
-    // rate limit response headers
-    c.header('X-RateLimit-Limit', MAX_REQUESTS.toString())
-    c.header('X-RateLimit-Remaining', (MAX_REQUESTS - 1).toString())
-
-    await next()
-    return
-  }
-
-  // block request if limit reached
-  if (existing.count >= MAX_REQUESTS) {
-    // remaining wait time in seconds
-    const retryAfter = Math.ceil((existing.resetAt - now) / 1000)
-
-    // response headers
-    c.header('Retry-After', retryAfter.toString())
-    c.header('X-RateLimit-Limit', MAX_REQUESTS.toString())
-    c.header('X-RateLimit-Remaining', '0')
-
+  // If the request count exceeds the maximum allowed, respond with a 429 status and include a Retry-After header.
+  if (record.count > RATE_LIMIT_MAX_REQUESTS) {
+    // Calculate the time until the rate limit resets and set the Retry-After header accordingly.
+    const retryAfter = Math.ceil((record.resetAt - now) / 1000);
+    c.header("Retry-After", retryAfter.toString());
     return c.json(
       {
         success: false,
-        message: 'Too many requests. Please try again later.',
+        message: "Too many requests. Please try again later.",
         retryAfter,
       },
-      429,
-    )
+      HTTP_STATUS.TOO_MANY_REQUESTS,
+    );
   }
 
-  // increase request count
-  existing.count++
-
-  // update remaining requests header
-  c.header('X-RateLimit-Limit', MAX_REQUESTS.toString())
-  c.header('X-RateLimit-Remaining', (MAX_REQUESTS - existing.count).toString())
-
-  // continue request
-  await next()
-}
-
+  await next();
+};
 // endregion

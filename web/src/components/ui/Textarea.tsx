@@ -6,7 +6,10 @@ import type { TextareaProps } from '@/types'
 
 // region component
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ label, error, hint, maxLength, showCharCount = true, className, id, value, ...props }, ref) => {
+  (
+    { label, error, hint, maxLength, showCharCount = true, className, id, value, ...props },
+    ref,
+  ) => {
     const inputId = id || props.name
 
     // region derived data
@@ -50,7 +53,12 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
 
           {/* char counter turns warning colour when approaching the limit */}
           {maxLength && showCharCount && (
-            <p className={cn('text-xs font-medium', charPercentage > 90 ? 'text-warning-600' : 'text-neutral-400')}>
+            <p
+              className={cn(
+                'text-xs font-medium',
+                charPercentage > 90 ? 'text-warning-600' : 'text-neutral-400',
+              )}
+            >
               {charCount} / {maxLength}
             </p>
           )}

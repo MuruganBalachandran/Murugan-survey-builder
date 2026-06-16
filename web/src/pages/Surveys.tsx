@@ -1,21 +1,25 @@
 // region imports
 import { Outlet, useLocation } from '@tanstack/react-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { toast } from '@/lib/toast'
-import { AppLayout } from '@/components/Layout/AppLayout'
 import { CustomModal } from '@/components/common/CustomModal'
+import { AppLayout } from '@/components/Layout/AppLayout'
+import { CreateSurveyDrawer } from '@/components/surveys/drawers/CreateSurveyDrawer'
+import { EditSurveyDrawer } from '@/components/surveys/drawers/EditSurveyDrawer'
+import { SurveysGrid } from '@/components/surveys/grid/SurveysGrid'
+import { ShareSurveyModal } from '@/components/surveys/share/ShareSurveyModal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
-import { SurveysGrid } from '@/components/surveys/grid/SurveysGrid'
-import { ShareSurveyModal } from '@/components/surveys/share/ShareSurveyModal'
-import { CreateSurveyDrawer } from '@/components/surveys/drawers/CreateSurveyDrawer'
-import { EditSurveyDrawer } from '@/components/surveys/drawers/EditSurveyDrawer'
-import { useModal } from '@/hooks/useModal'
 import { useAppDispatch, useAppSelector } from '@/hooks/redux'
+import { useModal } from '@/hooks/useModal'
+import { toast } from '@/lib/toast'
 import type { Survey } from '@/services/api/surveys'
-import type { Question } from '@/types/survey'
-import { CalendarIcon, SortIcon, FilterIcon } from '@/utils/icons'
+import {
+  addQuestionToSurvey,
+  deleteQuestionFromSurvey,
+  reorderSurveyQuestions,
+  updateQuestionDetails,
+} from '@/store/slices/questionSlice'
 import {
   clearCurrentSurvey,
   clearError,
@@ -25,31 +29,28 @@ import {
   fetchUserSurveys,
   updateSurveyDetails,
 } from '@/store/slices/surveySlice'
+import type { QuestionFormState, SurveyRecord } from '@/types'
+import type { Question } from '@/types/survey'
 import {
-  addQuestionToSurvey,
-  deleteQuestionFromSurvey,
-  reorderSurveyQuestions,
-  updateQuestionDetails,
-} from '@/store/slices/questionSlice'
-import type { SurveyRecord, QuestionFormState } from '@/types'
-import {
-  DEFAULT_SURVEY_FORM as defaultSurveyForm,
-  DEFAULT_QUESTION_FORM,
-  SURVEY_PAGE_SIZE,
-} from '@/utils/constants'
-import {
-  isValidSurveyTitle,
-  isValidSurveyDescription,
-  isValidQuestionTitle,
-  isValidQuestionOptions,
-  isMultipleChoiceQuestion,
-} from '@/utils/validations'
-import {
-  normalizeQuestionType,
   buildPaginationItems,
   getSurveyUrl,
+  normalizeQuestionType,
   readFileAsDataUrl,
 } from '@/utils/common/survey'
+import {
+  DEFAULT_QUESTION_FORM,
+  DEFAULT_SURVEY_FORM as defaultSurveyForm,
+  SURVEY_PAGE_SIZE,
+} from '@/utils/constants'
+import { CalendarIcon, FilterIcon, SortIcon } from '@/utils/icons'
+import {
+  isMultipleChoiceQuestion,
+  isValidQuestionOptions,
+  isValidQuestionTitle,
+  isValidSurveyDescription,
+  isValidSurveyTitle,
+} from '@/utils/validations'
+
 // endregion
 
 const defaultQuestionForm: QuestionFormState = DEFAULT_QUESTION_FORM
@@ -124,7 +125,10 @@ export const SurveysPage = () => {
   // surveys for the current page come directly from the API
   const paginatedSurveys = surveys
 
-  const pageItems = useMemo(() => buildPaginationItems(currentPage, totalPages), [currentPage, totalPages])
+  const pageItems = useMemo(
+    () => buildPaginationItems(currentPage, totalPages),
+    [currentPage, totalPages],
+  )
 
   // endregion
 
@@ -135,7 +139,9 @@ export const SurveysPage = () => {
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => setDebouncedSearch(surveySearch), 400)
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
   }, [surveySearch])
 
   // reset to page 1 whenever filters change
@@ -145,15 +151,25 @@ export const SurveysPage = () => {
 
   // fetch surveys from the API whenever filters, sort, or page change
   useEffect(() => {
-    dispatch(fetchUserSurveys({
-      page: currentPage,
-      pageSize,
-      search: debouncedSearch,
-      status: surveyStatus,
-      dateRange: surveyDateRange,
-      sort: surveySortBy,
-    }))
-  }, [dispatch, currentPage, pageSize, debouncedSearch, surveyStatus, surveyDateRange, surveySortBy])
+    dispatch(
+      fetchUserSurveys({
+        page: currentPage,
+        pageSize,
+        search: debouncedSearch,
+        status: surveyStatus,
+        dateRange: surveyDateRange,
+        sort: surveySortBy,
+      }),
+    )
+  }, [
+    dispatch,
+    currentPage,
+    pageSize,
+    debouncedSearch,
+    surveyStatus,
+    surveyDateRange,
+    surveySortBy,
+  ])
 
   // load full survey detail whenever the active drawer changes
   useEffect(() => {
@@ -190,7 +206,16 @@ export const SurveysPage = () => {
   // region helpers
 
   const refreshData = async (surveyId?: string) => {
-    await dispatch(fetchUserSurveys({ page: currentPage, pageSize, search: debouncedSearch, status: surveyStatus, dateRange: surveyDateRange, sort: surveySortBy }))
+    await dispatch(
+      fetchUserSurveys({
+        page: currentPage,
+        pageSize,
+        search: debouncedSearch,
+        status: surveyStatus,
+        dateRange: surveyDateRange,
+        sort: surveySortBy,
+      }),
+    )
     if (surveyId) await dispatch(fetchSurveyById(surveyId))
   }
 
@@ -272,7 +297,9 @@ export const SurveysPage = () => {
       description: question.description || '',
       required: question.required,
       options:
-        (question.type === 'multiple_choice' || question.uiType === 'checkbox_group' || question.uiType === 'select') &&
+        (question.type === 'multiple_choice' ||
+          question.uiType === 'checkbox_group' ||
+          question.uiType === 'select') &&
         question.options &&
         question.options.length > 0
           ? question.options.map((option) => option)
@@ -324,7 +351,8 @@ export const SurveysPage = () => {
     if (isMultipleChoiceQuestion(questionForm.type)) {
       if (!isValidQuestionOptions(questionForm.options)) {
         const cleaned = questionForm.options.map((opt) => opt.trim()).filter(Boolean)
-        nextErrors.options = cleaned.length < 2 ? 'Add at least 2 options' : 'Options must be unique'
+        nextErrors.options =
+          cleaned.length < 2 ? 'Add at least 2 options' : 'Options must be unique'
       }
     }
 
@@ -372,7 +400,8 @@ export const SurveysPage = () => {
               logoUrl: surveyForm.logoUrl.trim() || undefined,
             }),
           )
-          if (result.type !== updateSurveyDetails.fulfilled.type) throw new Error('Failed to update survey')
+          if (result.type !== updateSurveyDetails.fulfilled.type)
+            throw new Error('Failed to update survey')
         } else {
           // new survey — create first, then apply branding
           const createAction = await dispatch(
@@ -393,7 +422,8 @@ export const SurveysPage = () => {
               logoUrl: surveyForm.logoUrl.trim() || undefined,
             }),
           )
-          if (updateAction.type !== updateSurveyDetails.fulfilled.type) throw new Error('Failed to save branding')
+          if (updateAction.type !== updateSurveyDetails.fulfilled.type)
+            throw new Error('Failed to save branding')
 
           surveyIdToRefresh = createdSurveyId
           setCreateSurveyId(createdSurveyId)
@@ -527,7 +557,9 @@ export const SurveysPage = () => {
 
     questionIds.splice(targetIndex, 0, movedQuestionId)
 
-    const result = await dispatch(reorderSurveyQuestions({ surveyId: activeSurvey.id, questionIds }))
+    const result = await dispatch(
+      reorderSurveyQuestions({ surveyId: activeSurvey.id, questionIds }),
+    )
     if (result.type === reorderSurveyQuestions.fulfilled.type) {
       await refreshData(activeSurvey.id)
       toast.success('Questions reordered')
@@ -556,7 +588,9 @@ export const SurveysPage = () => {
       description: questionForm.description.trim() || undefined,
       required: questionForm.required,
       options:
-        questionForm.type === 'multiple_choice' || questionForm.type === 'checkbox_group' || questionForm.type === 'dropdown'
+        questionForm.type === 'multiple_choice' ||
+        questionForm.type === 'checkbox_group' ||
+        questionForm.type === 'dropdown'
           ? cleanedOptions
           : undefined,
     }
@@ -672,7 +706,8 @@ export const SurveysPage = () => {
               Survey workspace
             </p>
             <p className="max-w-none text-violet-100">
-              Create branded surveys, add questions from a drawer, reorder them, and share public links without leaving the page.
+              Create branded surveys, add questions from a drawer, reorder them, and share public
+              links without leaving the page.
             </p>
           </div>
 
@@ -760,7 +795,8 @@ export const SurveysPage = () => {
               {/* pagination bar */}
               <div className="mt-6 flex flex-col gap-4 border-t border-gray-200 pt-5 md:flex-row md:items-center md:justify-between">
                 <p className="text-sm text-gray-600">
-                  Showing {(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, surveysTotal)} of {surveysTotal}
+                  Showing {(currentPage - 1) * pageSize + 1}-
+                  {Math.min(currentPage * pageSize, surveysTotal)} of {surveysTotal}
                 </p>
 
                 <div className="flex flex-wrap items-center gap-2">
@@ -771,7 +807,14 @@ export const SurveysPage = () => {
                     className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
                     aria-label="Previous page"
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
                       <path d="M15 18l-6-6 6-6" />
                     </svg>
                   </button>
@@ -810,7 +853,14 @@ export const SurveysPage = () => {
                     className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
                     aria-label="Next page"
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
                       <path d="M9 18l6-6-6-6" />
                     </svg>
                   </button>

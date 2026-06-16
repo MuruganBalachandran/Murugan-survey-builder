@@ -5,7 +5,9 @@ import type { EmptyStateProps } from '@/types'
 
 // region component
 export const EmptyState = ({ icon, title, description, action, className }: EmptyStateProps) => (
-  <div className={cn('flex flex-col items-center justify-center py-16 px-4 text-center', className)}>
+  <div
+    className={cn('flex flex-col items-center justify-center py-16 px-4 text-center', className)}
+  >
     {/* optional decorative icon */}
     {icon && <div className="mb-4 text-5xl opacity-20">{icon}</div>}
 

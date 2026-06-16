@@ -16,11 +16,15 @@ export const Footer = () => {
               <p className="text-sm text-violet-100">Create, share, and collect responses.</p>
             </div>
           </div>
-          <p className="mt-5 text-sm text-violet-100">© {currentYear} SurveyBuilder. All rights reserved.</p>
+          <p className="mt-5 text-sm text-violet-100">
+            © {currentYear} SurveyBuilder. All rights reserved.
+          </p>
         </div>
 
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-violet-100">Quick links</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-violet-100">
+            Quick links
+          </p>
           <div className="mt-4 grid gap-2">
             <a href="/#features" className="text-sm text-white/90 hover:text-white">
               Features
@@ -41,7 +45,9 @@ export const Footer = () => {
         </div>
 
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-violet-100">Account</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-violet-100">
+            Account
+          </p>
           <div className="mt-4 grid gap-2">
             <a href="/login" className="text-sm text-white/90 hover:text-white">
               Sign In

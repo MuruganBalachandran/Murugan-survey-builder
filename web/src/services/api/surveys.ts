@@ -1,22 +1,14 @@
 // region imports
+
+import type { ApiResponse } from '@/types/common'
+import type { Survey, SurveyWithQuestions } from '@/types/survey'
 import apiClient from './client'
-import type {
-  Survey,
-  SurveyWithQuestions,
-} from '@/types/survey'
-import type {
-  ApiResponse,
-} from '@/types/common'
+
 // endregion
 
 // region exports
-export type {
-  Survey,
-  SurveyWithQuestions,
-}
-export type {
-  ApiResponse,
-}
+export type { ApiResponse, Survey, SurveyWithQuestions }
+
 // endregion
 
 // region helper functions
@@ -37,14 +29,10 @@ export const createSurvey = async (
 ): Promise<ApiResponse<Survey>> => {
   try {
     // create new survey
-    const response =
-      await apiClient.post<ApiResponse<Survey>>(
-        '/surveys',
-        {
-          title,
-          description,
-        },
-      )
+    const response = await apiClient.post<ApiResponse<Survey>>('/surveys', {
+      title,
+      description,
+    })
 
     return response.data
   } catch (error: any) {
@@ -83,15 +71,10 @@ export const getUserSurveys = async (
 // endregion
 
 // region get survey by id
-export const getSurveyById = async (
-  id: string,
-): Promise<ApiResponse<SurveyWithQuestions>> => {
+export const getSurveyById = async (id: string): Promise<ApiResponse<SurveyWithQuestions>> => {
   try {
     // fetch survey details
-    const response =
-      await apiClient.get<
-        ApiResponse<SurveyWithQuestions>
-      >(`/surveys/${id}`)
+    const response = await apiClient.get<ApiResponse<SurveyWithQuestions>>(`/surveys/${id}`)
 
     return response.data
   } catch (error: any) {
@@ -101,15 +84,12 @@ export const getSurveyById = async (
 // endregion
 
 // region get public survey
-export const getPublicSurvey = async (
-  slug: string,
-): Promise<ApiResponse<SurveyWithQuestions>> => {
+export const getPublicSurvey = async (slug: string): Promise<ApiResponse<SurveyWithQuestions>> => {
   try {
     // fetch public survey
-    const response =
-      await apiClient.get<
-        ApiResponse<SurveyWithQuestions>
-      >(`/surveys/public/${slug}`)
+    const response = await apiClient.get<ApiResponse<SurveyWithQuestions>>(
+      `/surveys/public/${slug}`,
+    )
 
     return response.data
   } catch (error: any) {
@@ -126,21 +106,13 @@ export const updateSurvey = async (
     description?: string
     primaryColor?: string
     logoUrl?: string
-    status?:
-      | 'draft'
-      | 'published'
-      | 'closed'
-      | 'archived'
+    status?: 'draft' | 'published' | 'closed' | 'archived'
     publishedAt?: string
   },
 ): Promise<ApiResponse<Survey>> => {
   try {
     // update survey details
-    const response =
-      await apiClient.put<ApiResponse<Survey>>(
-        `/surveys/${id}`,
-        data,
-      )
+    const response = await apiClient.put<ApiResponse<Survey>>(`/surveys/${id}`, data)
 
     return response.data
   } catch (error: any) {
@@ -150,15 +122,10 @@ export const updateSurvey = async (
 // endregion
 
 // region delete survey
-export const deleteSurvey = async (
-  id: string,
-): Promise<ApiResponse<null>> => {
+export const deleteSurvey = async (id: string): Promise<ApiResponse<null>> => {
   try {
     // delete survey
-    const response =
-      await apiClient.delete<ApiResponse<null>>(
-        `/surveys/${id}`,
-      )
+    const response = await apiClient.delete<ApiResponse<null>>(`/surveys/${id}`)
 
     return response.data
   } catch (error: any) {

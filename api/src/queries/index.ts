@@ -1,13 +1,10 @@
-// region exports
-// Survey queries
-export * from './surveys'
-
+// region Barrel exports
 // Question queries
-export * from './questions'
-
+export * from "./questions";
 // Response queries
-export * from './responses'
-
+export * from "./responses";
+// Survey queries
+export * from "./surveys";
 // User queries
-export * from './users'
+export * from "./users";
 // endregion

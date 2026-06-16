@@ -1,11 +1,17 @@
 // region imports
 import { cn } from '@/lib/cn'
 import type { BadgeProps } from '@/types'
-import { BADGE_VARIANTS, BADGE_SIZES } from '@/utils/constants'
+import { BADGE_SIZES, BADGE_VARIANTS } from '@/utils/constants'
 // endregion
 
 // region component
-export const Badge = ({ children, variant = 'default', size = 'md', className, icon }: BadgeProps) => (
+export const Badge = ({
+  children,
+  variant = 'default',
+  size = 'md',
+  className,
+  icon,
+}: BadgeProps) => (
   // inline pill label — renders as a <span> so it can sit inside any text context
   <span
     className={cn(

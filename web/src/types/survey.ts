@@ -2,7 +2,14 @@
 export interface Question {
   id: string
   surveyId: string
-  type: 'short_text' | 'long_text' | 'multiple_choice' | 'checkbox_group' | 'dropdown' | 'rating' | 'yes_no'
+  type:
+    | 'short_text'
+    | 'long_text'
+    | 'multiple_choice'
+    | 'checkbox_group'
+    | 'dropdown'
+    | 'rating'
+    | 'yes_no'
   uiType?: 'input' | 'textarea' | 'radio' | 'checkbox_group' | 'select' | 'buttons' | 'toggle'
   title: string
   description?: string
@@ -138,7 +145,7 @@ export interface AddQuestionModalProps {
     type: 'short_text' | 'multiple_choice' | 'rating',
     title: string,
     description?: string,
-    options?: string[]
+    options?: string[],
   ) => Promise<void>
 }
 

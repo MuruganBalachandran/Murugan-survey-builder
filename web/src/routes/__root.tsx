@@ -52,19 +52,15 @@ function RootLayout() {
 
   // region token verification on mount
   useEffect(() => {
-    // re-verify stored token so the user stays logged in after a page refresh
-    const token = localStorage.getItem('authToken')
-    if (token) {
-      dispatch(verifyToken())
-    }
+    // always attempt verification on mount — browser sends the httpOnly
+    // cookie automatically if one exists, no localStorage check needed
+    dispatch(verifyToken())
   }, [dispatch])
   // endregion
 
   // region redirect unauthenticated users
   useEffect(() => {
-    // if a stored token exists but Redux hasn't authenticated, send to login
-    const token = localStorage.getItem('authToken')
-    if (!isLoading && !isAuthenticated && token && !isPublicRoute) {
+    if (!isLoading && !isAuthenticated && !isPublicRoute) {
       navigate({ to: '/login', replace: true })
     }
   }, [isAuthenticated, isLoading, isPublicRoute, navigate])

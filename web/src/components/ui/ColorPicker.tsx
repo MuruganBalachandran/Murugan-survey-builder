@@ -1,8 +1,9 @@
 // region imports
 import { useState } from 'react'
 import { cn } from '@/lib/cn'
-import { Input } from './Input'
 import type { ColorPickerProps } from '@/types'
+import { Input } from './Input'
+
 // endregion
 
 // region constants
@@ -85,7 +86,9 @@ export const ColorPicker = ({ value, onChange, label = 'Color' }: ColorPickerPro
               }}
               className={cn(
                 'h-8 rounded-lg border-2 transition-all',
-                value === color ? 'border-neutral-900 shadow-md' : 'border-transparent hover:shadow-md',
+                value === color
+                  ? 'border-neutral-900 shadow-md'
+                  : 'border-transparent hover:shadow-md',
               )}
               style={{ backgroundColor: color }}
               title={color}

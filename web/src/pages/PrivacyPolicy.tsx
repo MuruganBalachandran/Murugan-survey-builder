@@ -20,9 +20,18 @@ export const PrivacyPolicyPage = () => (
           <h1 className="mt-2 text-3xl font-bold text-gray-900">Privacy Policy</h1>
         </div>
         <div className="space-y-4 text-sm leading-7 text-gray-600">
-          <p>SurveyBuilder stores account information, surveys, questions, branding choices, and submitted responses.</p>
-          <p>We use this data to operate the app, present your dashboard, and render public survey pages.</p>
-          <p>Responses are visible to survey owners and are not shared publicly unless you share the survey link.</p>
+          <p>
+            SurveyBuilder stores account information, surveys, questions, branding choices, and
+            submitted responses.
+          </p>
+          <p>
+            We use this data to operate the app, present your dashboard, and render public survey
+            pages.
+          </p>
+          <p>
+            Responses are visible to survey owners and are not shared publicly unless you share the
+            survey link.
+          </p>
           <p>We do not sell your survey response data.</p>
         </div>
       </section>

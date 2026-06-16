@@ -1,21 +1,14 @@
 // region imports
-import type {
-  PayloadAction,
-} from '@reduxjs/toolkit'
-import {
-  createAsyncThunk,
-  createSlice,
-} from '@reduxjs/toolkit'
+import type { PayloadAction } from '@reduxjs/toolkit'
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import * as authAPI from '@/services/api/auth'
-import type {
-  User,
-} from '@/types/auth'
+import type { User } from '@/types/auth'
 // endregion
 
 // region types
 export interface AuthState {
   user: User | null
-  token: string | null
+  // token is no longer stored in Redux — it lives in the httpOnly cookie
   isLoading: boolean
   isAuthenticated: boolean
   error: Record<string, string> | null
@@ -23,18 +16,11 @@ export interface AuthState {
 // endregion
 
 // region initial state
+// isAuthenticated starts false — verifyToken() on mount rehydrates it
 const initialState: AuthState = {
   user: null,
-
-  token:
-    localStorage.getItem('authToken') ||
-    null,
-
   isLoading: false,
-
-  isAuthenticated:
-    !!localStorage.getItem('authToken'),
-
+  isAuthenticated: false,
   error: null,
 }
 // endregion
@@ -42,38 +28,15 @@ const initialState: AuthState = {
 // region login user
 export const loginUser = createAsyncThunk(
   'auth/loginUser',
-
-  async (
-    credentials: {
-      email: string
-      password: string
-    },
-
-    { rejectWithValue },
-  ) => {
+  async (credentials: { email: string; password: string }, { rejectWithValue }) => {
     try {
-      // authenticate user
-      const response =
-        await authAPI.login(
-          credentials.email,
-          credentials.password,
-        )
-
-      // handle API validation errors
+      const response = await authAPI.login(credentials.email, credentials.password)
       if (!response.success) {
-        return rejectWithValue(
-          response.errors || {
-            general: response.message,
-          },
-        )
+        return rejectWithValue(response.errors || { general: response.message })
       }
-
       return response
     } catch (error: any) {
-      return rejectWithValue({
-        general:
-          error.message || 'Login failed',
-      })
+      return rejectWithValue({ general: error.message || 'Login failed' })
     }
   },
 )
@@ -82,94 +45,37 @@ export const loginUser = createAsyncThunk(
 // region signup user
 export const signupUser = createAsyncThunk(
   'auth/signupUser',
-
   async (
-    data: {
-      name: string
-      email: string
-      password: string
-      confirmPassword: string
-    },
-
+    data: { name: string; email: string; password: string; confirmPassword: string },
     { rejectWithValue },
   ) => {
     try {
-      // register new user
-      const response =
-        await authAPI.signup(
-          data.email,
-          data.password,
-          data.confirmPassword,
-          data.name,
-        )
-
-      // handle API validation errors
+      const response = await authAPI.signup(data.email, data.password, data.confirmPassword, data.name)
       if (!response.success) {
-        return rejectWithValue(
-          response.errors || {
-            general: response.message,
-          },
-        )
+        return rejectWithValue(response.errors || { general: response.message })
       }
-
       return response
     } catch (error: any) {
-      return rejectWithValue({
-        general:
-          error.message || 'Signup failed',
-      })
+      return rejectWithValue({ general: error.message || 'Signup failed' })
     }
   },
 )
 // endregion
 
 // region verify token
+// Cookie is sent automatically by the browser — no token to pass.
+// On success, rehydrates user identity and isAuthenticated in Redux.
 export const verifyToken = createAsyncThunk(
   'auth/verifyToken',
-
   async (_, { rejectWithValue }) => {
     try {
-      // fetch stored auth token
-      const token =
-        localStorage.getItem('authToken')
-
-      if (!token) {
-        return rejectWithValue({
-          general: 'No token found',
-        })
-      }
-
-      // verify token with backend
-      const response =
-        await authAPI.verifyToken(token)
-
-      // handle invalid token
+      const response = await authAPI.verifyToken()
       if (!response.success) {
-        localStorage.removeItem(
-          'authToken',
-        )
-
-        return rejectWithValue({
-          general:
-            'Token verification failed',
-        })
+        return rejectWithValue({ general: 'Token verification failed' })
       }
-
-      return {
-        token,
-        user: response.user,
-      }
+      return { user: response.user }
     } catch (error: any) {
-      // clear invalid token
-      localStorage.removeItem(
-        'authToken',
-      )
-
-      return rejectWithValue({
-        general:
-          error.message ||
-          'Verification failed',
-      })
+      return rejectWithValue({ general: error.message || 'Verification failed' })
     }
   },
 )
@@ -178,33 +84,20 @@ export const verifyToken = createAsyncThunk(
 // region auth slice
 const authSlice = createSlice({
   name: 'auth',
-
   initialState,
-
   reducers: {
     logout: (state) => {
-      // clear auth state
+      // Clear Redux state — the cookie is cleared by the API logout endpoint
       state.user = null
-      state.token = null
       state.isAuthenticated = false
       state.error = null
-
-      // remove stored token
-      localStorage.removeItem(
-        'authToken',
-      )
     },
 
     clearError: (state) => {
-      // clear auth errors
       state.error = null
     },
 
-    setUser: (
-      state,
-      action: PayloadAction<User>,
-    ) => {
-      // update authenticated user
+    setUser: (state, action: PayloadAction<User>) => {
       state.user = action.payload
       state.isAuthenticated = true
     },
@@ -212,155 +105,62 @@ const authSlice = createSlice({
 
   extraReducers: (builder) => {
     // region login reducers
-
     builder
-      .addCase(
-        loginUser.pending,
-        (state) => {
-          state.isLoading = true
-          state.error = null
-        },
-      )
-
-      .addCase(
-        loginUser.fulfilled,
-        (state, action) => {
-          state.isLoading = false
-          state.isAuthenticated = true
-
-          state.token =
-            action.payload.token || null
-
-          state.user =
-            (action.payload.user as User) ||
-            null
-
-          // persist auth token
-          if (action.payload.token) {
-            localStorage.setItem(
-              'authToken',
-              action.payload.token,
-            )
-          }
-        },
-      )
-
-      .addCase(
-        loginUser.rejected,
-        (state, action) => {
-          state.isLoading = false
-
-          state.error =
-            action.payload as Record<
-              string,
-              string
-            >
-
-          state.isAuthenticated = false
-        },
-      )
-
+      .addCase(loginUser.pending, (state) => {
+        state.isLoading = true
+        state.error = null
+      })
+      .addCase(loginUser.fulfilled, (state, action) => {
+        state.isLoading = false
+        state.isAuthenticated = true
+        state.user = (action.payload.user as User) ?? null
+      })
+      .addCase(loginUser.rejected, (state, action) => {
+        state.isLoading = false
+        state.error = action.payload as Record<string, string>
+        state.isAuthenticated = false
+      })
     // endregion
 
     // region signup reducers
-
     builder
-      .addCase(
-        signupUser.pending,
-        (state) => {
-          state.isLoading = true
-          state.error = null
-        },
-      )
-
-      .addCase(
-        signupUser.fulfilled,
-        (state, action) => {
-          state.isLoading = false
-          state.isAuthenticated = true
-
-          state.token =
-            action.payload.token || null
-
-          state.user =
-            (action.payload.user as User) ||
-            null
-
-          // persist auth token
-          if (action.payload.token) {
-            localStorage.setItem(
-              'authToken',
-              action.payload.token,
-            )
-          }
-        },
-      )
-
-      .addCase(
-        signupUser.rejected,
-        (state, action) => {
-          state.isLoading = false
-
-          state.error =
-            action.payload as Record<
-              string,
-              string
-            >
-
-          state.isAuthenticated = false
-        },
-      )
-
+      .addCase(signupUser.pending, (state) => {
+        state.isLoading = true
+        state.error = null
+      })
+      .addCase(signupUser.fulfilled, (state, action) => {
+        state.isLoading = false
+        state.isAuthenticated = true
+        state.user = (action.payload.user as User) ?? null
+      })
+      .addCase(signupUser.rejected, (state, action) => {
+        state.isLoading = false
+        state.error = action.payload as Record<string, string>
+        state.isAuthenticated = false
+      })
     // endregion
 
     // region verify token reducers
-
     builder
-      .addCase(
-        verifyToken.pending,
-        (state) => {
-          state.isLoading = true
-        },
-      )
-
-      .addCase(
-        verifyToken.fulfilled,
-        (state, action) => {
-          state.isLoading = false
-
-          state.token =
-            action.payload.token
-
-          state.user =
-            (action.payload.user as User) ||
-            null
-
-          state.isAuthenticated = true
-        },
-      )
-
-      .addCase(
-        verifyToken.rejected,
-        (state) => {
-          state.isLoading = false
-
-          state.user = null
-          state.token = null
-          state.isAuthenticated = false
-        },
-      )
-
+      .addCase(verifyToken.pending, (state) => {
+        state.isLoading = true
+      })
+      .addCase(verifyToken.fulfilled, (state, action) => {
+        state.isLoading = false
+        state.user = (action.payload.user as User) ?? null
+        state.isAuthenticated = true
+      })
+      .addCase(verifyToken.rejected, (state) => {
+        state.isLoading = false
+        state.user = null
+        state.isAuthenticated = false
+      })
     // endregion
   },
 })
 // endregion
 
 // region exports
-export const {
-  logout,
-  clearError,
-  setUser,
-} = authSlice.actions
-
+export const { logout, clearError, setUser } = authSlice.actions
 export default authSlice.reducer
 // endregion

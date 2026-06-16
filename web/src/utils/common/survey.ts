@@ -1,65 +1,39 @@
 // region imports
-import type {
-  QuestionType,
-  QuestionUiType,
-  PaginationItem,
-} from '@/types'
+import type { PaginationItem, QuestionType, QuestionUiType } from '@/types'
 // endregion
 
 // region question type utilities
 // get question type label
-export function getQuestionTypeLabel(
-  type:
-    | QuestionType
-    | string,
-): string {
-  const labels: Record<
-    string,
-    string
-  > = {
-    short_text:
-      'Short Text',
+export function getQuestionTypeLabel(type: QuestionType | string): string {
+  const labels: Record<string, string> = {
+    short_text: 'Short Text',
 
-    long_text:
-      'Long Text',
+    long_text: 'Long Text',
 
-    multiple_choice:
-      'Multiple Choice',
+    multiple_choice: 'Multiple Choice',
 
-    checkbox_group:
-      'Checkbox',
+    checkbox_group: 'Checkbox',
 
-    dropdown:
-      'Dropdown',
+    dropdown: 'Dropdown',
 
     rating: 'Rating',
 
     yes_no: 'Yes / No',
   }
 
-  return (
-    labels[type] ?? 'Unknown'
-  )
+  return labels[type] ?? 'Unknown'
 }
 
 // get question type icon
-export function getQuestionTypeIcon(
-  type:
-    | QuestionType
-    | string,
-): string {
-  const icons: Record<
-    string,
-    string
-  > = {
+export function getQuestionTypeIcon(type: QuestionType | string): string {
+  const icons: Record<string, string> = {
     short_text: '✏️',
 
     long_text: '📝',
 
     multiple_choice: '◯',
 
-    checkbox_group:
-      '☑️',
+    checkbox_group: '☑️',
 
     dropdown: '▼',
 
@@ -72,40 +46,24 @@ export function getQuestionTypeIcon(
 }
 
 // get question type description
-export function getQuestionTypeDescription(
-  type:
-    | QuestionType
-    | string,
-): string {
-  const descriptions: Record<
-    string,
-    string
-  > = {
-    short_text:
-      'Single line text response',
+export function getQuestionTypeDescription(type: QuestionType | string): string {
+  const descriptions: Record<string, string> = {
+    short_text: 'Single line text response',
 
-    long_text:
-      'Multi-line text response',
+    long_text: 'Multi-line text response',
 
-    multiple_choice:
-      'Choose one from multiple options',
+    multiple_choice: 'Choose one from multiple options',
 
-    checkbox_group:
-      'Choose multiple options',
+    checkbox_group: 'Choose multiple options',
 
-    dropdown:
-      'Select from dropdown list',
+    dropdown: 'Select from dropdown list',
 
-    rating:
-      'Rate on a scale',
+    rating: 'Rate on a scale',
 
-    yes_no:
-      'Yes or no answer',
+    yes_no: 'Yes or no answer',
   }
 
-  return (
-    descriptions[type] ?? ''
-  )
+  return descriptions[type] ?? ''
 }
 
 // get human-readable label for a question type based on type and UI type
@@ -195,45 +153,25 @@ export interface ProgressState {
 }
 
 // calculate survey progress
-export function calculateProgress(
-  answeredCount: number,
-  totalQuestions: number,
-): ProgressState {
-  const current = Math.min(
-    answeredCount,
-    totalQuestions,
-  )
+export function calculateProgress(answeredCount: number, totalQuestions: number): ProgressState {
+  const current = Math.min(answeredCount, totalQuestions)
 
   return {
     current,
 
     total: totalQuestions,
 
-    percentage:
-      totalQuestions > 0
-        ? Math.round(
-            (current /
-              totalQuestions) *
-              100,
-          )
-        : 0,
+    percentage: totalQuestions > 0 ? Math.round((current / totalQuestions) * 100) : 0,
 
-    isComplete:
-      current >= totalQuestions,
+    isComplete: current >= totalQuestions,
   }
 }
 
 // check whether question is answered
-export function isQuestionAnswered(
-  value: any,
-): boolean {
+export function isQuestionAnswered(value: any): boolean {
   // validate string answers
-  if (
-    typeof value === 'string'
-  ) {
-    return (
-      value.trim().length > 0
-    )
+  if (typeof value === 'string') {
+    return value.trim().length > 0
   }
 
   // validate array answers
@@ -242,12 +180,7 @@ export function isQuestionAnswered(
   }
 
   // validate primitive answers
-  return (
-    typeof value ===
-      'number' ||
-    typeof value ===
-      'boolean'
-  )
+  return typeof value === 'number' || typeof value === 'boolean'
 }
 // endregion
 

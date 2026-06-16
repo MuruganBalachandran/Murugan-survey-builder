@@ -1,12 +1,15 @@
 // region imports
 import { forwardRef } from 'react'
 import { cn } from '@/lib/cn'
-import type { CardProps, CardHeaderProps, CardBodyProps, CardFooterProps } from '@/types'
+import type { CardBodyProps, CardFooterProps, CardHeaderProps, CardProps } from '@/types'
 // endregion
 
 // region Card component
 export const Card = forwardRef<HTMLDivElement, CardProps>(
-  ({ children, hover = false, clickable = false, variant = 'default', className, ...props }, ref) => (
+  (
+    { children, hover = false, clickable = false, variant = 'default', className, ...props },
+    ref,
+  ) => (
     <div
       ref={ref}
       className={cn(
@@ -42,7 +45,12 @@ export const CardBody = ({ children, className }: CardBodyProps) => (
 
 // region CardFooter component
 export const CardFooter = ({ children, className }: CardFooterProps) => (
-  <div className={cn('border-t border-neutral-200 flex items-center justify-between gap-3 px-6 py-4', className)}>
+  <div
+    className={cn(
+      'border-t border-neutral-200 flex items-center justify-between gap-3 px-6 py-4',
+      className,
+    )}
+  >
     {children}
   </div>
 )

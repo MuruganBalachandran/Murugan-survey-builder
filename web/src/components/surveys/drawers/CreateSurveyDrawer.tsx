@@ -1,14 +1,15 @@
 // region imports
 import { OffCanvas } from '@/components/common/OffCanvas'
 import { Button } from '@/components/ui/Button'
-import { SurveyBasicsStep } from '../wizard/SurveyBasicsStep'
-import { SurveyBrandingStep } from '../wizard/SurveyBrandingStep'
-import { SurveyQuestionsStep } from '../wizard/SurveyQuestionsStep'
-import { SurveyPublishStep } from '../wizard/SurveyPublishStep'
-import { QuestionComposerCard } from '../forms/QuestionComposerCard'
-import type { SurveyRecord, QuestionFormState } from '@/types'
+import type { QuestionFormState, SurveyRecord } from '@/types'
 import type { Question } from '@/types/survey'
 import { isValidSurveyDescription } from '@/utils/validations'
+import { QuestionComposerCard } from '../forms/QuestionComposerCard'
+import { SurveyBasicsStep } from '../wizard/SurveyBasicsStep'
+import { SurveyBrandingStep } from '../wizard/SurveyBrandingStep'
+import { SurveyPublishStep } from '../wizard/SurveyPublishStep'
+import { SurveyQuestionsStep } from '../wizard/SurveyQuestionsStep'
+
 // endregion
 
 // region types
@@ -149,7 +150,9 @@ export const CreateSurveyDrawer = ({
               variant="primary"
               onClick={onPublish}
               isLoading={isPublishingSurvey}
-              disabled={!activeSurvey || activeQuestions.length === 0 || activeSurvey.status === 'published'}
+              disabled={
+                !activeSurvey || activeQuestions.length === 0 || activeSurvey.status === 'published'
+              }
             >
               {activeSurvey?.status === 'published' ? 'Published' : 'Publish survey'}
             </Button>
@@ -174,7 +177,10 @@ export const CreateSurveyDrawer = ({
             }}
             onDescriptionBlur={() => {
               const trimmed = surveyForm.description.trim()
-              const error = trimmed && !isValidSurveyDescription(trimmed) ? 'Description must be 5-100 characters' : ''
+              const error =
+                trimmed && !isValidSurveyDescription(trimmed)
+                  ? 'Description must be 5-100 characters'
+                  : ''
               onSurveyErrorsChange({ ...surveyErrors, description: error })
             }}
           />
@@ -234,7 +240,9 @@ export const CreateSurveyDrawer = ({
             isPublished={activeSurvey?.status === 'published'}
             onCopyLink={() => activeSurvey?.slug && onCopySurveyLink(activeSurvey.slug)}
             onPreview={() =>
-              activeSurvey?.slug && activeSurvey.status === 'published' && onPreviewSurvey(activeSurvey.slug)
+              activeSurvey?.slug &&
+              activeSurvey.status === 'published' &&
+              onPreviewSurvey(activeSurvey.slug)
             }
             isPublishing={isPublishingSurvey}
           />

@@ -1,22 +1,14 @@
 // region imports
+
+import type { ApiResponse } from '@/types/common'
+import type { Question, QuestionPayload } from '@/types/survey'
 import apiClient from './client'
-import type {
-  Question,
-  QuestionPayload,
-} from '@/types/survey'
-import type {
-  ApiResponse,
-} from '@/types/common'
+
 // endregion
 
 // region exports
-export type {
-  Question,
-  QuestionPayload,
-}
-export type {
-  ApiResponse,
-}
+export type { ApiResponse, Question, QuestionPayload }
+
 // endregion
 
 // region helper functions
@@ -37,11 +29,10 @@ export const addQuestion = async (
 ): Promise<ApiResponse<Question>> => {
   try {
     // create survey question
-    const response =
-      await apiClient.post<ApiResponse<Question>>(
-        `/surveys/${surveyId}/questions`,
-        data,
-      )
+    const response = await apiClient.post<ApiResponse<Question>>(
+      `/surveys/${surveyId}/questions`,
+      data,
+    )
 
     return response.data
   } catch (error: any) {
@@ -58,11 +49,10 @@ export const updateQuestion = async (
 ): Promise<ApiResponse<Question>> => {
   try {
     // update survey question
-    const response =
-      await apiClient.put<ApiResponse<Question>>(
-        `/surveys/${surveyId}/questions/${questionId}`,
-        data,
-      )
+    const response = await apiClient.put<ApiResponse<Question>>(
+      `/surveys/${surveyId}/questions/${questionId}`,
+      data,
+    )
 
     return response.data
   } catch (error: any) {
@@ -78,10 +68,9 @@ export const deleteQuestion = async (
 ): Promise<ApiResponse<null>> => {
   try {
     // delete survey question
-    const response =
-      await apiClient.delete<ApiResponse<null>>(
-        `/surveys/${surveyId}/questions/${questionId}`,
-      )
+    const response = await apiClient.delete<ApiResponse<null>>(
+      `/surveys/${surveyId}/questions/${questionId}`,
+    )
 
     return response.data
   } catch (error: any) {
@@ -97,13 +86,12 @@ export const reorderQuestions = async (
 ): Promise<ApiResponse<Question[]>> => {
   try {
     // reorder survey questions
-    const response =
-      await apiClient.put<ApiResponse<Question[]>>(
-        `/surveys/${surveyId}/questions/reorder`,
-        {
-          questionIds,
-        },
-      )
+    const response = await apiClient.put<ApiResponse<Question[]>>(
+      `/surveys/${surveyId}/questions/reorder`,
+      {
+        questionIds,
+      },
+    )
 
     return response.data
   } catch (error: any) {

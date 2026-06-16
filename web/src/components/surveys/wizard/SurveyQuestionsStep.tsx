@@ -1,8 +1,8 @@
 // region imports
 import { Button } from '@/components/ui/Button'
-import { DragIcon, EditIcon, TrashIcon } from '@/utils/icons'
-import { questionTypeLabel } from '@/utils/common/survey'
 import type { SurveyQuestionsStepProps } from '@/types'
+import { questionTypeLabel } from '@/utils/common/survey'
+import { DragIcon, EditIcon, TrashIcon } from '@/utils/icons'
 // endregion
 
 // region component
@@ -24,7 +24,9 @@ export const SurveyQuestionsStep = ({
     {/* header with survey title and add-question button */}
     <div className="flex items-start justify-between gap-4">
       <div>
-        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-violet-600">Questions</p>
+        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-violet-600">
+          Questions
+        </p>
         <h3 className="mt-2 text-2xl font-bold text-gray-900">{surveyTitle}</h3>
         <p className="mt-2 text-sm text-gray-600">{surveyDescription || 'No description yet.'}</p>
       </div>

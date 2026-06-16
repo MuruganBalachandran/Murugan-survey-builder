@@ -1,7 +1,7 @@
 // region imports
 import { Button } from '@/components/ui/Button'
-import { getSurveyUrl } from '@/utils/common/survey'
 import type { SurveyPublishStepProps } from '@/types'
+import { getSurveyUrl } from '@/utils/common/survey'
 // endregion
 
 // region component
@@ -15,7 +15,9 @@ export const SurveyPublishStep = ({
 }: SurveyPublishStepProps) => (
   <div className="space-y-6">
     <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
-      <p className="text-sm font-semibold uppercase tracking-[0.18em] text-violet-600">Publish & share</p>
+      <p className="text-sm font-semibold uppercase tracking-[0.18em] text-violet-600">
+        Publish & share
+      </p>
       <h3 className="mt-2 text-2xl font-bold text-gray-900">{surveyTitle}</h3>
       <p className="mt-2 text-sm text-gray-600">
         Publish the survey and share the live link when you are ready.

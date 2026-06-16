@@ -1,14 +1,14 @@
 // region imports
-import { useParams, useNavigate } from '@tanstack/react-router'
+import { useNavigate, useParams } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
-import { toast } from '@/lib/toast'
 import { AppLayout } from '@/components/Layout/AppLayout'
-import { Button } from '@/components/ui/Button'
-import { ResponsesSummary } from '@/components/surveyResponses/ResponsesSummary'
 import { ResponsesList } from '@/components/surveyResponses/ResponsesList'
+import { ResponsesSummary } from '@/components/surveyResponses/ResponsesSummary'
+import { Button } from '@/components/ui/Button'
 import { useAppDispatch, useAppSelector } from '@/hooks/redux'
-import { fetchSurveyById, clearError } from '@/store/slices/surveySlice'
+import { toast } from '@/lib/toast'
 import { fetchSurveyResponses } from '@/store/slices/responseSlice'
+import { clearError, fetchSurveyById } from '@/store/slices/surveySlice'
 import type { SurveyResponse } from '@/types/survey'
 import { ExportIcon } from '@/utils/icons'
 // endregion
@@ -95,7 +95,11 @@ export const SurveyResponsesPage = () => {
     setExporting(true)
     try {
       // build header row from question titles
-      const headers = ['Response ID', 'Submitted At', ...currentSurvey.questions.map((q) => q.title)]
+      const headers = [
+        'Response ID',
+        'Submitted At',
+        ...currentSurvey.questions.map((q) => q.title),
+      ]
 
       // build one row per response, matching answers to question columns
       const rows = responses.map((response) => {
@@ -156,7 +160,9 @@ export const SurveyResponsesPage = () => {
               >
                 ← Back to Surveys
               </button>
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-violet-100">Analytics</p>
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-violet-100">
+                Analytics
+              </p>
               <h1 className="mt-2 text-3xl font-bold text-white">Response analytics</h1>
               {currentSurvey && <p className="mt-2 text-violet-100">{currentSurvey.title}</p>}
             </div>

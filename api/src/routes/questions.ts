@@ -1,28 +1,44 @@
-// imports
-import { Hono } from 'hono'
+// region imports
+import { Hono } from "hono";
 import {
   addQuestion,
   deleteQuestionById,
   reorderSurveyQuestions,
   updateQuestionDetails,
-} from '../controllers/questionsController'
-import { authMiddleware } from '../middleware'
+} from "../controllers/questionsController";
+import { authMiddleware } from "../middleware";
+// endregion
+
 
 // routes initialization
-const questionRoutes = new Hono()
+const questionRoutes = new Hono();
 
-// question routes - specific patterns first
+// region routes
 // reorder questions
-questionRoutes.put('/:surveyId/questions/reorder', authMiddleware, reorderSurveyQuestions)
+questionRoutes.put(
+  "/:surveyId/questions/reorder",
+  authMiddleware,
+  reorderSurveyQuestions,
+);
 
 // add question to survey
-questionRoutes.post('/:surveyId/questions', authMiddleware, addQuestion)
+questionRoutes.post("/:surveyId/questions", authMiddleware, addQuestion);
 
 // update question
-questionRoutes.put('/:surveyId/questions/:questionId', authMiddleware, updateQuestionDetails)
+questionRoutes.put(
+  "/:surveyId/questions/:questionId",
+  authMiddleware,
+  updateQuestionDetails,
+);
 
 // delete question
-questionRoutes.delete('/:surveyId/questions/:questionId', authMiddleware, deleteQuestionById)
+questionRoutes.delete(
+  "/:surveyId/questions/:questionId",
+  authMiddleware,
+  deleteQuestionById,
+);
+// endregion
 
-// export
-export default questionRoutes
+// region export
+export default questionRoutes;
+// endregion

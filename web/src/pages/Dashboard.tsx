@@ -1,13 +1,21 @@
 // region imports
-import { useEffect, useMemo, useState } from 'react'
+
 import { useNavigate } from '@tanstack/react-router'
+import { useEffect, useMemo, useState } from 'react'
 import { AppLayout } from '@/components/Layout/AppLayout'
 import { Button } from '@/components/ui/Button'
 import { useAppDispatch, useAppSelector } from '@/hooks/redux'
 import { getSurveyResponses } from '@/services/api/responses'
 import { fetchUserSurveys } from '@/store/slices/surveySlice'
-import { DashboardSurveyIcon, ResponseIcon, CompletionIcon, PublishedIcon, DraftIcon } from '@/utils/icons'
 import type { DashboardResponse, StatCardProps } from '@/types'
+import {
+  CompletionIcon,
+  DashboardSurveyIcon,
+  DraftIcon,
+  PublishedIcon,
+  ResponseIcon,
+} from '@/utils/icons'
+
 // endregion
 
 // region helpers
@@ -19,7 +27,9 @@ const StatCard = ({ label, value, detail, icon, iconClassName }: StatCardProps) 
         <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900">{value}</p>
         <p className="mt-1 text-xs text-gray-500">{detail}</p>
       </div>
-      <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${iconClassName}`}>{icon}</span>
+      <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${iconClassName}`}>
+        {icon}
+      </span>
     </div>
   </div>
 )
@@ -43,7 +53,10 @@ const startOfCurrentWeek = () => {
 
 // converts a UTC date string into a human-readable relative label
 const formatRelativeTime = (dateValue: string) => {
-  const elapsedSeconds = Math.max(0, Math.floor((Date.now() - new Date(dateValue).getTime()) / 1000))
+  const elapsedSeconds = Math.max(
+    0,
+    Math.floor((Date.now() - new Date(dateValue).getTime()) / 1000),
+  )
   if (elapsedSeconds < 60) return 'Just now'
 
   const elapsedMinutes = Math.floor(elapsedSeconds / 60)
@@ -145,7 +158,8 @@ export const DashboardPage = () => {
 
     // sort all responses newest-first for the activity feed
     const sortedResponses = [...responses].sort(
-      (first, second) => new Date(second.submittedAt).getTime() - new Date(first.submittedAt).getTime(),
+      (first, second) =>
+        new Date(second.submittedAt).getTime() - new Date(first.submittedAt).getTime(),
     )
 
     // build a per-day count array for the current Mon-Sun week
@@ -215,11 +229,13 @@ export const DashboardPage = () => {
           <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
             <div>
               <h1 className="mt-2 text-3xl font-bold tracking-tight">
-                {getGreeting()}, {user?.name?.split(' ')[0] || 'there'}
+                {getGreeting()}, {user?.name?.split(' ')?.[0] || 'there'}
               </h1>
               <p className="mt-3 text-base text-violet-100">
                 You collected{' '}
-                <span className="font-bold text-white">{dashboardData.responsesThisWeek.toLocaleString()}</span>{' '}
+                <span className="font-bold text-white">
+                  {dashboardData.responsesThisWeek.toLocaleString()}
+                </span>{' '}
                 new responses this week.
               </p>
             </div>
@@ -277,21 +293,33 @@ export const DashboardPage = () => {
           <section className="rounded-2xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-700">Drafts</p>
-                <h2 className="mt-2 text-xl font-bold text-gray-900">Continue where you left off</h2>
-                <p className="mt-1 text-sm text-gray-600">These surveys are still drafts and need finishing before sharing.</p>
+                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-700">
+                  Drafts
+                </p>
+                <h2 className="mt-2 text-xl font-bold text-gray-900">
+                  Continue where you left off
+                </h2>
+                <p className="mt-1 text-sm text-gray-600">
+                  These surveys are still drafts and need finishing before sharing.
+                </p>
               </div>
             </div>
 
             <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {dashboardData.draftSurveys.slice(0, 3).map((survey) => (
-                <div key={survey.id} className="rounded-2xl border border-amber-200 bg-white p-4 shadow-sm">
+                <div
+                  key={survey.id}
+                  className="rounded-2xl border border-amber-200 bg-white p-4 shadow-sm"
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-amber-600">Draft</p>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-amber-600">
+                        Draft
+                      </p>
                       <h3 className="mt-2 text-base font-semibold text-gray-900">{survey.title}</h3>
                       <p className="mt-1 text-sm text-gray-500">
-                        {survey.questionCount ?? 0} questions · {(survey.responseCount ?? 0).toLocaleString()} responses
+                        {survey.questionCount ?? 0} questions ·{' '}
+                        {(survey.responseCount ?? 0).toLocaleString()} responses
                       </p>
                     </div>
                     <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
@@ -318,7 +346,9 @@ export const DashboardPage = () => {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-xl font-bold text-gray-900">Responses over time</h2>
-                <p className="mt-1 text-sm text-gray-500">Submission activity for the current week</p>
+                <p className="mt-1 text-sm text-gray-500">
+                  Submission activity for the current week
+                </p>
               </div>
               <span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700">
                 {dashboardData.responsesThisWeek} this week
@@ -328,10 +358,14 @@ export const DashboardPage = () => {
             <div className="mt-8 flex h-64 items-end gap-3 sm:gap-5">
               {dashboardData.weekDays.map((day) => {
                 // minimum bar height of 4% keeps empty days visible
-                const height = day.count === 0 ? 4 : Math.max(12, (day.count / maxDailyResponses) * 100)
+                const height =
+                  day.count === 0 ? 4 : Math.max(12, (day.count / maxDailyResponses) * 100)
 
                 return (
-                  <div key={day.label} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-3">
+                  <div
+                    key={day.label}
+                    className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-3"
+                  >
                     <span className="text-xs font-semibold text-gray-600">{day.count}</span>
                     <div className="flex h-48 w-full items-end rounded-xl bg-gray-50 px-1.5 pt-2">
                       <div
@@ -344,7 +378,9 @@ export const DashboardPage = () => {
                         title={`${day.label}: ${day.count} responses`}
                       />
                     </div>
-                    <span className={`text-xs font-medium ${day.isToday ? 'text-violet-700' : 'text-gray-500'}`}>
+                    <span
+                      className={`text-xs font-medium ${day.isToday ? 'text-violet-700' : 'text-gray-500'}`}
+                    >
                       {day.label}
                     </span>
                   </div>
@@ -370,7 +406,9 @@ export const DashboardPage = () => {
 
             <div className="mt-6 space-y-5">
               {isDashboardLoading ? (
-                <p className="py-8 text-center text-sm text-gray-500">Loading survey performance...</p>
+                <p className="py-8 text-center text-sm text-gray-500">
+                  Loading survey performance...
+                </p>
               ) : dashboardData.topSurveys.length > 0 ? (
                 dashboardData.topSurveys.map((survey, index) => (
                   <div key={survey.id}>
@@ -396,13 +434,17 @@ export const DashboardPage = () => {
                     <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-gray-100">
                       <div
                         className="h-full rounded-full bg-violet-500"
-                        style={{ width: `${((survey.responseCount ?? 0) / maxSurveyResponses) * 100}%` }}
+                        style={{
+                          width: `${((survey.responseCount ?? 0) / maxSurveyResponses) * 100}%`,
+                        }}
                       />
                     </div>
                   </div>
                 ))
               ) : (
-                <p className="py-8 text-center text-sm text-gray-500">Create a survey to see performance.</p>
+                <p className="py-8 text-center text-sm text-gray-500">
+                  Create a survey to see performance.
+                </p>
               )}
             </div>
           </div>
@@ -418,7 +460,9 @@ export const DashboardPage = () => {
 
             <div className="mt-6 divide-y divide-gray-100">
               {responsesLoading && responses.length === 0 ? (
-                <p className="py-8 text-center text-sm text-gray-500">Loading recent responses...</p>
+                <p className="py-8 text-center text-sm text-gray-500">
+                  Loading recent responses...
+                </p>
               ) : dashboardData.recentResponses.length > 0 ? (
                 dashboardData.recentResponses.map((response) => (
                   <button
@@ -433,9 +477,13 @@ export const DashboardPage = () => {
                     <span className="min-w-0 flex-1">
                       <span className="block text-sm text-gray-700">
                         <span className="font-semibold text-gray-900">Anonymous</span> submitted{' '}
-                        <span className="font-semibold text-gray-900">"{response.surveyTitle}"</span>
+                        <span className="font-semibold text-gray-900">
+                          "{response.surveyTitle}"
+                        </span>
                       </span>
-                      <span className="mt-1 block text-xs text-gray-500">{formatRelativeTime(response.submittedAt)}</span>
+                      <span className="mt-1 block text-xs text-gray-500">
+                        {formatRelativeTime(response.submittedAt)}
+                      </span>
                     </span>
                     <span className="text-lg text-gray-300">›</span>
                   </button>
@@ -443,7 +491,9 @@ export const DashboardPage = () => {
               ) : (
                 <div className="py-8 text-center">
                   <p className="text-sm font-medium text-gray-700">No responses yet</p>
-                  <p className="mt-1 text-sm text-gray-500">Share a published survey to start seeing activity.</p>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Share a published survey to start seeing activity.
+                  </p>
                 </div>
               )}
             </div>

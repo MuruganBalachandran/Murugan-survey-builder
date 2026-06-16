@@ -1,6 +1,7 @@
 // region imports
-import { useState, useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import type { ModalVariant } from '@/types'
+
 // endregion
 
 // region types

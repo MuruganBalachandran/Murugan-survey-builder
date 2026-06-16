@@ -1,9 +1,9 @@
 // region imports
 import { useEffect } from 'react'
-import { WhatsAppIcon, MailShareIcon, CopyShareIcon, Share2Icon, LinkedInIcon } from '@/utils/icons'
 import { toast } from '@/lib/toast'
-import { getSurveyUrl } from '@/utils/common/survey'
 import type { ShareSurveyModalProps } from '@/types'
+import { getSurveyUrl } from '@/utils/common/survey'
+import { CopyShareIcon, LinkedInIcon, MailShareIcon, Share2Icon, WhatsAppIcon } from '@/utils/icons'
 // endregion
 
 // region component
@@ -96,7 +96,9 @@ export const ShareSurveyModal = ({ survey, onClose, onCopy }: ShareSurveyModalPr
               <h2 id="share-survey-title" className="text-lg font-bold text-gray-900">
                 Share survey
               </h2>
-              <p className="mt-1 text-sm text-gray-600">Invite people to respond to {survey.title}.</p>
+              <p className="mt-1 text-sm text-gray-600">
+                Invite people to respond to {survey.title}.
+              </p>
             </div>
             <button
               type="button"
@@ -138,7 +140,9 @@ export const ShareSurveyModal = ({ survey, onClose, onCopy }: ShareSurveyModalPr
 
             {/* platform share buttons */}
             <div>
-              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">Share with</p>
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Share with
+              </p>
               <div className="grid grid-cols-3 gap-3">
                 {shareOptions.map((option) => (
                   <button

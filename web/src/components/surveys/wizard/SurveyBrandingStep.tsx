@@ -1,7 +1,7 @@
 // region imports
 import { Input } from '@/components/ui/Input'
-import { BRAND_SWATCHES } from '@/utils/constants'
 import type { SurveyBrandingStepProps } from '@/types'
+import { BRAND_SWATCHES } from '@/utils/constants'
 // endregion
 
 // region component
@@ -17,7 +17,9 @@ export const SurveyBrandingStep = ({
   <div className="space-y-5">
     {/* native color picker + hex display */}
     <div>
-      <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-gray-600">Primary color</label>
+      <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-gray-600">
+        Primary color
+      </label>
       <div className="flex items-center gap-3">
         <input
           type="color"
@@ -33,7 +35,9 @@ export const SurveyBrandingStep = ({
 
     {/* preset swatches for quick color selection */}
     <div>
-      <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-gray-600">Preset colors</label>
+      <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-gray-600">
+        Preset colors
+      </label>
       <div className="grid grid-cols-6 gap-3 sm:grid-cols-12">
         {BRAND_SWATCHES.map((swatch) => (
           <button

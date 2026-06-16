@@ -1,16 +1,15 @@
-
 // region Imports
 
-import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import type { SignupFormProps, SignupFormData, PasswordValidation, FieldErrors } from '@/types'
-import { toast } from '@/lib/toast'
+import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useAppDispatch, useAppSelector } from '@/hooks/redux'
+import { toast } from '@/lib/toast'
 import { clearError, signupUser } from '@/store/slices/authSlice'
-import { UserIcon, MailIcon, LockIcon, EyeIcon, EyeOffIcon, CheckIcon, XIcon } from '@/utils/icons'
-import { validatePasswordRules, isPasswordValid, PASSWORD_RULES } from '@/utils/common'
+import type { FieldErrors, PasswordValidation, SignupFormData, SignupFormProps } from '@/types'
+import { isPasswordValid, PASSWORD_RULES, validatePasswordRules } from '@/utils/common'
+import { CheckIcon, EyeIcon, EyeOffIcon, LockIcon, MailIcon, UserIcon, XIcon } from '@/utils/icons'
 
 // endregion
 
@@ -41,9 +40,7 @@ export const SignupForm = ({ onSuccess }: SignupFormProps) => {
 
   // endregion
 
-
   // region Event Handlers
-
 
   /**
    * Handles input field changes and updates validation
@@ -124,7 +121,8 @@ export const SignupForm = ({ onSuccess }: SignupFormProps) => {
     }
 
     if (!formData.confirmPassword) newErrors.confirmPassword = 'Please confirm your password'
-    else if (formData.confirmPassword !== formData.password) newErrors.confirmPassword = "Passwords don't match"
+    else if (formData.confirmPassword !== formData.password)
+      newErrors.confirmPassword = "Passwords don't match"
 
     if (!formData.terms) newErrors.terms = 'You must accept the terms'
 
@@ -136,12 +134,14 @@ export const SignupForm = ({ onSuccess }: SignupFormProps) => {
 
     // region Submit Logic
     dispatch(clearError())
-    const result = await dispatch(signupUser({
-      name: formData.name,
-      email: formData.email,
-      password: formData.password,
-      confirmPassword: formData.confirmPassword,
-    }))
+    const result = await dispatch(
+      signupUser({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        confirmPassword: formData.confirmPassword,
+      }),
+    )
 
     if (result.meta.requestStatus === 'fulfilled') {
       toast.success('Account created successfully!')
@@ -157,9 +157,7 @@ export const SignupForm = ({ onSuccess }: SignupFormProps) => {
 
   // endregion
 
-
   // region UI Render
-
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -292,19 +290,31 @@ export const SignupForm = ({ onSuccess }: SignupFormProps) => {
               }`}
             >
               {formData.terms && (
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#818CF8" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#818CF8"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
               )}
             </div>
           </div>
 
-          <label htmlFor="terms" className="cursor-pointer select-none text-xs leading-normal text-gray-600">
+          <label
+            htmlFor="terms"
+            className="cursor-pointer select-none text-xs leading-normal text-gray-600"
+          >
             I agree to the{' '}
             <Link to="/terms" className="font-medium text-violet-600 hover:text-violet-700">
               Terms of Service
-            </Link>
-            {' '}and{' '}
+            </Link>{' '}
+            and{' '}
             <Link to="/privacy" className="font-medium text-violet-600 hover:text-violet-700">
               Privacy Policy
             </Link>
