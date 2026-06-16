@@ -11,6 +11,7 @@ export const SurveysGrid = ({
   onPreview,
   onShare,
   onDelete,
+  onDuplicate,
   onManualClose,
   onAutoExpire,
 }: SurveysGridProps) => (
@@ -24,6 +25,7 @@ export const SurveysGrid = ({
         onPreview={onPreview}
         onShare={onShare}
         onDelete={onDelete}
+        onDuplicate={onDuplicate}
         onManualClose={onManualClose}
         onAutoExpire={onAutoExpire}
       />

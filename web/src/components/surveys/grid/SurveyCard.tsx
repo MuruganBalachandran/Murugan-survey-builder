@@ -5,6 +5,7 @@ import type { SurveyCardProps } from "@/types";
 import { useCountdown } from "@/hooks/useCountdown";
 import {
   CloseCircleIcon,
+  DuplicateIcon,
   PreviewIcon,
   ResponseIcon,
   ShareIcon,
@@ -22,6 +23,7 @@ export const SurveyCard = ({
   onPreview,
   onShare,
   onDelete,
+  onDuplicate,
   onManualClose,
   onAutoExpire,
 }: SurveyCardProps) => {
@@ -164,6 +166,17 @@ export const SurveyCard = ({
             }
           >
             <ShareIcon />
+          </button>
+
+          {/* manual close — only actionable for published surveys */}
+          <button
+            type="button"
+            onClick={() => onDuplicate(survey.id)}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-violet-600 transition-colors hover:bg-violet-50"
+            aria-label="Duplicate survey"
+            title="Duplicate survey"
+          >
+            <DuplicateIcon />
           </button>
 
           {/* manual close — only actionable for published surveys */}

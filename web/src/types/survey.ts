@@ -89,6 +89,7 @@ export interface SurveyCardProps {
   onPreview: (slug: string) => void
   onShare: (slug: string) => void
   onDelete: (id: string) => void
+  onDuplicate: (id: string) => void
   onManualClose: (id: string) => void
   onAutoExpire: (id: string) => void
 }
@@ -144,6 +145,7 @@ export interface SurveysGridProps {
   onPreview: (slug: string) => void
   onShare: (slug: string) => void
   onDelete: (id: string) => void
+  onDuplicate: (id: string) => void
   onManualClose: (id: string) => void
   onAutoExpire: (id: string) => void
 }

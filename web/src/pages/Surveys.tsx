@@ -51,7 +51,6 @@ import {
   isValidSurveyDescription,
   isValidSurveyTitle,
 } from "@/utils/validations";
-
 // endregion
 
 const defaultQuestionForm: QuestionFormState = DEFAULT_QUESTION_FORM;
@@ -406,6 +405,40 @@ export const SurveysPage = () => {
     const nextLogoUrl = await readFileAsDataUrl(file);
     setLogoFileName(file.name);
     setSurveyForm((current) => ({ ...current, logoUrl: nextLogoUrl }));
+  };
+
+  // fetch source survey then open the create wizard pre-filled with its data
+  const handleDuplicateSurvey = async (surveyId: string) => {
+    const result = await dispatch(fetchSurveyById(surveyId));
+    if (result.type !== fetchSurveyById.fulfilled.type) {
+      toast.error('Failed to load survey for duplication');
+      return;
+    }
+    const source = result.payload as SurveyRecord & { questions?: Question[] };
+    setSurveyForm({
+      title: `${source.title} (copy)`,
+      description: source.description || '',
+      primaryColor: source.primaryColor || '#6366F1',
+      logoUrl: source.logoUrl || '',
+      endsAt: defaultSurveyForm().endsAt,
+    });
+    setPendingTemplateQuestions(
+      (source.questions ?? []).map((q) => ({
+        type: q.type,
+        uiType: q.uiType ?? 'input',
+        title: q.title,
+        description: q.description || '',
+        required: q.required,
+        options: q.options ?? [],
+      })),
+    );
+    setSurveyErrors({});
+    setCreateStep(1);
+    setLogoFileName('');
+    setSelectedSurveyId(null);
+    setCreateSurveyId(null);
+    setIsQuestionComposerOpen(false);
+    setIsCreateOpen(true);
   };
 
   // pre-fill form from a template and advance to step 1
@@ -931,6 +964,7 @@ export const SurveysPage = () => {
                     );
                     if (survey) handleSurveyDelete(survey);
                   }}
+                  onDuplicate={handleDuplicateSurvey}
                   onManualClose={handleManualClose}
                   onAutoExpire={handleAutoExpire}
                 />
