@@ -7,7 +7,7 @@ import { HTTP_STATUS, verifyToken } from '../utils'
 export type { AuthContext }
 
 // region middleware
-export const authMiddleware = async (c: Context, next: Next): Promise<Response | undefined> => {
+export const authMiddleware = async (c: Context, next: Next) => {
   try {
     // Read JWT from the httpOnly cookie set at login/signup
     const cookie = c.req.header('Cookie') ?? ''
@@ -29,6 +29,7 @@ export const authMiddleware = async (c: Context, next: Next): Promise<Response |
     // Attach verified user identity to the request context
     c.set('user', { userId: payload.userId, email: payload.email })
 
+    // Continue to next middleware/handler
     await next()
   } catch (error) {
     console.error('Auth middleware error:', error)

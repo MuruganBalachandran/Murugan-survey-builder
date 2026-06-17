@@ -68,6 +68,7 @@ export const createNewSurvey = async (c: Context): Promise<Response> => {
 
     // if survey not found return error
     if (!survey) {
+      console.error("Survey creation returned undefined for user:", user.userId);
       return c.json<ApiResponse<null>>(
         { success: false, message: "Failed to create survey" },
         HTTP_STATUS.INTERNAL_SERVER_ERROR,

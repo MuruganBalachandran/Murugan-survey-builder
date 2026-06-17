@@ -108,3 +108,61 @@ pnpm check:fix    # Auto-fix Biome issues
 pnpm typecheck    # tsc --noEmit
 pnpm build        # Production build to dist/
 ```
+
+## Deploying to Production
+
+### Prerequisites
+- Cloudflare account with Pages enabled
+- `wrangler` CLI installed and authenticated (`wrangler login`)
+- API already deployed (see api/README.md for setup)
+
+### Step 1: Set API URL
+
+Update `web/.env` with your production API URL:
+
+```bash
+echo "VITE_API_URL=https://<your-api-domain>/api" > web/.env
+```
+
+### Step 2: Build
+
+```bash
+cd web
+npm run build
+```
+
+This creates a `dist/` directory with the optimized production build.
+
+### Step 3: Deploy to Cloudflare Pages
+
+```bash
+wrangler pages deploy dist
+```
+
+On first deployment, you'll be prompted to:
+- Enter a project name (e.g., `survey-builder`)
+- Enter a production branch name (e.g., `deploy`)
+
+The frontend will be available at `https://<hash>.survey-builder-<hash>.pages.dev`
+
+### Step 4: Update API CORS
+
+After frontend deployment, update the `FRONTEND_URL` in `api/wrangler.jsonc` with your Pages URL and redeploy:
+
+```bash
+cd api
+wrangler deploy
+```
+
+### Continuous Deployment
+
+For automated deployments on each push:
+1. Connect your GitHub repo to Cloudflare Pages in the dashboard
+2. Set build settings:
+   - **Build command**: `npm run build`
+   - **Build directory**: `dist`
+   - **Root directory**: `web`
+3. Add environment variables in the dashboard (if needed)
+
+The frontend will auto-deploy on every push to your production branch.
+

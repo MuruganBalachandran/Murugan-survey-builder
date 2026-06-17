@@ -107,7 +107,7 @@ Schema has four tables: `users`, `surveys`, `questions`, `survey_responses`.
 pnpm dev   # from workspace root — starts Worker on :8787
 ```
 
-To apply schema changes to the local D1 instance:
+To apply schema to the local D1 instance:
 
 ```bash
 pnpm --filter sde-intern-task-api wrangler d1 execute survey-builder --local --file=schema.sql
@@ -117,4 +117,87 @@ Regenerate Worker env types after changing `wrangler.jsonc` bindings:
 
 ```bash
 pnpm --filter sde-intern-task-api cf-typegen
+```
+
+## Deploying to Production
+
+### Prerequisites
+- Cloudflare account with Workers and D1 enabled
+- `wrangler` CLI installed and authenticated (`wrangler login`)
+
+### Step 1: Set up D1 Database (first time only)
+
+Create a D1 database and update `wrangler.jsonc` with the database ID:
+
+```bash
+wrangler d1 create survey-builder
+# Copy the database_id from output and update wrangler.jsonc
+```
+
+Initialize the schema on remote database:
+
+```bash
+cd api
+wrangler d1 execute survey-builder --remote --file=schema.sql
+```
+
+### Step 2: Configure Environment Variables
+
+Update `wrangler.jsonc` with your production values:
+
+```jsonc
+"vars": {
+  "JWT_SECRET": "your-secure-secret-key-here",
+  "JWT_EXPIRY": "1h",
+  "FRONTEND_URL": "https://your-frontend-domain.pages.dev"
+}
+```
+
+### Step 3: Deploy API Worker
+
+```bash
+cd api
+npm run deploy
+# or
+wrangler deploy
+```
+
+The API will be available at `https://<your-subdomain>.workers.dev`
+
+### Step 4: Deploy Frontend (Cloudflare Pages)
+
+```bash
+cd web
+
+# Set the API URL in .env
+echo "VITE_API_URL=https://<your-api-domain>/api" > .env
+
+# Build and deploy
+npm run build
+wrangler pages deploy dist
+```
+
+The frontend will be available at the Pages deployment URL.
+
+### Step 5: Update CORS and Frontend URL
+
+After frontend deployment, update the `FRONTEND_URL` in `wrangler.jsonc` and redeploy the API:
+
+```bash
+cd api
+wrangler deploy
+```
+
+### Monitoring
+
+View live logs from the Worker:
+
+```bash
+wrangler tail --format pretty
+```
+
+Check D1 database status:
+
+```bash
+wrangler d1 info survey-builder --remote
 ```

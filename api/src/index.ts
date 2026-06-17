@@ -12,16 +12,19 @@ import surveyRoutes from './routes/surveys'
 const app = new Hono<{ Bindings: Env }>()
 
 // middleware setup
-// CORS middleware
+// CORS middleware - allow requests from configured frontend URL
 app.use(
   cors({
     origin: (origin, c) => {
-      const allowed = c.env.FRONTEND_URL
-      return origin === allowed ? origin : null
+      const frontendUrl = c.env.FRONTEND_URL
+      // allow if origin matches frontend URL or if it's a pages.dev URL in production
+      if (origin === frontendUrl) return origin
+      if (frontendUrl && origin && origin.includes('.pages.dev')) return origin
+      return null
     },
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
-    exposeHeaders: ['Set-Cookie'],
+    exposeHeaders: ['Set-Cookie', 'Content-Type'],
     credentials: true,
   }),
 )
