@@ -2,10 +2,7 @@
 
 A lightweight branded survey builder. Create surveys, add questions, brand them with your colors and logo, share a public link, and view responses — all without leaving the dashboard.
 
-**Live Demo:** https://bf25f48c.survey-builder-dhz.pages.dev
-
-**API:** https://sde-intern-task-api.surveybuilder.workers.dev
-
+**Live Demo:** https://main.survey-builder-dhz.pages.dev
 
 ## What it does
 
