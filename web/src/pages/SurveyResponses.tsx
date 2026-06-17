@@ -1,18 +1,19 @@
 // region imports
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import * as XLSX from "xlsx";
 import { AppLayout } from "@/components/Layout/AppLayout";
 import { QuestionCharts } from "@/components/surveyResponses/QuestionCharts";
 import { ResponsesList } from "@/components/surveyResponses/ResponsesList";
 import { ResponsesOverTimeChart } from "@/components/surveyResponses/ResponsesOverTimeChart";
 import { ResponsesSummary } from "@/components/surveyResponses/ResponsesSummary";
-import { Button } from "@/components/ui/Button";
 import { useAppDispatch, useAppSelector } from "@/hooks/redux";
 import { toast } from "@/lib/toast";
 import { fetchSurveyResponses } from "@/store/slices/responseSlice";
 import { clearError, fetchSurveyById } from "@/store/slices/surveySlice";
 import type { SurveyResponse } from "@/types/survey";
-import { ExportIcon } from "@/utils/icons";
+import { ChevronLeftIcon, ChevronRightIcon } from "@/utils/icons";
+import { buildPaginationItems } from "@/utils/common/survey";
 // endregion
 
 /**
@@ -31,15 +32,29 @@ export const SurveyResponsesPage = () => {
   const [responses, setResponses] = useState<SurveyResponse[]>([]);
   const [loadingResponses, setLoadingResponses] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalResponses, setTotalResponses] = useState(0);
+  const [activeTab, setActiveTab] = useState<"analytics" | "breakdown" | "responses">("analytics");
+  const [responsesLoaded, setResponsesLoaded] = useState(false);
+  const [breakdownPage, setBreakdownPage] = useState(1);
+  const responsesPageSize = 5;
+  const breakdownPageSize = 10;
   // endregion
 
   // region effects
 
-  // fetch survey metadata and responses on mount
+  // fetch survey metadata on mount (but NOT responses yet)
   useEffect(() => {
     dispatch(fetchSurveyById(id));
-    loadResponses();
   }, [dispatch, id]);
+
+  // load responses only when the "Responses" tab is clicked
+  useEffect(() => {
+    if (activeTab === "responses" && !responsesLoaded) {
+      loadResponses(1);
+      setResponsesLoaded(true);
+    }
+  }, [activeTab, responsesLoaded]);
 
   // show toast and clear redux error whenever one is set
   useEffect(() => {
@@ -53,6 +68,26 @@ export const SurveyResponsesPage = () => {
   // endregion
 
   // region derived data
+
+  const responsesTotalPages = Math.max(1, Math.ceil(totalResponses / responsesPageSize));
+  const breakdownTotalPages = currentSurvey ? Math.max(1, Math.ceil(currentSurvey.questions.length / breakdownPageSize)) : 1;
+
+  const responsesPageItems = useMemo(
+    () => buildPaginationItems(currentPage, responsesTotalPages),
+    [currentPage, responsesTotalPages],
+  );
+
+  const breakdownPageItems = useMemo(
+    () => buildPaginationItems(breakdownPage, breakdownTotalPages),
+    [breakdownPage, breakdownTotalPages],
+  );
+
+  const paginatedQuestions = useMemo(() => {
+    if (!currentSurvey) return [];
+    const start = (breakdownPage - 1) * breakdownPageSize;
+    const end = start + breakdownPageSize;
+    return currentSurvey.questions.slice(start, end);
+  }, [currentSurvey, breakdownPage]);
 
   // percentage of answer fields that were filled across all responses
   const responseRate = useMemo(() => {
@@ -104,13 +139,20 @@ export const SurveyResponsesPage = () => {
 
   // region handlers
 
-  const loadResponses = async () => {
+  const loadResponses = async (page = 1) => {
     setLoadingResponses(true);
     try {
-      const result = await dispatch(fetchSurveyResponses(id));
+      const result = await dispatch(
+        fetchSurveyResponses({ surveyId: id, page, pageSize: responsesPageSize }),
+      );
       if (result.type === fetchSurveyResponses.fulfilled.type) {
-        const payload = result.payload as { responses: SurveyResponse[] };
+        const payload = result.payload as {
+          responses: SurveyResponse[];
+          total: number;
+        };
         setResponses(payload.responses);
+        setTotalResponses(payload.total);
+        setCurrentPage(page);
       } else {
         toast.error("Failed to load responses");
       }
@@ -126,56 +168,139 @@ export const SurveyResponsesPage = () => {
 
     setExporting(true);
     try {
-      // build header row from question titles
-      const headers = [
-        "Response ID",
-        "Submitted At",
-        ...currentSurvey.questions.map((q) => q.title),
-      ];
+      const exportDate = new Date();
+      
+      // Fetch ALL responses for export with reasonable page size
+      const pageSize = 100;
+      const allResponsesResult = await dispatch(
+        fetchSurveyResponses({ surveyId: id, page: 1, pageSize }),
+      );
+      
+      let allResponses: SurveyResponse[] = [];
+      if (allResponsesResult.type === fetchSurveyResponses.fulfilled.type) {
+        const payload = allResponsesResult.payload as {
+          responses: SurveyResponse[];
+          total: number;
+        };
+        allResponses = payload.responses;
+        
+        // If there are more responses, fetch additional pages
+        if (payload.total > pageSize) {
+          const totalPages = Math.ceil(payload.total / pageSize);
+          for (let page = 2; page <= totalPages; page++) {
+            const pageResult = await dispatch(
+              fetchSurveyResponses({ surveyId: id, page, pageSize }),
+            );
+            if (pageResult.type === fetchSurveyResponses.fulfilled.type) {
+              const pagePayload = pageResult.payload as {
+                responses: SurveyResponse[];
+                total: number;
+              };
+              allResponses = [...allResponses, ...pagePayload.responses];
+            }
+          }
+        }
+      }
 
-      // build one row per response, matching answers to question columns
-      const rows = responses.map((response) => {
+      if (allResponses.length === 0) {
+        toast.error("No responses to export");
+        setExporting(false);
+        return;
+      }
+
+      // Create workbook with simple table format
+      const workbook = XLSX.utils.book_new();
+
+      // Create single sheet with all responses in table format
+      const tableRows: any[] = [];
+      
+      // Add empty row at the start for spacing
+      tableRows.push([]);
+      
+      // Header row with padding inside cells
+      tableRows.push([
+        "  Response ID  ",
+        "  Submitted At  ",
+        ...currentSurvey.questions.map((q) => `  ${q.title}  `),
+      ]);
+
+      // Data rows
+      allResponses.forEach((response, idx) => {
         const row = [
-          response.id,
-          new Date(response.submittedAt).toLocaleString(),
+          `  ${idx + 1}  `,
+          `  ${new Date(response.submittedAt).toLocaleString()}  `,
         ];
 
         currentSurvey.questions.forEach((question) => {
-          const answer = response.answers.find(
-            (a) => a.questionId === question.id,
-          );
+          const answer = response.answers.find((a) => a.questionId === question.id);
           const value = answer
             ? Array.isArray(answer.value)
               ? answer.value.join("; ")
               : String(answer.value)
             : "";
-          row.push(value);
+          row.push(`  ${value}  `);
         });
 
-        return row;
+        tableRows.push(row);
       });
 
-      // wrap every cell in quotes to handle commas inside values
-      const csvContent = [
-        headers.map((h) => `"${h}"`).join(","),
-        ...rows.map((r) => r.map((cell) => `"${cell}"`).join(",")),
-      ].join("\n");
+      // Add empty row at the end for spacing
+      tableRows.push([]);
 
-      // trigger browser download via a temporary anchor element
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const link = document.createElement("a");
-      const url = URL.createObjectURL(blob);
+      const sheet = XLSX.utils.aoa_to_sheet(tableRows);
+      
+      // Style header row (bold, blue background, white text) - it's at index 1 now
+      for (let i = 0; i < tableRows[1].length; i++) {
+        const cellRef = XLSX.utils.encode_col(i) + "2"; // Row 2 because we added empty row at start
+        if (!sheet[cellRef]) continue;
+        sheet[cellRef].s = {
+          fill: { fgColor: { rgb: "4F46E5" } },
+          font: { bold: true, color: { rgb: "FFFFFF" }, size: 11 },
+          alignment: { horizontal: "left", vertical: "center" },
+        };
+      }
 
-      link.setAttribute("href", url);
-      link.setAttribute("download", `${currentSurvey.title}-responses.csv`);
-      link.style.visibility = "hidden";
+      // Alternate row colors for better readability (starting from row 3)
+      for (let i = 3; i < tableRows.length; i++) {
+        for (let j = 0; j < tableRows[1].length; j++) {
+          const cellRef = XLSX.utils.encode_col(j) + i;
+          if (!sheet[cellRef]) continue;
+          sheet[cellRef].s = {
+            ...(i % 2 === 1 && {
+              fill: { fgColor: { rgb: "F9FAFB" } },
+            }),
+            alignment: { horizontal: "left", vertical: "center" },
+          };
+        }
+      }
 
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // Auto-size columns based on content
+      const colWidths = tableRows[1].map((header: string) => {
+        const len = String(header).length;
+        return Math.max(len + 2, 18);
+      });
+      sheet["!cols"] = colWidths.map((w: number) => ({ wch: w }));
+      sheet["!rows"] = [
+        { hpx: 15 }, // Empty row at top
+        { hpx: 30 }, // Header row
+      ];
 
-      toast.success("Responses exported successfully");
-    } catch {
+      XLSX.utils.book_append_sheet(workbook, sheet, "Responses");
+
+      // Generate filename
+      const timestamp = exportDate.toISOString().slice(0, 10);
+      const safeTitle = currentSurvey.title
+        .replace(/[^a-z0-9]/gi, "-")
+        .replace(/-+/g, "-")
+        .toLowerCase();
+      const filename = `survey-responses-${safeTitle}-${timestamp}.xlsx`;
+
+      // Write file
+      XLSX.writeFile(workbook, filename);
+
+      toast.success(`Exported ${allResponses.length} responses to Excel`);
+    } catch (error) {
+      console.error("Export error:", error);
       toast.error("Failed to export responses");
     } finally {
       setExporting(false);
@@ -197,61 +322,245 @@ export const SurveyResponsesPage = () => {
               >
                 ← Back to Surveys
               </button>
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-violet-100">
-                Analytics
-              </p>
-              <h1 className="mt-2 text-3xl font-bold text-white">
-                Response analytics
-              </h1>
               {currentSurvey && (
-                <p className="mt-2 text-violet-100">{currentSurvey.title}</p>
+                <>
+                  <h2 className="mt-2 text-2xl font-bold text-white">
+                    {currentSurvey.title}
+                  </h2>
+                  {currentSurvey.description && (
+                    <p className="mt-1 text-sm text-violet-100">
+                      {currentSurvey.description}
+                    </p>
+                  )}
+                </>
               )}
             </div>
-            <Button
-              onClick={handleExportCSV}
-              isLoading={exporting}
-              variant="secondary"
-              icon={<ExportIcon />}
-              disabled={responses.length === 0}
-              className="bg-white !text-indigo-600 !border-none"
-            >
-              Export CSV
-            </Button>
           </div>
         </div>
 
-        {/* loading spinner shown while either survey or responses are fetching */}
-        {(isLoading || loadingResponses) && (
+        {isLoading && (
           <div className="text-center py-12">
             <div className="inline-block w-8 h-8 border-4 border-violet-200 border-t-violet-600 rounded-full animate-spin" />
-            <p className="mt-4 text-gray-600">Loading responses...</p>
+            <p className="mt-4 text-gray-600">Loading survey...</p>
           </div>
         )}
 
         {currentSurvey && !isLoading && (
           <div className="space-y-6">
-            <ResponsesSummary
-              totalResponses={responses.length}
-              totalQuestions={currentSurvey.questions.length}
-              responseRate={responseRate}
-            />
+            {/* Tab navigation */}
+            <div className="border-b border-gray-200">
+              <div className="flex gap-8">
+                <button
+                  onClick={() => setActiveTab("analytics")}
+                  className={`py-3 px-1 text-sm font-medium border-b-2 transition-colors ${
+                    activeTab === "analytics"
+                      ? "border-violet-600 text-violet-600"
+                      : "border-transparent text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  Analytics
+                </button>
+                <button
+                  onClick={() => setActiveTab("breakdown")}
+                  className={`py-3 px-1 text-sm font-medium border-b-2 transition-colors ${
+                    activeTab === "breakdown"
+                      ? "border-violet-600 text-violet-600"
+                      : "border-transparent text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  Question Breakdown
+                </button>
+                <button
+                  onClick={() => setActiveTab("responses")}
+                  className={`py-3 px-1 text-sm font-medium border-b-2 transition-colors ${
+                    activeTab === "responses"
+                      ? "border-violet-600 text-violet-600"
+                      : "border-transparent text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  Responses
+                </button>
+              </div>
+            </div>
 
-            <ResponsesOverTimeChart
-              days={weekDays}
-              subtitle="Submission activity for this survey this week"
-              badge={`${responses.length} total`}
-            />
+            {/* Analytics Tab */}
+            {activeTab === "analytics" && (
+              <div className="space-y-6">
+                <ResponsesSummary
+                  totalResponses={totalResponses}
+                  totalQuestions={currentSurvey.questions.length}
+                  responseRate={responseRate}
+                />
 
-            <QuestionCharts
-              questions={currentSurvey.questions}
-              responses={responses}
-            />
+                <ResponsesOverTimeChart
+                  days={weekDays}
+                  subtitle="Submission activity for this survey this week"
+                  badge={`${totalResponses} total`}
+                />
+              </div>
+            )}
 
-            <ResponsesList
-              responses={responses}
-              questions={currentSurvey.questions}
-              isEmpty={responses.length === 0}
-            />
+            {/* Question Breakdown Tab */}
+            {activeTab === "breakdown" && (
+              <div className="space-y-6">
+                <QuestionCharts
+                  questions={paginatedQuestions}
+                  responses={responses}
+                />
+
+                {breakdownTotalPages > 1 && (
+                  <div className="flex flex-col gap-4 border-t border-gray-200 pt-5 md:flex-row md:items-center md:justify-between">
+                    <p className="text-sm text-gray-600">
+                      Showing {(breakdownPage - 1) * breakdownPageSize + 1}-
+                      {Math.min(breakdownPage * breakdownPageSize, currentSurvey.questions.length)} of{" "}
+                      {currentSurvey.questions.length} questions
+                    </p>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setBreakdownPage(Math.max(1, breakdownPage - 1))}
+                        disabled={breakdownPage === 1}
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                        aria-label="Previous page"
+                      >
+                        <ChevronLeftIcon />
+                      </button>
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        {breakdownPageItems.map((item, index) =>
+                          item === "ellipsis" ? (
+                            <span
+                              key={`ellipsis-${index}`}
+                              className="inline-flex h-10 min-w-10 items-center justify-center px-3 text-sm font-semibold text-gray-400"
+                            >
+                              ...
+                            </span>
+                          ) : (
+                            <button
+                              key={item}
+                              type="button"
+                              onClick={() => setBreakdownPage(item)}
+                              className={`inline-flex h-10 min-w-10 items-center justify-center rounded-lg border px-3 text-sm font-semibold transition-colors ${
+                                item === breakdownPage
+                                  ? "border-violet-600 bg-violet-600 text-white shadow-sm"
+                                  : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                              }`}
+                              aria-current={
+                                item === breakdownPage ? "page" : undefined
+                              }
+                            >
+                              {item}
+                            </button>
+                          ),
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setBreakdownPage(Math.min(breakdownTotalPages, breakdownPage + 1))
+                        }
+                        disabled={breakdownPage === breakdownTotalPages}
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                        aria-label="Next page"
+                      >
+                        <ChevronRightIcon />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Responses Tab */}
+            {activeTab === "responses" && (
+              <div className="space-y-6">
+                {loadingResponses && (
+                  <div className="text-center py-12">
+                    <div className="inline-block w-8 h-8 border-4 border-violet-200 border-t-violet-600 rounded-full animate-spin" />
+                    <p className="mt-4 text-gray-600">Loading responses...</p>
+                  </div>
+                )}
+
+                {!loadingResponses && (
+                  <>
+                    <ResponsesList
+                      responses={responses}
+                      questions={currentSurvey.questions}
+                      isEmpty={responses.length === 0}
+                      totalCount={totalResponses}
+                      onExportCSV={handleExportCSV}
+                      isExporting={exporting}
+                    />
+
+                    {totalResponses > responsesPageSize && (
+                      <div className="flex flex-col gap-4 border-t border-gray-200 pt-5 md:flex-row md:items-center md:justify-between">
+                        <p className="text-sm text-gray-600">
+                          Showing {(currentPage - 1) * responsesPageSize + 1}-
+                          {Math.min(currentPage * responsesPageSize, totalResponses)} of{" "}
+                          {totalResponses}
+                        </p>
+
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => loadResponses(Math.max(1, currentPage - 1))}
+                            disabled={currentPage === 1 || loadingResponses}
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                            aria-label="Previous page"
+                          >
+                            <ChevronLeftIcon />
+                          </button>
+
+                          <div className="flex flex-wrap items-center gap-2">
+                            {responsesPageItems.map((item, index) =>
+                              item === "ellipsis" ? (
+                                <span
+                                  key={`ellipsis-${index}`}
+                                  className="inline-flex h-10 min-w-10 items-center justify-center px-3 text-sm font-semibold text-gray-400"
+                                >
+                                  ...
+                                </span>
+                              ) : (
+                                <button
+                                  key={item}
+                                  type="button"
+                                  onClick={() => loadResponses(item)}
+                                  className={`inline-flex h-10 min-w-10 items-center justify-center rounded-lg border px-3 text-sm font-semibold transition-colors ${
+                                    item === currentPage
+                                      ? "border-violet-600 bg-violet-600 text-white shadow-sm"
+                                      : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                                  }`}
+                                  aria-current={
+                                    item === currentPage ? "page" : undefined
+                                  }
+                                  disabled={loadingResponses}
+                                >
+                                  {item}
+                                </button>
+                              ),
+                            )}
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              loadResponses(Math.min(responsesTotalPages, currentPage + 1))
+                            }
+                            disabled={currentPage === responsesTotalPages || loadingResponses}
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                            aria-label="Next page"
+                          >
+                            <ChevronRightIcon />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>

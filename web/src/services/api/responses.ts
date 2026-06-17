@@ -46,12 +46,28 @@ export const submitResponse = async (
 // region get survey responses
 export const getSurveyResponses = async (
   surveyId: string,
-): Promise<ApiResponse<SurveyResponse[]>> => {
+  page = 1,
+  pageSize = 10,
+): Promise<
+  ApiResponse<{
+    responses: SurveyResponse[];
+    total: number;
+    page: number;
+    pageSize: number;
+  }>
+> => {
   try {
-    // fetch survey responses
-    const response = await apiClient.get<ApiResponse<SurveyResponse[]>>(
-      `/surveys/${surveyId}/responses`,
-    )
+    // fetch survey responses with pagination
+    const response = await apiClient.get<
+      ApiResponse<{
+        responses: SurveyResponse[];
+        total: number;
+        page: number;
+        pageSize: number;
+      }>
+    >(`/surveys/${surveyId}/responses`, {
+      params: { page, pageSize },
+    })
 
     return response.data
   } catch (error: any) {

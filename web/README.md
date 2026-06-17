@@ -1,168 +1,636 @@
-# Web — Survey Builder
+# Survey Builder - Frontend
 
-React + Vite + TanStack Router. Client-side only — no SSR. Talks to the Hono API over `/api` (proxied by Vite in dev).
+A modern React-based survey building and management platform with real-time analytics and response tracking.
 
-## Stack
+## Table of Contents
 
-- **Framework:** React 18 + Vite
-- **Routing:** TanStack Router (file-based, client-side)
-- **State:** Redux Toolkit + redux-persist (auth token survives reload)
-- **Styling:** Tailwind CSS
-- **HTTP:** Axios with request/response interceptors
-- **Linting/Formatting:** Biome
+- [Architecture](#architecture)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Features](#features)
+- [How to Run](#how-to-run)
+- [How to Deploy](#how-to-deploy)
+- [Data Flow](#data-flow)
+- [API Integration](#api-integration)
 
 ## Architecture
 
+### High-Level Overview
+
 ```
-src/
-├── routes/           # TanStack Router file-based routes
-│   ├── __root.tsx    # Root layout — auth guard, session-expiry handler, ToastContainer
-│   ├── index.tsx     # / — Home page
-│   ├── login.tsx / signup.tsx
-│   ├── dashboard.tsx
-│   ├── surveys.tsx
-│   ├── surveys.$id.edit.tsx
-│   ├── surveys.$id.responses.tsx
-│   └── survey.$slug.tsx   # Public survey (no auth)
-├── pages/            # Page-level components, one per route
-├── components/
-│   ├── home/         # HomeHero, FeaturesSection, HowItWorksSection, FaqSection, FinalCtaSection
-│   ├── surveys/      # Builder UI — SurveyCard, QuestionComposerCard, BrandingForm, SurveyQuestionsStep, etc.
-│   ├── Layout/       # AppLayout, Header, Footer
-│   ├── common/       # OffCanvas, CustomModal, Toast, LockedAccessPage, EmptyState, Loading
-│   └── ui/           # Primitives — Button, Input, Select, Textarea, Checkbox, RadioGroup, Badge, ColorPicker
-├── store/
-│   ├── index.ts      # configureStore — auth, survey, question (response thunks), response slices
-│   └── slices/
-│       ├── authSlice.ts      # loginUser, signupUser, verifyToken, logout
-│       ├── surveySlice.ts    # CRUD thunks for surveys + currentSurvey
-│       ├── questionSlice.ts  # Question thunks + response thunks (submitSurveyResponse, fetchSurveyResponses)
-│       └── responseSlice.ts  # Response slice reducer
-├── services/api/     # Axios wrappers — one file per domain (auth, surveys, questions, responses)
-│   └── client.ts     # Base axios instance with auth interceptor and session-expiry event
-├── hooks/
-│   ├── redux.ts      # Typed useAppDispatch / useAppSelector
-│   └── useModal.ts   # Encapsulates confirm-modal open/close/loading state
-├── types/            # Shared TypeScript interfaces across pages, components, and store
-├── utils/
-│   ├── common/       # survey.ts (normalizeQuestionType, statusLabel, buildPaginationItems, getSurveyUrl), functions.ts, auth.ts
-│   ├── constants/    # DEFAULT_SURVEY_FORM, DEFAULT_QUESTION_FORM, SURVEY_PAGE_SIZE, route constants, theme tokens
-│   └── validations/  # isValidSurveyTitle, isValidQuestionOptions, isMultipleChoiceQuestion, etc.
-└── styles/
-    └── globals.css
+┌─────────────────────────────────────────────────────────────┐
+│                     React Application                        │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  ┌──────────────┐    ┌─────────────┐    ┌──────────────┐  │
+│  │   Pages      │◄──►│   Redux     │◄──►│   Services   │  │
+│  │              │    │   Store     │    │   (API)      │  │
+│  └──────────────┘    └─────────────┘    └──────────────┘  │
+│        │                    │                    │          │
+│        │                    │                    │          │
+│  ┌──────────────────┐  ┌──────────────┐  ┌──────────────┐ │
+│  │   Components     │  │   Slices     │  │   Axios      │ │
+│  │   - Surveys      │  │   - Survey   │  │   Client     │ │
+│  │   - Responses    │  │   - Question │  └──────────────┘ │
+│  │   - Questions    │  │   - Response │        │          │
+│  │   - Auth         │  └──────────────┘        │          │
+│  └──────────────────┘                          │          │
+│                                        ┌───────▼────────┐  │
+│                                        │  API Backend   │  │
+│                                        │  (Cloudflare   │  │
+│                                        │   Workers)     │  │
+│                                        └────────────────┘  │
+│                                                            │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-## Routing
+### Frontend Architecture Layers
 
-TanStack Router with file-based routes. `__root.tsx` is the root layout — it handles:
-- Verifying the stored JWT on app load (`verifyToken` thunk).
-- Listening for the `auth:session-expired` custom event (dispatched by the Axios interceptor on 401) to show a toast and redirect to `/login`.
-- Rendering `LockedAccessPage` for protected routes when unauthenticated instead of a hard redirect, so the layout doesn't flash.
+#### 1. **Presentation Layer (Pages & Components)**
+- **Pages**: High-level views (Surveys, Dashboard, SurveyResponses, etc.)
+- **Components**: Reusable UI elements (Buttons, Forms, Cards, Charts)
+- **Location**: `src/pages/`, `src/components/`
 
-Public routes: `/`, `/login`, `/signup`, `/terms`, `/privacy`, `/survey/:slug`.
+#### 2. **State Management Layer (Redux Toolkit)**
+- **Redux Store**: Centralized state management for surveys, questions, responses, and auth
+- **Slices**: Modular state logic (surveySlice, questionSlice, responseSlice)
+- **Thunks**: Async operations that dispatch actions
+- **Location**: `src/store/slices/`
 
-## State Management
+#### 3. **API Integration Layer (Services)**
+- **Service Files**: Abstracts API calls into reusable functions
+- **Axios Client**: HTTP client with interceptors and base configuration
+- **Location**: `src/services/api/`
 
-Redux Toolkit. Three meaningful slices:
+#### 4. **Utilities & Helpers**
+- **Validation**: Form and data validation rules
+- **Common Functions**: Reusable utilities (pagination, formatting, etc.)
+- **Icons**: SVG icon components
+- **Toast Notifications**: User feedback system
+- **Location**: `src/utils/`, `src/lib/`
 
-- **authSlice** — user, token, isAuthenticated, isLoading. Persisted via redux-persist (token survives page reload).
-- **surveySlice** — surveys list, `surveysTotal` (total count from API), and `currentSurvey` (survey with questions). Fetched on page load and refreshed after mutations. Pagination and filtering are server-driven — the slice stores only the current page of results.
-- **questionSlice** — question mutation thunks (add, update, delete, reorder) and response thunks (submit, fetch). Shares the response slice reducer with `responseSlice.ts`.
+#### 5. **Types & Constants**
+- **TypeScript Interfaces**: Type definitions for data models
+- **Constants**: Configuration values and enums
+- **Location**: `src/types/`
 
-Why Redux over local state: the survey builder drawer and the surveys list are siblings, both needing `currentSurvey`. Lifting that state through props would be fragile. Redux keeps the active survey as a single source of truth both the drawer and the grid can read.
+## Tech Stack
 
-## HTTP Layer
+### Core
+- **React 19** - UI library
+- **TypeScript 6** - Type safety
+- **Vite 8** - Build tool and dev server
+- **TailwindCSS 4** - Utility-first styling
 
-`services/api/client.ts` creates a single Axios instance. Two interceptors:
+### State Management
+- **Redux Toolkit** - State management
+- **Redux Persist** - Local storage persistence
+- **Async Thunks** - API integration
 
-- **Request** — attaches `Authorization: Bearer <token>` from `localStorage`.
-- **Response** — on 401, fires a `auth:session-expired` custom event exactly once (guarded by `sessionExpiryHandled` flag, reset only on successful responses, and skipped for `/auth/verify` so the silent startup check doesn't trigger a toast).
+### Routing & Navigation
+- **TanStack Router** - Type-safe routing
+- **React Router Plugins** - Automatic file-based routing
 
-Each domain file (`surveys.ts`, `questions.ts`, etc.) wraps the Axios calls and normalises errors so every function returns `ApiResponse<T>` — callers never deal with thrown exceptions.
+### Forms & Validation
+- **React Hook Form** - Efficient form handling
+- **Zod** - TypeScript-first validation
+- **@hookform/resolvers** - Zod + React Hook Form integration
 
-## Survey Builder
+### API & Data
+- **Axios** - HTTP client
+- **Chart.js** - Data visualization
+- **XLSX** - Excel export functionality
 
-The builder lives entirely in `pages/Surveys.tsx` as an OffCanvas drawer — no separate route. This was a deliberate tradeoff: it keeps the survey list and builder on the same page, so the user sees updates instantly without navigation.
+### Development
+- **Biome** - Linting and formatting
+- **TypeScript** - Type checking
 
-Key interactions:
-- **Create wizard** — 4-step flow (basics → branding → questions → publish) inside an OffCanvas.
-- **Edit drawer** — same OffCanvas, pre-filled with the selected survey's current values.
-- **Question composer** — `QuestionComposerCard` renders inline inside the questions step. Supports 7 question types: short text, long text, multiple choice, checkbox group, dropdown, rating, yes/no.
-- **Reorder** — HTML5 drag-and-drop. `draggedQuestionId` tracks the dragged item; on drop, the new order is computed client-side and sent to `PUT /questions/reorder`.
-- **Branding** — `ColorPicker` + logo URL input. Primary color is applied live in the preview panel and persisted on the survey.
-- **Filtering and pagination** — search, status, date range, and sort are filter state on the frontend. Each change fires a debounced fetch to the API, which applies the filters in SQL and returns only the current page. `surveysTotal` from the API response drives the pagination bar.
+## Project Structure
 
-## Public Survey Page
-
-`/survey/:slug` — no auth required. Fetches the survey by slug (returns 403 if not published), renders questions using `uiType` to pick the right input (radio, checkbox, select, textarea, star rating, toggle). On submit, sends `POST /:surveyId/responses`.
-
-## Running locally
-
-```bash
-pnpm dev   # from workspace root — starts Vite on :5173, proxies /api to :8787
+```
+web/
+├── src/
+│   ├── components/
+│   │   ├── auth/              # Authentication components
+│   │   ├── common/            # Reusable UI components
+│   │   ├── home/              # Landing page components
+│   │   ├── Layout/            # Layout wrapper
+│   │   ├── surveyBuilder/     # Survey creation/editing
+│   │   └── surveyResponses/   # Response analytics & display
+│   │
+│   ├── pages/                 # Route pages
+│   │   ├── Login.tsx
+│   │   ├── Signup.tsx
+│   │   ├── Dashboard.tsx      # Survey list
+│   │   ├── SurveyBuilder.tsx  # Survey creation
+│   │   ├── SurveyResponses.tsx # Response analytics
+│   │   └── PublicSurvey.tsx   # Public survey form
+│   │
+│   ├── store/
+│   │   ├── slices/            # Redux Toolkit slices
+│   │   │   ├── surveySlice.ts
+│   │   │   ├── questionSlice.ts
+│   │   │   ├── responseSlice.ts
+│   │   │   └── authSlice.ts
+│   │   └── index.ts           # Store configuration
+│   │
+│   ├── services/
+│   │   ├── api/
+│   │   │   ├── client.ts      # Axios instance
+│   │   │   ├── surveys.ts     # Survey API calls
+│   │   │   ├── questions.ts   # Question API calls
+│   │   │   ├── responses.ts   # Response API calls
+│   │   │   └── auth.ts        # Auth API calls
+│   │   └── index.ts
+│   │
+│   ├── types/
+│   │   └── survey.ts          # TypeScript interfaces
+│   │
+│   ├── utils/
+│   │   ├── common/
+│   │   │   ├── survey.ts      # Survey helpers
+│   │   │   └── index.ts
+│   │   ├── validations/       # Validation schemas
+│   │   ├── icons.tsx          # Icon components
+│   │   ├── constants.ts       # App constants
+│   │   └── index.ts
+│   │
+│   ├── lib/
+│   │   └── toast.ts           # Toast notification system
+│   │
+│   ├── hooks/
+│   │   └── redux.ts           # Redux hooks
+│   │
+│   ├── App.tsx                # Root component
+│   └── index.css              # Global styles
+│
+├── index.html
+├── vite.config.ts             # Vite configuration
+├── tsconfig.json              # TypeScript configuration
+├── tailwind.config.ts         # TailwindCSS config
+├── postcss.config.js
+├── biome.json
+└── package.json
 ```
 
-```bash
-pnpm check        # Biome lint + format check (must pass before submitting)
-pnpm check:fix    # Auto-fix Biome issues
-pnpm typecheck    # tsc --noEmit
-pnpm build        # Production build to dist/
-```
+## Features
 
-## Deploying to Production
+### Authentication
+- ✅ User registration with password validation
+- ✅ Login with JWT tokens
+- ✅ Secure token storage (Redux Persist)
+- ✅ Protected routes and endpoints
+
+### Survey Management
+- ✅ Create surveys with title, description, branding
+- ✅ Add custom color, logo, thank you message
+- ✅ Publish/Draft status
+- ✅ Response limits and expiration dates
+- ✅ Search, filter, and sort surveys
+- ✅ Pagination support
+
+### Question Management
+- ✅ Multiple question types (text, email, rating, multiple choice, etc.)
+- ✅ Question reordering (drag & drop)
+- ✅ Required field validation
+- ✅ Character limits for text fields
+- ✅ Conditional visibility (if/then logic)
+- ✅ Question templates
+
+### Response Analytics
+- ✅ Real-time response tracking
+- ✅ Summary statistics (total responses, response rate)
+- ✅ Question breakdown with charts
+- ✅ Weekly response trend analysis
+- ✅ Response pagination (5 per page)
+- ✅ Question chart pagination (10 per page)
+
+### Data Export
+- ✅ Export to Excel (.xlsx format)
+- ✅ Professional styling with colors
+- ✅ Padded cells for readability
+- ✅ All responses included
+- ✅ Auto-sized columns
+- ✅ Timestamped filename
+
+### Public Survey
+- ✅ Public survey link sharing
+- ✅ Anonymous response submission
+- ✅ No authentication required
+- ✅ Thank you message after submission
+- ✅ Auto-save responses
+
+## How to Run
 
 ### Prerequisites
-- Cloudflare account with Pages enabled
-- `wrangler` CLI installed and authenticated (`wrangler login`)
-- API already deployed (see api/README.md for setup)
+- Node.js 18+ or pnpm
+- npm/pnpm/yarn
 
-### Step 1: Set API URL
-
-Update `web/.env` with your production API URL:
+### Installation
 
 ```bash
-echo "VITE_API_URL=https://<your-api-domain>/api" > web/.env
-```
-
-### Step 2: Build
-
-```bash
+# Navigate to web directory
 cd web
-npm run build
+
+# Install dependencies
+pnpm install
+
+# Set up environment variables
+cp .env.example .env
+# Edit .env with your API URL
 ```
 
-This creates a `dist/` directory with the optimized production build.
-
-### Step 3: Deploy to Cloudflare Pages
+### Development Server
 
 ```bash
-wrangler pages deploy dist
+# Start dev server
+pnpm dev
+
+# Server runs at http://localhost:5174
+# Hot module replacement enabled
+# TypeScript type checking on save
 ```
 
-On first deployment, you'll be prompted to:
-- Enter a project name (e.g., `survey-builder`)
-- Enter a production branch name (e.g., `deploy`)
-
-The frontend will be available at `https://<hash>.survey-builder-<hash>.pages.dev`
-
-### Step 4: Update API CORS
-
-After frontend deployment, update the `FRONTEND_URL` in `api/wrangler.jsonc` with your Pages URL and redeploy:
+### Build
 
 ```bash
-cd api
-wrangler deploy
+# Build for production
+pnpm build
+
+# Output in dist/ folder
+# Optimized and minified
+
+# Preview build locally
+pnpm preview
 ```
 
-### Continuous Deployment
+### Type Checking
 
-For automated deployments on each push:
-1. Connect your GitHub repo to Cloudflare Pages in the dashboard
-2. Set build settings:
-   - **Build command**: `npm run build`
-   - **Build directory**: `dist`
-   - **Root directory**: `web`
-3. Add environment variables in the dashboard (if needed)
+```bash
+# Run TypeScript compiler
+pnpm typecheck
+```
 
-The frontend will auto-deploy on every push to your production branch.
+## How to Deploy
 
+### Deploy to Cloudflare Pages
+
+```bash
+# Build the project
+pnpm build
+
+# Deploy using Wrangler
+pnpm dlx wrangler pages deploy dist --project-name=survey-builder
+
+# Or deploy via Git integration:
+# Push to GitHub and connect repository in Cloudflare Pages dashboard
+```
+
+### Environment Variables
+
+Create `.env` file:
+
+```env
+VITE_API_URL=https://sde-intern-task-api.surveybuilder.workers.dev
+```
+
+### Production Checklist
+
+- [ ] Set `VITE_API_URL` to production API endpoint
+- [ ] Run `pnpm build` successfully
+- [ ] Test all features in production
+- [ ] Verify CORS configuration on backend
+- [ ] Check authentication flow
+- [ ] Test survey creation and response submission
+- [ ] Verify analytics page
+- [ ] Test Excel export functionality
+
+## Data Flow
+
+### 1. User Authentication Flow
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                                                          │
+│  User Input (Email, Password)                           │
+│         │                                               │
+│         ▼                                               │
+│  Local Validation (Zod Schema)                         │
+│         │                                               │
+│         ▼                                               │
+│  Redux Action: signup/login                            │
+│         │                                               │
+│         ▼                                               │
+│  Async Thunk: authSlice.signupUser/loginUser          │
+│         │                                               │
+│         ▼                                               │
+│  Axios POST to /api/auth/signup or /login             │
+│         │                                               │
+│         ▼                                               │
+│  Backend Validation & Authentication                   │
+│         │                                               │
+│         ▼                                               │
+│  Return JWT Token                                      │
+│         │                                               │
+│         ▼                                               │
+│  Redux Store Token                                     │
+│         │                                               │
+│         ▼                                               │
+│  Redux Persist to LocalStorage                         │
+│         │                                               │
+│         ▼                                               │
+│  Redirect to Dashboard                                 │
+│         │                                               │
+│         ▼                                               │  
+│  Component Re-render with Auth State                   │
+│                                                        │
+└──────────────────────────────────────────────────────────┘
+```
+
+### 2. Survey Creation Flow
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                                                          │
+│  User Fills Survey Form                                │
+│  (Title, Description, Color, Logo)                    │
+│         │                                               │
+│         ▼                                               │
+│  React Hook Form Validation (Zod)                     │
+│         │                                               │
+│         ▼                                               │
+│  Redux Action: createSurvey                            │
+│         │                                               │
+│         ▼                                               │
+│  Async Thunk: surveySlice.createSurvey                │
+│         │                                               │
+│         ▼                                               │
+│  Axios POST to /api/surveys                           │
+│  (with JWT token in header)                           │
+│         │                                               │
+│         ▼                                               │
+│  Backend: Validate & Create Survey                    │
+│  (Check ownership, validate data)                     │
+│         │                                               │
+│         ▼                                               │
+│  Return Survey Object with ID                         │
+│         │                                               │
+│         ▼                                               │
+│  Redux Store Survey                                   │
+│         │                                               │
+│         ▼                                               │
+│  Redirect to SurveyBuilder with Survey ID            │
+│         │                                               │
+│         ▼                                               │
+│  Component Renders Editor                             │
+│                                                        │
+└──────────────────────────────────────────────────────────┘
+```
+
+### 3. Question Management Flow
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                                                          │
+│  User Adds Question via Modal                          │
+│  (Type, Title, Options, Required, etc.)               │
+│         │                                               │
+│         ▼                                               │
+│  Local Validation                                      │
+│         │                                               │
+│         ▼                                               │
+│  Redux Action: addQuestion                            │
+│         │                                               │
+│         ▼                                               │
+│  Async Thunk: questionSlice.addQuestion              │
+│         │                                               │
+│         ▼                                               │
+│  Axios POST to /api/surveys/{surveyId}/questions     │
+│         │                                               │
+│         ▼                                               │
+│  Backend: Validate & Create Question                  │
+│  (Check survey ownership, validate fields)            │
+│         │                                               │
+│         ▼                                               │
+│  Return Question Object                               │
+│         │                                               │
+│         ▼                                               │
+│  Redux Update: Add to questionSlice                   │
+│         │                                               │
+│         ▼                                               │
+│  Component Re-render                                  │
+│  (Show question in survey)                            │
+│                                                        │
+└──────────────────────────────────────────────────────────┘
+```
+
+### 4. Response Submission Flow (Public)
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                                                          │
+│  User Accesses Public Survey Link                      │
+│  (No authentication required)                          │
+│         │                                               │
+│         ▼                                               │
+│  Axios GET to /api/surveys/public/{slug}             │
+│         │                                               │
+│         ▼                                               │
+│  Backend Checks if Survey Published                   │
+│         │                                               │
+│         ▼                                               │
+│  Return Survey Questions                              │
+│         │                                               │
+│         ▼                                               │
+│  Component Renders Survey Form                        │
+│         │                                               │
+│         ▼                                               │
+│  User Fills Out Form & Submits                        │
+│         │                                               │
+│         ▼                                               │
+│  Local Validation (Zod)                               │
+│         │                                               │
+│         ▼                                               │
+│  Axios POST to /api/surveys/{surveyId}/responses    │
+│  (No auth required, just survey ID)                  │
+│         │                                               │
+│         ▼                                               │
+│  Backend: Validate Answers                            │
+│         │                                               │
+│         ▼                                               │
+│  Store Response in Database                           │
+│         │                                               │
+│         ▼                                               │
+│  Return Success Message                               │
+│         │                                               │
+│         ▼                                               │
+│  Component Shows Thank You Page                       │
+│                                                        │
+└──────────────────────────────────────────────────────────┘
+```
+
+### 5. Response Analytics Flow
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                                                          │
+│  User Clicks "View Responses" Button                   │
+│         │                                               │
+│         ▼                                               │
+│  Lazy Load: Only fetch when Analytics tab clicked    │
+│         │                                               │
+│         ▼                                               │
+│  Redux Action: fetchSurveyResponses                   │
+│         │                                               │
+│         ▼                                               │
+│  Async Thunk with Pagination:                         │
+│  - Page: 1, PageSize: 5 (or 100 for export)          │
+│         │                                               │
+│         ▼                                               │
+│  Axios GET to /api/surveys/{surveyId}/responses     │
+│  ?page=1&pageSize=5                                  │
+│         │                                               │
+│         ▼                                               │
+│  Backend Query DB with Pagination                     │
+│  - Count total responses                              │
+│  - Fetch paginated results                            │
+│         │                                               │
+│         ▼                                               │
+│  Return { responses: [...], total: 6 }               │
+│         │                                               │
+│         ▼                                               │
+│  Redux Store: Set responses & pagination state        │
+│         │                                               │
+│         ▼                                               │
+│  Component Renders Tabs:                              │
+│  - Analytics (summary stats, charts)                  │
+│  - Question Breakdown (chart per question)            │
+│  - All Responses (paginated list, 5 per page)        │
+│         │                                               │
+│         ▼                                               │
+│  User Clicks Export Button                            │
+│         │                                               │
+│         ▼                                               │
+│  Fetch ALL responses (page size 100)                  │
+│  Handle multiple pages if needed                      │
+│         │                                               │
+│         ▼                                               │
+│  XLSX Library: Generate Excel File                    │
+│  - Header row (blue background, white text)          │
+│  - All responses with formatting                      │
+│  - Alternating row colors                             │
+│  - Padded cells                                       │
+│         │                                               │
+│         ▼                                               │
+│  Browser Download                                      │
+│                                                        │
+└──────────────────────────────────────────────────────────┘
+```
+
+## API Integration
+
+### Base URL Configuration
+
+```typescript
+// src/services/api/client.ts
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787'
+
+const axiosInstance = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true,
+})
+```
+
+### API Endpoints Used
+
+```
+Authentication:
+  POST   /api/auth/signup
+  POST   /api/auth/login
+  POST   /api/auth/logout
+
+Surveys:
+  GET    /api/surveys (paginated list with filters)
+  GET    /api/surveys/:id
+  POST   /api/surveys (create)
+  PUT    /api/surveys/:id (update)
+  DELETE /api/surveys/:id
+  GET    /api/surveys/public/:slug (public access)
+
+Questions:
+  GET    /api/surveys/:surveyId/questions
+  POST   /api/surveys/:surveyId/questions
+  PUT    /api/surveys/:surveyId/questions/:questionId
+  DELETE /api/surveys/:surveyId/questions/:questionId
+  PUT    /api/surveys/:surveyId/questions/reorder
+
+Responses:
+  GET    /api/surveys/:surveyId/responses (paginated)
+  POST   /api/surveys/:surveyId/responses (public submission)
+```
+
+### Request/Response Pattern
+
+All API requests include JWT token:
+
+```typescript
+// Automatically added by Axios interceptor
+headers: {
+  'Authorization': `Bearer ${token}`,
+  'Content-Type': 'application/json',
+}
+```
+
+Responses follow standard format:
+
+```typescript
+interface ApiResponse<T> {
+  success: boolean
+  message: string
+  data?: T
+  errors?: Record<string, string>
+}
+```
+
+## Performance Optimizations
+
+1. **Code Splitting**: Route-based code splitting with Vite
+2. **Lazy Loading**: Responses only load when Analytics tab clicked
+3. **Pagination**: 5 responses per page, 10 questions per page
+4. **Memoization**: useMemo for derived data (pagination items, charts)
+5. **Redux**: Efficient state updates with Toolkit
+6. **Images**: Optimized and cached by Cloudflare
+7. **Caching**: Browser caching of static assets
+
+## Troubleshooting
+
+### Common Issues
+
+**API Connection Error**
+- Check `VITE_API_URL` environment variable
+- Verify API server is running
+- Check CORS settings on backend
+
+**Auth Token Expired**
+- Token refresh not implemented yet (TODO)
+- Clear localStorage and re-login
+
+**Survey Not Loading**
+- Check survey ownership
+- Verify survey ID is valid
+- Check network tab for API errors
+
+**Export Not Working**
+- Ensure all responses have loaded
+- Check browser console for errors
+- Verify XLSX library is bundled
+
+## Contributing
+
+Follow these conventions:
+- Use TypeScript strictly
+- Write Zod schemas for validation
+- Use Redux Toolkit slices
+- Keep components focused and reusable
+- Add comments for complex logic
+- Test on multiple browsers

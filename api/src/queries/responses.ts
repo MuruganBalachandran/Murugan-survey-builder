@@ -106,3 +106,41 @@ export const findResponsesBySurveyId = async (
   }
 };
 // endregion
+
+// region findResponsesBySurveyIdPaginated
+export const findResponsesBySurveyIdPaginated = async (
+  db: D1Database,
+  surveyId: string,
+  options: { page?: number; pageSize?: number } = {},
+): Promise<{ responses: SurveyResponse[]; total: number; page: number; pageSize: number }> => {
+  try {
+    const page = Math.max(1, options.page ?? 1);
+    const pageSize = Math.min(200, Math.max(1, options.pageSize ?? 10));
+    const offset = (page - 1) * pageSize;
+
+    // Run count and data queries in parallel
+    const [countResult, listResult] = await Promise.all([
+      db
+        .prepare("SELECT COUNT(*) AS total FROM survey_responses WHERE survey_id = ?")
+        .bind(surveyId)
+        .first<{ total: number }>(),
+      db
+        .prepare(
+          `SELECT ${RESPONSE_COLUMNS} FROM survey_responses WHERE survey_id = ? ORDER BY submitted_at DESC LIMIT ? OFFSET ?`,
+        )
+        .bind(surveyId, pageSize, offset)
+        .all<any>(),
+    ]);
+
+    return {
+      responses: listResult.results.map(mapResponse),
+      total: countResult?.total ?? 0,
+      page,
+      pageSize,
+    };
+  } catch (error) {
+    console.error("findResponsesBySurveyIdPaginated error:", error);
+    return { responses: [], total: 0, page: 1, pageSize: 10 };
+  }
+};
+// endregion

@@ -30,17 +30,40 @@ const formatAnswer = (value: any, question: Question | undefined) => {
 // endregion
 
 // region component
-export const ResponsesList = ({ responses, questions, isEmpty = false }: ResponsesListProps) => {
+export const ResponsesList = ({ responses, questions, isEmpty = false, totalCount = 0, onExportCSV, isExporting = false }: ResponsesListProps) => {
   return (
     <div className="app-panel">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">
-        All Responses
-        {!isEmpty && (
-          <span className="ml-2 rounded-full bg-violet-50 px-2.5 py-0.5 text-xs font-semibold text-violet-600">
-            {responses.length}
-          </span>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold text-gray-900">
+          All Responses
+          {!isEmpty && (
+            <span className="ml-2 rounded-full bg-violet-50 px-2.5 py-0.5 text-xs font-semibold text-violet-600">
+              {totalCount}
+            </span>
+          )}
+        </h2>
+        {!isEmpty && onExportCSV && (
+          <button
+            onClick={onExportCSV}
+            disabled={isExporting}
+            className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isExporting ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Exporting...
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Export CSV
+              </>
+            )}
+          </button>
         )}
-      </h2>
+      </div>
 
       {isEmpty ? (
         <div className="text-center py-8">

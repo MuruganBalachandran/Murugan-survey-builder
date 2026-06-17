@@ -5,6 +5,7 @@ import {
   countResponsesBySurveyId,
   createResponse,
   findResponsesBySurveyId,
+  findResponsesBySurveyIdPaginated,
   findSurveyById,
   updateSurvey,
 } from "../queries";
@@ -140,9 +141,28 @@ export const getSurveyResponses = async (c: Context): Promise<Response> => {
       );
     }
 
-    const responses = await findResponsesBySurveyId(db, surveyId);
-    return c.json<ApiResponse<SurveyResponse[]>>(
-      { success: true, message: "Responses retrieved", data: responses },
+    // pagination
+    const page = Math.max(1, Number(c.req.query("page") ?? 1));
+    const pageSize = Math.min(200, Math.max(1, Number(c.req.query("pageSize") ?? 10)));
+
+    const { responses, total } = await findResponsesBySurveyIdPaginated(db, surveyId, {
+      page,
+      pageSize,
+    });
+
+    return c.json<
+      ApiResponse<{
+        responses: SurveyResponse[];
+        total: number;
+        page: number;
+        pageSize: number;
+      }>
+    >(
+      {
+        success: true,
+        message: "Responses retrieved",
+        data: { responses, total, page, pageSize },
+      },
       HTTP_STATUS.OK,
     );
   } catch (error) {
