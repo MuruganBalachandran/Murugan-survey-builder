@@ -2,7 +2,10 @@
 
 A lightweight branded survey builder. Create surveys, add questions, brand them with your colors and logo, share a public link, and view responses — all without leaving the dashboard.
 
-Built as a take-home for the SDE intern role at [DoCoDeGo](https://docodego.com/).
+**Live Demo:** https://bf25f48c.survey-builder-dhz.pages.dev
+
+**API:** https://sde-intern-task-api.surveybuilder.workers.dev
+
 
 ## What it does
 
@@ -98,6 +101,22 @@ pnpm check:fix        # Auto-fix Biome issues
 pnpm typecheck        # tsc --noEmit across both packages
 pnpm build            # Production build of web/
 ```
+
+## Deploying to Production
+
+For detailed deployment instructions, see:
+- **API deployment** → [`api/README.md` → Deploying to Production](./api/README.md#deploying-to-production)
+- **Frontend deployment** → [`web/README.md` → Deploying to Production](./web/README.md#deploying-to-production)
+
+Quick summary:
+1. Deploy D1 database schema: `wrangler d1 execute survey-builder --remote --file=schema.sql`
+2. Set environment variables in `wrangler.jsonc` (JWT_SECRET, FRONTEND_URL)
+3. Deploy API: `cd api && npm run deploy`
+4. Set VITE_API_URL in `web/.env` and build
+5. Deploy frontend: `cd web && wrangler pages deploy dist`
+6. Update FRONTEND_URL in API and redeploy for CORS
+
+The full app is deployed across Cloudflare Workers (API) and Cloudflare Pages (frontend) with D1 for persistence.
 
 ## AI tools used
 

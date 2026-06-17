@@ -47,7 +47,7 @@ export const createSurvey = async (
   try {
     const now = new Date().toISOString();
 
-    await db
+    const result = await db
       .prepare(
         "INSERT INTO surveys (id, user_id, title, description, slug, primary_color, logo_url, status, published_at, ends_at, max_responses, thank_you_message, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       )
@@ -69,6 +69,11 @@ export const createSurvey = async (
       )
       // sends the INSERT command to D1.
       .run();
+
+    if (!result.success) {
+      console.error("createSurvey DB error:", result);
+      return undefined;
+    }
 
     return {
       ...survey,

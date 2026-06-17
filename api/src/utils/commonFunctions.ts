@@ -45,18 +45,17 @@ export const bytesToHex = (bytes: Uint8Array): string =>
 
 const COOKIE_NAME = "auth_token";
 
-// Builds a Set-Cookie header with httpOnly, SameSite=Strict security flags.
-// Secure flag is only added in production so local dev over HTTP works.
+// Builds a Set-Cookie header with httpOnly, SameSite security flags
+// For cross-origin requests, use SameSite=None; Secure in production
 export const buildCookieHeader = (token: string, env: Env): string => {
-  const isProd = env.NODE_ENV === "production";
   const maxAge = 60 * 60; // 1 hour — matches JWT_EXPIRY
   return [
     `${COOKIE_NAME}=${token}`,
     `Max-Age=${maxAge}`,
     "Path=/",
     "HttpOnly",
-    "SameSite=Strict",
-    isProd ? "Secure" : "",
+    "SameSite=None",
+    "Secure",
   ]
     .filter(Boolean)
     .join("; ");
@@ -64,7 +63,7 @@ export const buildCookieHeader = (token: string, env: Env): string => {
 
 // Builds a Set-Cookie header that immediately expires the cookie
 export const clearCookieHeader = (): string =>
-  `${COOKIE_NAME}=; Max-Age=0; Path=/; HttpOnly; SameSite=Strict`;
+  `${COOKIE_NAME}=; Max-Age=0; Path=/; HttpOnly; SameSite=None; Secure`;
 
 // Extracts the JWT value from the Cookie request header
 export const getTokenFromCookie = (cookieHeader: string): string | null => {

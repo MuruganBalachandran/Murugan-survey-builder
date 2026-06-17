@@ -29,7 +29,7 @@ export const createQuestion = async (
 ): Promise<Question | undefined> => {
   try {
     const now = new Date().toISOString();
-    await db
+    const result = await db
       .prepare(
         "INSERT INTO questions (id, survey_id, type, ui_type, title, description, options, required, order_index, min_length, max_length, visible_if, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       )
@@ -50,6 +50,11 @@ export const createQuestion = async (
         now,
       )
       .run();
+
+    if (!result.success) {
+      console.error("createQuestion DB error:", result);
+      return undefined;
+    }
 
     return { ...question, createdAt: now, updatedAt: now };
   } catch (error) {

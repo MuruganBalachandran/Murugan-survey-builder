@@ -17,9 +17,8 @@ export const FinalCtaSection = ({ onGetStarted }: FinalCtaSectionProps) => (
     <Button
       variant="secondary"
       size="lg"
-      className="mt-6"
+      className="mt-6 bg-white !text-indigo-600 !border-none"
       onClick={onGetStarted}
-      className="bg-white !text-indigo-600 !border-none"
     >
       Get Started
     </Button>

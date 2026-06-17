@@ -90,6 +90,7 @@ export const addQuestion = async (c: Context): Promise<Response> => {
     });
 
     if (!question) {
+      console.error("Question creation returned undefined for survey:", surveyId);
       return c.json<ApiResponse<null>>(
         { success: false, message: "Failed to create question" },
         HTTP_STATUS.INTERNAL_SERVER_ERROR,
@@ -172,7 +173,13 @@ export const updateQuestionDetails = async (c: Context): Promise<Response> => {
       );
     }
 
-    const updatedQuestion = await updateQuestion(db, questionId, body);
+    // Convert null visibleIf to undefined for type safety
+    const updatePayload: Partial<Omit<Question, "surveyId" | "createdAt" | "id">> = {
+      ...body,
+      visibleIf: body.visibleIf === null ? undefined : body.visibleIf,
+    };
+
+    const updatedQuestion = await updateQuestion(db, questionId, updatePayload);
     if (!updatedQuestion) {
       return c.json<ApiResponse<null>>(
         { success: false, message: "Question not found" },

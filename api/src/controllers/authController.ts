@@ -83,19 +83,14 @@ export const signup = async (c: Context): Promise<Response> => {
     const token = await generateToken(newUser.id, newUser.email, c.env);
 
     // Set the JWT in an httpOnly cookie — never exposed to JS
-    return new Response(
-      JSON.stringify({
+    c.header('Set-Cookie', buildCookieHeader(token, c.env))
+    return c.json(
+      {
         success: true,
         message: "User registered successfully",
         user: { id: newUser.id, email: newUser.email, name: newUser.name },
-      } satisfies AuthResponse),
-      {
-        status: HTTP_STATUS.CREATED,
-        headers: {
-          "Content-Type": "application/json",
-          "Set-Cookie": buildCookieHeader(token, c.env),
-        },
-      },
+      } satisfies AuthResponse,
+      HTTP_STATUS.CREATED,
     );
   } catch (error) {
     console.error("Signup error:", error);
@@ -159,19 +154,14 @@ export const login = async (c: Context): Promise<Response> => {
     const token = await generateToken(user.id, user.email, c.env);
 
     // Set the JWT in an httpOnly cookie — never exposed to JS
-    return new Response(
-      JSON.stringify({
+    c.header('Set-Cookie', buildCookieHeader(token, c.env))
+    return c.json(
+      {
         success: true,
         message: "Login successful",
         user: { id: user.id, email: user.email, name: user.name },
-      } satisfies AuthResponse),
-      {
-        status: HTTP_STATUS.OK,
-        headers: {
-          "Content-Type": "application/json",
-          "Set-Cookie": buildCookieHeader(token, c.env),
-        },
-      },
+      } satisfies AuthResponse,
+      HTTP_STATUS.OK,
     );
   } catch (error) {
     console.error("Login error:", error);
@@ -220,19 +210,14 @@ export const verify = async (c: Context): Promise<Response> => {
 // region logout
 export const logout = async (c: Context): Promise<Response> => {
   try {
-    // returns a response with the cookie cleared
-    return new Response(
-      JSON.stringify({
+    // Set the cookie to empty to clear it
+    c.header('Set-Cookie', clearCookieHeader())
+    return c.json(
+      {
         success: true,
         message: "Logout successful",
-      } satisfies AuthResponse),
-      {
-        status: HTTP_STATUS.OK,
-        headers: {
-          "Content-Type": "application/json",
-          "Set-Cookie": clearCookieHeader(),
-        },
-      },
+      } satisfies AuthResponse,
+      HTTP_STATUS.OK,
     );
   } catch (error) {
     console.error("Logout error:", error);
