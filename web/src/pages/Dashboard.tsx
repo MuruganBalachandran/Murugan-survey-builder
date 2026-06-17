@@ -1,14 +1,26 @@
 // region imports
 
 import { useNavigate } from '@tanstack/react-router'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 import { AppLayout } from '@/components/Layout/AppLayout'
 import { Button } from '@/components/ui/Button'
 import { useAppDispatch, useAppSelector } from '@/hooks/redux'
 import { ResponsesOverTimeChart } from '@/components/surveyResponses/ResponsesOverTimeChart'
-import { getSurveyResponses } from '@/services/api/responses'
+import { fetchSurveyResponses } from '@/store/slices/responseSlice'
 import { fetchUserSurveys } from '@/store/slices/surveySlice'
 import type { DashboardResponse, StatCardProps } from '@/types'
+import {
+  DASHBOARD_SURVEYS_PAGE_SIZE,
+  DRAFT_SURVEYS_PREVIEW_LIMIT,
+  RECENT_RESPONSES_LIMIT,
+  TOP_SURVEYS_LIMIT,
+} from '@/utils/constants'
+import {
+  formatRelativeTime,
+  getGreeting,
+  isAnswered,
+  startOfCurrentWeek,
+} from '@/utils/common'
 import {
   CompletionIcon,
   DashboardSurveyIcon,
@@ -34,136 +46,63 @@ const StatCard = ({ label, value, detail, icon, iconClassName }: StatCardProps) 
     </div>
   </div>
 )
-
-// returns true when an answer field has a non-empty value
-const isAnswered = (value: string | string[] | number) => {
-  if (Array.isArray(value)) return value.length > 0
-  if (typeof value === 'string') return value.trim().length > 0
-  return true
-}
-
-// returns a Date set to 00:00 of the current ISO week's Monday
-const startOfCurrentWeek = () => {
-  const date = new Date()
-  const day = date.getDay()
-  const daysSinceMonday = day === 0 ? 6 : day - 1
-  date.setHours(0, 0, 0, 0)
-  date.setDate(date.getDate() - daysSinceMonday)
-  return date
-}
-
-// converts a UTC date string into a human-readable relative label
-const formatRelativeTime = (dateValue: string) => {
-  const elapsedSeconds = Math.max(
-    0,
-    Math.floor((Date.now() - new Date(dateValue).getTime()) / 1000),
-  )
-  if (elapsedSeconds < 60) return 'Just now'
-
-  const elapsedMinutes = Math.floor(elapsedSeconds / 60)
-  if (elapsedMinutes < 60) return `${elapsedMinutes} min${elapsedMinutes === 1 ? '' : 's'} ago`
-
-  const elapsedHours = Math.floor(elapsedMinutes / 60)
-  if (elapsedHours < 24) return `${elapsedHours} hour${elapsedHours === 1 ? '' : 's'} ago`
-
-  const elapsedDays = Math.floor(elapsedHours / 24)
-  if (elapsedDays < 7) return `${elapsedDays} day${elapsedDays === 1 ? '' : 's'} ago`
-
-  return new Date(dateValue).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-}
-
-// returns a time-of-day greeting string
-const getGreeting = () => {
-  const hour = new Date().getHours()
-  if (hour < 12) return 'Good morning'
-  if (hour < 18) return 'Good afternoon'
-  return 'Good evening'
-}
-
 // endregion
 
+/**
+ * DashboardPage - User dashboard displaying surveys, responses, and analytics
+ * Shows overview statistics, recent activity, top surveys, and draft surveys
+ */
 // region component
 export const DashboardPage = () => {
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
   const { user, isAuthenticated } = useAppSelector((state) => state.auth)
   const { surveys, surveysTotal, isLoading } = useAppSelector((state) => state.survey)
-  const [responses, setResponses] = useState<DashboardResponse[]>([])
-  const [responsesLoading, setResponsesLoading] = useState(false)
+  const { responses, isLoading: responsesLoading } = useAppSelector((state) => state.response)
 
   // region effects
 
-  // fetch surveys on mount and redirect unauthenticated users
   useEffect(() => {
     if (!isAuthenticated) {
       navigate({ to: '/login' })
       return
     }
-    dispatch(fetchUserSurveys({ pageSize: 100 }))
+    dispatch(fetchUserSurveys({ pageSize: DASHBOARD_SURVEYS_PAGE_SIZE }))
   }, [dispatch, isAuthenticated, navigate])
 
-  // re-fetch surveys when the tab regains focus to keep data fresh
   useEffect(() => {
     if (!isAuthenticated) return
-    const refreshSurveys = () => dispatch(fetchUserSurveys({ pageSize: 100 }))
+    const refreshSurveys = () =>
+      dispatch(fetchUserSurveys({ pageSize: DASHBOARD_SURVEYS_PAGE_SIZE }))
     window.addEventListener('focus', refreshSurveys)
     return () => window.removeEventListener('focus', refreshSurveys)
   }, [dispatch, isAuthenticated])
 
-  // load responses for all surveys to compute stats
+  // load responses for all surveys via Redux thunk
   useEffect(() => {
-    if (!isAuthenticated || surveys.length === 0) {
-      setResponses([])
-      return
+    if (!isAuthenticated || surveys.length === 0) return
+    for (const survey of surveys) {
+      dispatch(fetchSurveyResponses({
+        surveyId: survey.id,
+        surveyTitle: survey.title,
+        questionCount: survey.questionCount ?? 0,
+      }))
     }
-
-    let cancelled = false
-
-    const loadResponses = async () => {
-      setResponsesLoading(true)
-      const results = await Promise.all(
-        surveys.map(async (survey) => {
-          try {
-            const result = await getSurveyResponses(survey.id)
-            if (!result.success || !result.data) return []
-            return result.data.map((response) => ({
-              ...response,
-              surveyId: survey.id,
-              surveyTitle: survey.title,
-              questionCount: survey.questionCount ?? 0,
-            }))
-          } catch {
-            return []
-          }
-        }),
-      )
-
-      if (!cancelled) {
-        setResponses(results.flat())
-        setResponsesLoading(false)
-      }
-    }
-
-    void loadResponses()
-    return () => {
-      cancelled = true
-    }
-  }, [isAuthenticated, surveys])
+  }, [dispatch, isAuthenticated, surveys])
 
   // endregion
 
   // region derived data
 
   const dashboardData = useMemo(() => {
+    const typedResponses = responses as DashboardResponse[]
     const totalResponses = surveys.reduce((sum, survey) => sum + (survey.responseCount ?? 0), 0)
 
-    // sort all responses newest-first for the activity feed
-    const sortedResponses = [...responses].sort(
+    const sortedResponses = [...typedResponses].sort(
       (first, second) =>
         new Date(second.submittedAt).getTime() - new Date(first.submittedAt).getTime(),
     )
 
-    // build a per-day count array for the current Mon-Sun week
     const weekStart = startOfCurrentWeek()
     const weekDays = Array.from({ length: 7 }, (_, index) => {
       const date = new Date(weekStart)
@@ -171,7 +110,7 @@ export const DashboardPage = () => {
       const nextDate = new Date(date)
       nextDate.setDate(date.getDate() + 1)
 
-      const count = responses.filter((response) => {
+      const count = typedResponses.filter((response) => {
         const submittedAt = new Date(response.submittedAt)
         return submittedAt >= date && submittedAt < nextDate
       }).length
@@ -185,12 +124,12 @@ export const DashboardPage = () => {
 
     const responsesThisWeek = weekDays.reduce((sum, day) => sum + day.count, 0)
 
-    // completion rate = answered fields / total expected fields across all responses
-    const answeredFields = responses.reduce(
-      (sum, response) => sum + response.answers.filter((answer) => isAnswered(answer.value)).length,
+    const answeredFields = typedResponses.reduce(
+      (sum, response) =>
+        sum + response.answers.filter((answer) => isAnswered(answer.value)).length,
       0,
     )
-    const totalFields = responses.reduce(
+    const totalFields = typedResponses.reduce(
       (sum, response) => sum + Math.max(response.questionCount, response.answers.length),
       0,
     )
@@ -201,10 +140,10 @@ export const DashboardPage = () => {
       responsesThisWeek,
       completionRate,
       weekDays,
-      recentResponses: sortedResponses.slice(0, 5),
+      recentResponses: sortedResponses.slice(0, RECENT_RESPONSES_LIMIT),
       topSurveys: [...surveys]
         .sort((first, second) => (second.responseCount ?? 0) - (first.responseCount ?? 0))
-        .slice(0, 5),
+        .slice(0, TOP_SURVEYS_LIMIT),
       draftSurveys: surveys.filter((survey) => survey.status !== 'published'),
     }
   }, [responses, surveys])
@@ -213,7 +152,6 @@ export const DashboardPage = () => {
 
   if (!isAuthenticated) return null
 
-  // scale progress bars relative to the top-performing survey
   const maxSurveyResponses = Math.max(
     ...dashboardData.topSurveys.map((survey) => survey.responseCount ?? 0),
     1,
@@ -248,7 +186,6 @@ export const DashboardPage = () => {
           </div>
         </section>
 
-        {/* stat cards row */}
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <StatCard
             label="Surveys"
@@ -294,7 +231,6 @@ export const DashboardPage = () => {
           />
         </section>
 
-        {/* draft surveys nudge — only shown when drafts exist */}
         {dashboardData.draftSurveys.length > 0 && (
           <section className="rounded-2xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -312,7 +248,7 @@ export const DashboardPage = () => {
             </div>
 
             <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {dashboardData.draftSurveys.slice(0, 3).map((survey) => (
+              {dashboardData.draftSurveys.slice(0, DRAFT_SURVEYS_PREVIEW_LIMIT).map((survey) => (
                 <div
                   key={survey.id}
                   className="rounded-2xl border border-amber-200 bg-white p-4 shadow-sm"
@@ -346,7 +282,6 @@ export const DashboardPage = () => {
           </section>
         )}
 
-        {/* weekly bar chart + top surveys side-by-side */}
         <section className="grid gap-6 xl:grid-cols-[1.55fr_0.85fr]">
           <ResponsesOverTimeChart
             days={dashboardData.weekDays}
@@ -394,7 +329,6 @@ export const DashboardPage = () => {
                         View analytics
                       </button>
                     </div>
-                    {/* progress bar width proportional to top survey response count */}
                     <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-gray-100">
                       <div
                         className="h-full rounded-full bg-violet-500"
@@ -414,7 +348,6 @@ export const DashboardPage = () => {
           </div>
         </section>
 
-        {/* recent activity feed */}
         <section className="grid gap-6 lg:grid-cols-1">
           <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
             <div>
@@ -432,7 +365,9 @@ export const DashboardPage = () => {
                   <button
                     key={response.id}
                     type="button"
-                    onClick={() => navigate({ to: `/surveys/${response.surveyId}/responses` })}
+                    onClick={() =>
+                      navigate({ to: `/surveys/${response.surveyId}/responses` })
+                    }
                     className="flex w-full items-center gap-4 py-4 text-left transition-colors first:pt-0 last:pb-0 hover:bg-gray-50"
                   >
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">

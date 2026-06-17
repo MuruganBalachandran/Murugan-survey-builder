@@ -2,6 +2,9 @@
 import { AppLayout } from '@/components/Layout/AppLayout'
 // endregion
 
+/**
+ * TermsOfServicePage - Displays the terms of service information
+ */
 // region component
 export const TermsOfServicePage = () => (
   <AppLayout>
@@ -15,6 +18,7 @@ export const TermsOfServicePage = () => (
         >
           Back
         </button>
+        {/* region render */}
         <div>
           <p className="app-eyebrow">Legal</p>
           <h1 className="mt-2 text-3xl font-bold text-gray-900">Terms of Service</h1>
@@ -28,6 +32,7 @@ export const TermsOfServicePage = () => (
           <p>Do not use the service to collect unlawful, harmful, or misleading data.</p>
           <p>We may update these terms as the product evolves.</p>
         </div>
+        {/* endregion */}
       </section>
     </div>
   </AppLayout>

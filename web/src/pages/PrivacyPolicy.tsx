@@ -2,6 +2,9 @@
 import { AppLayout } from '@/components/Layout/AppLayout'
 // endregion
 
+/**
+ * PrivacyPolicyPage - Displays the privacy policy information
+ */
 // region component
 export const PrivacyPolicyPage = () => (
   <AppLayout>
@@ -15,6 +18,7 @@ export const PrivacyPolicyPage = () => (
         >
           Back
         </button>
+        {/* region render */}
         <div>
           <p className="app-eyebrow">Legal</p>
           <h1 className="mt-2 text-3xl font-bold text-gray-900">Privacy Policy</h1>
@@ -34,6 +38,7 @@ export const PrivacyPolicyPage = () => (
           </p>
           <p>We do not sell your survey response data.</p>
         </div>
+        {/* endregion */}
       </section>
     </div>
   </AppLayout>

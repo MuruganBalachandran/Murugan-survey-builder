@@ -42,6 +42,9 @@ export const QUESTION_DESCRIPTION_MAX_LENGTH = 1000
 export const MIN_OPTIONS = 2
 export const MAX_OPTIONS = 50
 
+export const MAX_RESPONSES_MIN = 1
+export const MAX_RESPONSES_MAX = 10000
+
 export const VALID_QUESTION_TYPES = [
   'short_text',
   'long_text',

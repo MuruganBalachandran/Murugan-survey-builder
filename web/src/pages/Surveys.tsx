@@ -40,10 +40,13 @@ import {
 import {
   DEFAULT_QUESTION_FORM,
   DEFAULT_SURVEY_FORM as defaultSurveyForm,
+  SURVEY_DATE_RANGE_OPTIONS,
   SURVEY_PAGE_SIZE,
+  SURVEY_SORT_OPTIONS,
+  SURVEY_STATUSES,
   SURVEY_TEMPLATES,
 } from "@/utils/constants";
-import { CalendarIcon, FilterIcon, SortIcon } from "@/utils/icons";
+import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, FilterIcon, SortIcon } from "@/utils/icons";
 import {
   isMultipleChoiceQuestion,
   isValidMaxResponses,
@@ -56,6 +59,10 @@ import {
 
 const defaultQuestionForm: QuestionFormState = DEFAULT_QUESTION_FORM;
 
+/**
+ * SurveysPage - Survey management interface with create, edit, delete, and publish workflows
+ * Provides filtering, pagination, question management, and CSV export capabilities
+ */
 // region component
 export const SurveysPage = () => {
   const location = useLocation();
@@ -133,7 +140,7 @@ export const SurveysPage = () => {
       activeSurvey.title !== surveyForm.title.trim() ||
       (activeSurvey.description || "") !== surveyForm.description.trim() ||
       (activeSurvey.primaryColor || "").toLowerCase() !==
-        surveyForm.primaryColor.toLowerCase() ||
+      surveyForm.primaryColor.toLowerCase() ||
       (activeSurvey.logoUrl || "") !== surveyForm.logoUrl.trim() ||
       (activeSurvey.endsAt || "") !== (surveyForm.endsAt || "") ||
       String(activeSurvey.maxResponses ?? "") !== surveyForm.maxResponses
@@ -318,7 +325,7 @@ export const SurveysPage = () => {
               : question.uiType === "toggle"
                 ? "yes_no"
                 : question.type === "multiple_choice" ||
-                    question.type === "rating"
+                  question.type === "rating"
                   ? question.type
                   : "short_text",
       uiType:
@@ -330,8 +337,8 @@ export const SurveysPage = () => {
         (question.type === "multiple_choice" ||
           question.uiType === "checkbox_group" ||
           question.uiType === "select") &&
-        question.options &&
-        question.options.length > 0
+          question.options &&
+          question.options.length > 0
           ? question.options.map((option) => option)
           : ["", ""],
       // pre-fill character limits and conditional logic from saved question
@@ -368,10 +375,7 @@ export const SurveysPage = () => {
       nextErrors.description = "Description must be 5-100 characters";
     }
 
-    if (
-      surveyForm.maxResponses !== "" &&
-      !isValidMaxResponses(surveyForm.maxResponses)
-    ) {
+    if (surveyForm.maxResponses !== "" && !isValidMaxResponses(surveyForm.maxResponses)) {
       nextErrors.maxResponses = "Response limit must be between 1 and 10,000";
     }
 
@@ -389,16 +393,9 @@ export const SurveysPage = () => {
       nextErrors.title = "Question title must be 3-100 characters";
     }
 
-    if (isMultipleChoiceQuestion(questionForm.type)) {
-      if (!isValidQuestionOptions(questionForm.options)) {
-        const cleaned = questionForm.options
-          .map((opt) => opt.trim())
-          .filter(Boolean);
-        nextErrors.options =
-          cleaned.length < 2
-            ? "Add at least 2 options"
-            : "Options must be unique";
-      }
+    if (isMultipleChoiceQuestion(questionForm.type) && !isValidQuestionOptions(questionForm.options)) {
+      const cleaned = questionForm.options.map((opt) => opt.trim()).filter(Boolean);
+      nextErrors.options = cleaned.length < 2 ? "Add at least 2 options" : "Options must be unique";
     }
 
     setQuestionErrors(nextErrors);
@@ -445,6 +442,9 @@ export const SurveysPage = () => {
         description: q.description || "",
         required: q.required,
         options: q.options ?? [],
+        minLength: "",
+        maxLength: "",
+        visibleIf: null,
       })),
     );
     setSurveyErrors({});
@@ -547,8 +547,8 @@ export const SurveysPage = () => {
                   required: q.required,
                   options:
                     q.type === "multiple_choice" ||
-                    q.type === "checkbox_group" ||
-                    q.type === "dropdown"
+                      q.type === "checkbox_group" ||
+                      q.type === "dropdown"
                       ? q.options.filter(Boolean)
                       : undefined,
                 }),
@@ -733,8 +733,8 @@ export const SurveysPage = () => {
       required: questionForm.required,
       options:
         questionForm.type === "multiple_choice" ||
-        questionForm.type === "checkbox_group" ||
-        questionForm.type === "dropdown"
+          questionForm.type === "checkbox_group" ||
+          questionForm.type === "dropdown"
           ? cleanedOptions
           : undefined,
       minLength: questionForm.minLength ? Number(questionForm.minLength) : undefined,
@@ -747,11 +747,11 @@ export const SurveysPage = () => {
       const result =
         questionMode === "edit" && editingQuestionId
           ? await dispatch(
-              updateQuestionDetails({
-                ...payload,
-                questionId: editingQuestionId,
-              }),
-            )
+            updateQuestionDetails({
+              ...payload,
+              questionId: editingQuestionId,
+            }),
+          )
           : await dispatch(addQuestionToSurvey(payload));
 
       if (
@@ -936,11 +936,7 @@ export const SurveysPage = () => {
                 onChange={(event) => setSurveyDateRange(event.target.value)}
                 placeholder="Date range"
                 icon={<CalendarIcon />}
-                options={[
-                  { value: "all", label: "All time" },
-                  { value: "7d", label: "Last 7 days" },
-                  { value: "30d", label: "Last 30 days" },
-                ]}
+                options={[...SURVEY_DATE_RANGE_OPTIONS]}
               />
 
               <Select
@@ -950,9 +946,7 @@ export const SurveysPage = () => {
                 icon={<FilterIcon />}
                 options={[
                   { value: "all", label: "All status" },
-                  { value: "published", label: "Published" },
-                  { value: "draft", label: "Draft" },
-                  { value: "closed", label: "Closed" },
+                  ...SURVEY_STATUSES.map((s) => ({ value: s.id, label: s.label })),
                 ]}
               />
 
@@ -961,12 +955,7 @@ export const SurveysPage = () => {
                 onChange={(event) => setSurveySortBy(event.target.value)}
                 placeholder="Sort by"
                 icon={<SortIcon />}
-                options={[
-                  { value: "newest", label: "Newest first" },
-                  { value: "oldest", label: "Oldest first" },
-                  { value: "title", label: "Title A to Z" },
-                  { value: "responses", label: "Most responses" },
-                ]}
+                options={[...SURVEY_SORT_OPTIONS]}
               />
             </div>
           </div>
@@ -1013,16 +1002,7 @@ export const SurveysPage = () => {
                     className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
                     aria-label="Previous page"
                   >
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <path d="M15 18l-6-6 6-6" />
-                    </svg>
+                    <ChevronLeftIcon />
                   </button>
 
                   <div className="flex flex-wrap items-center gap-2">
@@ -1039,11 +1019,10 @@ export const SurveysPage = () => {
                           key={item}
                           type="button"
                           onClick={() => handlePageChange(item)}
-                          className={`inline-flex h-10 min-w-10 items-center justify-center rounded-lg border px-3 text-sm font-semibold transition-colors ${
-                            item === currentPage
+                          className={`inline-flex h-10 min-w-10 items-center justify-center rounded-lg border px-3 text-sm font-semibold transition-colors ${item === currentPage
                               ? "border-violet-600 bg-violet-600 text-white shadow-sm"
                               : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
-                          }`}
+                            }`}
                           aria-current={
                             item === currentPage ? "page" : undefined
                           }
@@ -1063,16 +1042,7 @@ export const SurveysPage = () => {
                     className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
                     aria-label="Next page"
                   >
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <path d="M9 18l6-6-6-6" />
-                    </svg>
+                    <ChevronRightIcon />
                   </button>
                 </div>
               </div>

@@ -2,8 +2,6 @@
 import type { PaginationItem, ProgressState, QuestionType, QuestionUiType } from '@/types'
 // endregion
 
-// region question type utilities
-// get question type label
 export function getQuestionTypeLabel(type: QuestionType | string): string {
   const labels: Record<string, string> = {
     short_text: 'Short Text',
@@ -45,7 +43,6 @@ export function getQuestionTypeIcon(type: QuestionType | string): string {
   return icons[type] ?? '❓'
 }
 
-// get question type description
 export function getQuestionTypeDescription(type: QuestionType | string): string {
   const descriptions: Record<string, string> = {
     short_text: 'Single line text response',
@@ -125,7 +122,6 @@ export const normalizeQuestionType = (type: QuestionType) => {
       return { type: 'short_text' as const, uiType: 'input' as const }
   }
 }
-// endregion
 
 // region survey status utilities
 export const statusLabel = (status?: string): string => {
@@ -146,9 +142,8 @@ export const statusTone = (status?: string): string => {
 
 export const truncateDescription = (text: string, limit = 50): string =>
   text.length > limit ? `${text.slice(0, limit)}...` : text
-// endregion
 
-// region survey progress utilities
+// region progress utilities
 export function calculateProgress(answeredCount: number, totalQuestions: number): ProgressState {
   const current = Math.min(answeredCount, totalQuestions)
 
@@ -178,7 +173,6 @@ export function isQuestionAnswered(value: any): boolean {
   // validate primitive answers
   return typeof value === 'number' || typeof value === 'boolean'
 }
-// endregion
 
 // region pagination utilities
 // build pagination items for displaying page numbers with ellipsis
@@ -206,20 +200,27 @@ export const buildPaginationItems = (currentPage: number, totalPages: number): P
   items.push(totalPages)
   return items
 }
-// endregion
 
-// region survey URL utilities
+// region URL utilities
 // generate survey URL from slug
 export const getSurveyUrl = (slug: string): string => `${window.location.origin}/survey/${slug}`
 // endregion
 
-// region file utilities
-// read file as data URL
-export const readFileAsDataUrl = (file: File): Promise<string> =>
-  new Promise<string>((resolve, reject) => {
+export const readFileAsDataUrl = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader()
-    reader.onload = () => resolve(String(reader.result || ''))
-    reader.onerror = () => reject(new Error('Failed to read file'))
+    reader.onload = () => {
+      // ensure result is a string before resolving
+      if (typeof reader.result === 'string') {
+        resolve(reader.result)
+      } else {
+        reject(new Error('Failed to read file'))
+      }
+    }
+    reader.onerror = () => {
+      reject(new Error('Failed to read file'))
+    }
+    // read the file as a data URL
     reader.readAsDataURL(file)
   })
-// endregion
+}

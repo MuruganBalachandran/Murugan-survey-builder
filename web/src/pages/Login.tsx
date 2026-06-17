@@ -6,17 +6,24 @@ import { LoginForm } from '@/components/auth/LoginForm'
 import { useAppSelector } from '@/hooks/redux'
 // endregion
 
+/**
+ * LoginPage - Renders the login form with authentication check
+ * Redirects already-authenticated users to the dashboard
+ */
 // region component
 export const LoginPage = () => {
+  // region state
   const navigate = useNavigate()
   const { isAuthenticated } = useAppSelector((state) => state.auth)
+  // endregion
 
-  // redirect already-authenticated users away from login
+  // region effects
   useEffect(() => {
     if (isAuthenticated) {
       navigate({ to: '/dashboard' })
     }
   }, [isAuthenticated, navigate])
+  // endregion
 
   // region render
   return (

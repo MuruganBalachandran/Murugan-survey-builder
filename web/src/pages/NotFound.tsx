@@ -3,6 +3,10 @@ import { Link } from '@tanstack/react-router'
 import { AppLayout } from '@/components/Layout/AppLayout'
 // endregion
 
+/**
+ * NotFoundPage - Displays a 404 page when route doesn't exist
+ * Provides navigation options to go back or return home
+ */
 // region component
 export const NotFoundPage = () => (
   <AppLayout>
@@ -13,6 +17,7 @@ export const NotFoundPage = () => (
         <p className="mt-3 max-w-lg text-sm leading-6 text-gray-600">
           The page you tried to open does not exist or has moved.
         </p>
+        {/* region render */}
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
           {/* go back one step in browser history */}
           <button
@@ -29,6 +34,7 @@ export const NotFoundPage = () => (
             Go home
           </Link>
         </div>
+        {/* endregion */}
       </section>
     </div>
   </AppLayout>

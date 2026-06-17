@@ -15,8 +15,13 @@ import type { SurveyResponse } from "@/types/survey";
 import { ExportIcon } from "@/utils/icons";
 // endregion
 
+/**
+ * SurveyResponsesPage - Displays response analytics and data for a specific survey
+ * Shows summary stats, response charts, and individual responses with CSV export
+ */
 // region component
 export const SurveyResponsesPage = () => {
+  // region state
   const { id } = useParams({ from: "/surveys/$id/responses" });
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
@@ -26,6 +31,7 @@ export const SurveyResponsesPage = () => {
   const [responses, setResponses] = useState<SurveyResponse[]>([]);
   const [loadingResponses, setLoadingResponses] = useState(false);
   const [exporting, setExporting] = useState(false);
+  // endregion
 
   // region effects
 
@@ -43,26 +49,6 @@ export const SurveyResponsesPage = () => {
       dispatch(clearError());
     }
   }, [error, dispatch]);
-
-  // endregion
-
-  // region functions
-
-  const loadResponses = async () => {
-    setLoadingResponses(true);
-    try {
-      const result = await dispatch(fetchSurveyResponses(id));
-      if (result.type === fetchSurveyResponses.fulfilled.type) {
-        setResponses(result.payload as SurveyResponse[]);
-      } else {
-        toast.error("Failed to load responses");
-      }
-    } catch {
-      toast.error("Failed to load responses");
-    } finally {
-      setLoadingResponses(false);
-    }
-  };
 
   // endregion
 
@@ -117,6 +103,23 @@ export const SurveyResponsesPage = () => {
   // endregion
 
   // region handlers
+
+  const loadResponses = async () => {
+    setLoadingResponses(true);
+    try {
+      const result = await dispatch(fetchSurveyResponses(id));
+      if (result.type === fetchSurveyResponses.fulfilled.type) {
+        const payload = result.payload as { responses: SurveyResponse[] };
+        setResponses(payload.responses);
+      } else {
+        toast.error("Failed to load responses");
+      }
+    } catch {
+      toast.error("Failed to load responses");
+    } finally {
+      setLoadingResponses(false);
+    }
+  };
 
   const handleExportCSV = async () => {
     if (!currentSurvey) return;

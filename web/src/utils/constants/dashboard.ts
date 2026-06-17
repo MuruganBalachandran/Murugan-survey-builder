@@ -18,6 +18,9 @@ export const STAT_CARDS = {
 
 export const RECENT_RESPONSES_TITLE = 'Recent Responses'
 export const RECENT_RESPONSES_LIMIT = 5
+export const TOP_SURVEYS_LIMIT = 5
+export const DRAFT_SURVEYS_PREVIEW_LIMIT = 3
+export const DASHBOARD_SURVEYS_PAGE_SIZE = 100
 
 export const SURVEY_INSIGHTS_TITLE = 'Survey Insights'
 export const NO_DATA_MESSAGE = 'No survey data available yet'

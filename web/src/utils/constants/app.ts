@@ -11,7 +11,7 @@ export const API_HEALTH_URL = '/api/health'
 
 export const STORAGE_KEYS = {
   SURVEY_DRAFTS: 'survey:drafts',
-  AUTH_TOKEN: 'auth:token',
+  SESSION_KEY: 'auth:session',
   USER_PREFERENCES: 'user:preferences',
   THEME_PREFERENCE: 'theme:preference',
 } as const

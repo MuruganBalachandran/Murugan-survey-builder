@@ -157,6 +157,9 @@ export const QUESTION_TYPES = [
 
 export const RATING_SCALES = [5, 10] as const;
 
+export const MAX_RESPONSES_MIN = 1;
+export const MAX_RESPONSES_MAX = 10000;
+
 export const SURVEY_STATUSES = [
   { id: "draft", label: "Draft", color: "bg-gray-100 text-gray-800" },
   { id: "published", label: "Published", color: "bg-green-100 text-green-800" },

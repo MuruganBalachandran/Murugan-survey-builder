@@ -1,91 +1,21 @@
 // region imports
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import * as questionAPI from '@/services/api/questions'
-import * as responseAPI from '@/services/api/responses'
-import type { Answer, QuestionPayload, SurveyResponse } from '@/types/survey'
+import type { Question, QuestionPayload } from '@/types/survey'
 // endregion
 
 // region types
-export interface ResponseState {
-  responses: SurveyResponse[]
+export interface QuestionState {
   isLoading: boolean
   error: Record<string, string> | null
 }
 // endregion
 
 // region initial state
-const initialState: ResponseState = {
-  responses: [],
+const initialState: QuestionState = {
   isLoading: false,
   error: null,
 }
-// endregion
-
-// region submit survey response
-export const submitSurveyResponse = createAsyncThunk(
-  'response/submitSurveyResponse',
-
-  async (
-    data: {
-      surveyId: string
-      answers: Answer[]
-    },
-
-    { rejectWithValue },
-  ) => {
-    try {
-      // submit public survey response
-      const response = await responseAPI.submitResponse(data.surveyId, data.answers)
-
-      // handle API validation errors
-      if (!response.success || !response.data) {
-        return rejectWithValue(
-          response.errors || {
-            general: response.message,
-          },
-        )
-      }
-
-      return response.data
-    } catch (error: any) {
-      return rejectWithValue({
-        general: error.message || 'Failed to submit response',
-      })
-    }
-  },
-)
-// endregion
-
-// region fetch survey responses
-export const fetchSurveyResponses = createAsyncThunk(
-  'response/fetchSurveyResponses',
-
-  async (
-    surveyId: string,
-
-    { rejectWithValue },
-  ) => {
-    try {
-      // fetch all survey responses
-      const response = await responseAPI.getSurveyResponses(surveyId)
-
-      // handle API validation errors
-      if (!response.success || !response.data) {
-        return rejectWithValue(
-          response.errors || {
-            general: response.message,
-          },
-        )
-      }
-
-      return response.data
-    } catch (error: any) {
-      return rejectWithValue({
-        general: error.message || 'Failed to fetch responses',
-      })
-    }
-  },
-)
 // endregion
 
 // region add question
@@ -153,7 +83,7 @@ export const reorderSurveyQuestions = createAsyncThunk(
       if (!response.success || !response.data) {
         return rejectWithValue(response.errors || { general: response.message })
       }
-      return response.data
+      return response.data as Question[]
     } catch (error: any) {
       return rejectWithValue({ general: error.message || 'Failed to reorder questions' })
     }
@@ -161,76 +91,49 @@ export const reorderSurveyQuestions = createAsyncThunk(
 )
 // endregion
 
-// region response slice
-const responseSlice = createSlice({
-  name: 'response',
-
+// region question slice
+const questionSlice = createSlice({
+  name: 'question',
   initialState,
-
   reducers: {
     clearError: (state) => {
-      // clear response errors
       state.error = null
     },
-
-    clearResponses: (state) => {
-      // clear stored responses
-      state.responses = []
-    },
   },
-
   extraReducers: (builder) => {
-    // region submit response reducers
+    const pending = (state: QuestionState) => {
+      state.isLoading = true
+      state.error = null
+    }
+    const rejected = (state: QuestionState, action: any) => {
+      state.isLoading = false
+      state.error = action.payload as Record<string, string>
+    }
+    const fulfilled = (state: QuestionState) => {
+      state.isLoading = false
+    }
 
     builder
-      .addCase(submitSurveyResponse.pending, (state) => {
-        state.isLoading = true
-        state.error = null
-      })
+      .addCase(addQuestionToSurvey.pending, pending)
+      .addCase(addQuestionToSurvey.fulfilled, fulfilled)
+      .addCase(addQuestionToSurvey.rejected, rejected)
 
-      .addCase(submitSurveyResponse.fulfilled, (state, action) => {
-        state.isLoading = false
+      .addCase(updateQuestionDetails.pending, pending)
+      .addCase(updateQuestionDetails.fulfilled, fulfilled)
+      .addCase(updateQuestionDetails.rejected, rejected)
 
-        // append new response
-        state.responses.push(action.payload)
-      })
+      .addCase(deleteQuestionFromSurvey.pending, pending)
+      .addCase(deleteQuestionFromSurvey.fulfilled, fulfilled)
+      .addCase(deleteQuestionFromSurvey.rejected, rejected)
 
-      .addCase(submitSurveyResponse.rejected, (state, action) => {
-        state.isLoading = false
-
-        state.error = action.payload as Record<string, string>
-      })
-
-    // endregion
-
-    // region fetch responses reducers
-
-    builder
-      .addCase(fetchSurveyResponses.pending, (state) => {
-        state.isLoading = true
-        state.error = null
-      })
-
-      .addCase(fetchSurveyResponses.fulfilled, (state, action) => {
-        state.isLoading = false
-
-        // store fetched responses
-        state.responses = action.payload
-      })
-
-      .addCase(fetchSurveyResponses.rejected, (state, action) => {
-        state.isLoading = false
-
-        state.error = action.payload as Record<string, string>
-      })
-
-    // endregion
+      .addCase(reorderSurveyQuestions.pending, pending)
+      .addCase(reorderSurveyQuestions.fulfilled, fulfilled)
+      .addCase(reorderSurveyQuestions.rejected, rejected)
   },
 })
 // endregion
 
 // region exports
-export const { clearError, clearResponses } = responseSlice.actions
-
-export default responseSlice.reducer
+export const { clearError } = questionSlice.actions
+export default questionSlice.reducer
 // endregion

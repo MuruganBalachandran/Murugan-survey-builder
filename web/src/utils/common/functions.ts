@@ -1,10 +1,6 @@
 // region imports
 import type { ModalVariant, ToastVariant, VariantStyles, VariantToastStyles } from '@/types'
 // endregion
-
-// region color utilities
-
-// validate hex color format
 export function isValidHexColor(color: string): boolean {
   return /^#[0-9A-Fa-f]{6}$/.test(color)
 }
@@ -22,12 +18,12 @@ export function hexToRgb(hex: string): {
 
   return result && result[1] && result[2] && result[3]
     ? {
-        r: parseInt(result[1], 16),
+      r: parseInt(result[1], 16),
 
-        g: parseInt(result[2], 16),
+      g: parseInt(result[2], 16),
 
-        b: parseInt(result[3], 16),
-      }
+      b: parseInt(result[3], 16),
+    }
     : null
 }
 
@@ -179,8 +175,8 @@ export function formatTime(date: string | Date): string {
 export function setItem<T>(key: string, value: T): void {
   try {
     localStorage.setItem(key, JSON.stringify(value))
-  } catch (error) {
-    console.error(`Failed to save to localStorage (${key}):`, error)
+  } catch {
+    console.error('Failed to save to localStorage')
   }
 }
 
@@ -190,8 +186,8 @@ export function getItem<T>(key: string, defaultValue?: T): T | null {
     const item = localStorage.getItem(key)
 
     return item ? JSON.parse(item) : (defaultValue ?? null)
-  } catch (error) {
-    console.error(`Failed to read from localStorage (${key}): ${error}`)
+  } catch {
+    console.error('Failed to read from localStorage')
 
     return defaultValue ?? null
   }
@@ -201,8 +197,8 @@ export function getItem<T>(key: string, defaultValue?: T): T | null {
 export function removeItem(key: string): void {
   try {
     localStorage.removeItem(key)
-  } catch (error) {
-    console.error(`Failed to remove from localStorage (${key}):`, error)
+  } catch {
+    console.error('Failed to remove from localStorage')
   }
 }
 
@@ -210,8 +206,8 @@ export function removeItem(key: string): void {
 export function clearAllStorage(): void {
   try {
     localStorage.clear()
-  } catch (error) {
-    console.error('Failed to clear localStorage:', error)
+  } catch {
+    console.error('Failed to clear localStorage')
   }
 }
 // endregion
@@ -222,20 +218,6 @@ export function clearAllStorage(): void {
 export function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 }
-// endregion
-
-// region file utilities
-// convert file to data url
-export const readFileAsDataUrl = (file: File) =>
-  new Promise<string>((resolve, reject) => {
-    const reader = new FileReader()
-
-    reader.onload = () => resolve(String(reader.result || ''))
-
-    reader.onerror = () => reject(new Error('Failed to read file'))
-
-    reader.readAsDataURL(file)
-  })
 // endregion
 
 // region modal variant utilities
@@ -336,5 +318,53 @@ export const getToastVariantStyles = (variant: ToastVariant): VariantToastStyles
   }
 
   return toastStyles[variant]
+}
+// endregion
+
+// region dashboard utilities
+
+// returns true when an answer field has a non-empty value
+export const isAnswered = (value: string | string[] | number): boolean => {
+  if (Array.isArray(value)) return value.length > 0
+  if (typeof value === 'string') return value.trim().length > 0
+  return true
+}
+
+// returns a Date set to 00:00 of the current ISO week's Monday
+export const startOfCurrentWeek = (): Date => {
+  const date = new Date()
+  const day = date.getDay()
+  const daysSinceMonday = day === 0 ? 6 : day - 1
+  date.setHours(0, 0, 0, 0)
+  date.setDate(date.getDate() - daysSinceMonday)
+  return date
+}
+
+// converts a UTC date string into a human-readable relative label
+export const formatRelativeTime = (dateValue: string): string => {
+  const elapsedSeconds = Math.max(
+    0,
+    Math.floor((Date.now() - new Date(dateValue).getTime()) / 1000),
+  )
+  if (elapsedSeconds < 60) return 'Just now'
+
+  const elapsedMinutes = Math.floor(elapsedSeconds / 60)
+  if (elapsedMinutes < 60) return `${elapsedMinutes} min${elapsedMinutes === 1 ? '' : 's'} ago`
+
+  const elapsedHours = Math.floor(elapsedMinutes / 60)
+  if (elapsedHours < 24) return `${elapsedHours} hour${elapsedHours === 1 ? '' : 's'} ago`
+
+  const elapsedDays = Math.floor(elapsedHours / 24)
+  if (elapsedDays < 7) return `${elapsedDays} day${elapsedDays === 1 ? '' : 's'} ago`
+
+  return new Date(dateValue).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+}
+
+// returns a time-of-day greeting string
+export const getGreeting = (): string => {
+  const hour = new Date().getHours()
+  if (hour < 12) return 'Good morning'
+  if (hour < 18) return 'Good afternoon'
+  return 'Good evening'
 }
 // endregion

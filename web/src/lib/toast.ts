@@ -1,3 +1,4 @@
+// region types
 export type ToastVariant = 'success' | 'error' | 'warning' | 'info'
 
 export interface ToastMessage {
@@ -14,19 +15,26 @@ type ToastOptions = {
 }
 
 type ToastListener = (messages: ToastMessage[]) => void
+// endregion
 
+// region internal state
 let messages: ToastMessage[] = []
 const listeners = new Set<ToastListener>()
+// endregion
 
+// region helpers
+// notify all listeners of message changes
 const notify = () => {
   listeners.forEach((listener) => listener(messages))
 }
 
+// remove message by id
 const remove = (id: string) => {
   messages = messages.filter((message) => message.id !== id)
   notify()
 }
 
+// show toast message with variant
 const show = (variant: ToastVariant, title: string, options: ToastOptions = {}) => {
   const message: ToastMessage = {
     id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
@@ -40,7 +48,9 @@ const show = (variant: ToastVariant, title: string, options: ToastOptions = {}) 
   notify()
   return message.id
 }
+// endregion
 
+// region toast api
 export const toast = {
   success: (title: string, options?: ToastOptions) => show('success', title, options),
   error: (title: string, options?: ToastOptions) => show('error', title, options),
@@ -48,7 +58,9 @@ export const toast = {
   info: (title: string, options?: ToastOptions) => show('info', title, options),
   dismiss: remove,
 }
+// endregion
 
+// region subscriptions
 export const subscribeToToasts = (listener: ToastListener) => {
   listeners.add(listener)
   listener(messages)
@@ -56,3 +68,4 @@ export const subscribeToToasts = (listener: ToastListener) => {
     listeners.delete(listener)
   }
 }
+// endregion

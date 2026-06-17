@@ -15,6 +15,10 @@ import { ArrowLeftIcon, CheckLargeIcon, ProgressIcon } from "@/utils/icons";
 
 // endregion
 
+// region types/interfaces
+// (all types imported)
+// endregion
+
 // region helpers
 
 // resolves the correct input widget for a question, falling back to uiType then type
@@ -58,8 +62,13 @@ const isQuestionVisible = (_question: Question) => true;
 
 // endregion
 
+/**
+ * PublicSurveyPage - Renders a public survey form for anonymous responses
+ * Handles single-step or multi-step survey navigation and submission
+ */
 // region component
 export const PublicSurveyPage = () => {
+  // region state
   const { slug } = useParams({ from: "/survey/$slug" });
   const [survey, setSurvey] = useState<SurveyWithQuestions | null>(null);
   const [loading, setLoading] = useState(true);
@@ -75,26 +84,6 @@ export const PublicSurveyPage = () => {
   const stepInputRef = useRef<
     HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null
   >(null);
-
-  // region effects
-
-  // load survey when slug changes
-  useEffect(() => {
-    loadSurvey();
-  }, [slug]);
-
-  // auto-focus the input of the current question after each step change
-  useEffect(() => {
-    if (!started || submitted || loading || !survey?.questions?.length) return;
-    const currentQuestion = survey.questions[currentIndex];
-    if (!currentQuestion) return;
-    // defer to next tick so the element is mounted before focus
-    const timeout = window.setTimeout(() => {
-      stepInputRef.current?.focus();
-    }, 0);
-    return () => window.clearTimeout(timeout);
-  }, [currentIndex, loading, started, submitted, survey]);
-
   // endregion
 
   // region functions
@@ -117,6 +106,27 @@ export const PublicSurveyPage = () => {
 
   // endregion
 
+  // region effects
+
+  // load survey when slug changes
+  useEffect(() => {
+    loadSurvey();
+  }, [slug]);
+
+  // auto-focus the input of the current question after each step change
+  useEffect(() => {
+    if (!started || submitted || loading || !survey?.questions?.length) return;
+    const currentQuestion = survey.questions[currentIndex];
+    if (!currentQuestion) return;
+    // defer to next tick so the element is mounted before focus
+    const timeout = window.setTimeout(() => {
+      stepInputRef.current?.focus();
+    }, 0);
+    return () => window.clearTimeout(timeout);
+  }, [currentIndex, loading, started, submitted, survey]);
+
+  // endregion
+
   // region derived data
 
   const brandColor = survey?.primaryColor || "#6366F1";
@@ -132,8 +142,8 @@ export const PublicSurveyPage = () => {
   // progress as a percentage of completed steps
   const progress = questions.length
     ? Math.round(
-        ((currentIndex + (submitted ? 1 : 0)) / questions.length) * 100,
-      )
+      ((currentIndex + (submitted ? 1 : 0)) / questions.length) * 100,
+    )
     : 0;
   const currentAnswer = currentQuestion
     ? answers[currentQuestion.id]
@@ -368,8 +378,8 @@ export const PublicSurveyPage = () => {
                     isClosed
                       ? undefined
                       : {
-                          background: `linear-gradient(135deg, ${brandColor} 0%, ${brandColor}cc 100%)`,
-                        }
+                        background: `linear-gradient(135deg, ${brandColor} 0%, ${brandColor}cc 100%)`,
+                      }
                   }
                 >
                   {isClosed ? "Survey closed" : "Start Survey"}
@@ -481,11 +491,10 @@ export const PublicSurveyPage = () => {
                     {currentQuestion.options?.map((option) => (
                       <label
                         key={option}
-                        className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition-all ${
-                          currentAnswer === option
+                        className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition-all ${currentAnswer === option
                             ? "border-violet-500 bg-violet-50"
                             : "border-gray-200 bg-white hover:border-gray-300"
-                        }`}
+                          }`}
                       >
                         <input
                           type="radio"
@@ -514,11 +523,10 @@ export const PublicSurveyPage = () => {
                       return (
                         <label
                           key={option}
-                          className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition-all ${
-                            selected
+                          className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition-all ${selected
                               ? "border-violet-500 bg-violet-50"
                               : "border-gray-200 bg-white hover:border-gray-300"
-                          }`}
+                            }`}
                         >
                           <input
                             type="checkbox"
@@ -593,11 +601,10 @@ export const PublicSurveyPage = () => {
                     {["Yes", "No"].map((option) => (
                       <label
                         key={option}
-                        className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition-all ${
-                          currentAnswer === option
+                        className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition-all ${currentAnswer === option
                             ? "border-violet-500 bg-violet-50"
                             : "border-gray-200 bg-white hover:border-gray-300"
-                        }`}
+                          }`}
                       >
                         <input
                           type="radio"

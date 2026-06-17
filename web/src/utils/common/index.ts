@@ -1,5 +1,4 @@
-// region barrllel export
-
+// region exports
 export * from './auth'
 export * from './functions'
 export * from './survey'

@@ -2,6 +2,8 @@
 import type { ValidationError } from '../types'
 import {
   MAX_OPTIONS,
+  MAX_RESPONSES_MAX,
+  MAX_RESPONSES_MIN,
   MIN_OPTIONS,
   NAME_MIN_LENGTH,
   PASSWORD_MIN_LENGTH,
@@ -126,12 +128,21 @@ export const validateSurveyStatus = (status: string): ValidationError | null => 
   return null
 }
 
+export const validateMaxResponses = (value?: number | null): ValidationError | null => {
+  if (value === undefined || value === null) return null
+  if (!Number.isInteger(value) || value < MAX_RESPONSES_MIN || value > MAX_RESPONSES_MAX) {
+    return { field: 'maxResponses', message: `Response limit must be between ${MAX_RESPONSES_MIN} and ${MAX_RESPONSES_MAX}` }
+  }
+  return null
+}
+
 export const validateSurveyUpdate = (updates: {
   title?: string
   description?: string
   primaryColor?: string
   logoUrl?: string
   status?: string
+  maxResponses?: number | null
 }): Record<string, string> => {
   const errors: Record<string, string> = {}
   if (updates.title !== undefined) {
@@ -152,6 +163,10 @@ export const validateSurveyUpdate = (updates: {
   }
   if (updates.status !== undefined) {
     const e = validateSurveyStatus(updates.status)
+    if (e) errors[e.field] = e.message
+  }
+  if (updates.maxResponses !== undefined) {
+    const e = validateMaxResponses(updates.maxResponses)
     if (e) errors[e.field] = e.message
   }
   return errors

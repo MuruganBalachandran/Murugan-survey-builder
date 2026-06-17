@@ -1,5 +1,6 @@
 // region imports
 import type { QuestionFormState } from "@/types";
+import { MAX_RESPONSES_MAX, MAX_RESPONSES_MIN } from "@/utils/constants";
 import { hasUniqueValues, isNonEmpty, isWithinLength } from "./common";
 // endregion
 

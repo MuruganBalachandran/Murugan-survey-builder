@@ -1,14 +1,13 @@
 // region imports
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
-
 import * as responseAPI from '@/services/api/responses'
-
 import type { Answer, SurveyResponse } from '@/types/survey'
+import type { DashboardResponse } from '@/types/pages'
 // endregion
 
 // region types
 export interface ResponseState {
-  responses: SurveyResponse[]
+  responses: DashboardResponse[]
   isLoading: boolean
   error: Record<string, string> | null
 }
@@ -35,10 +34,8 @@ export const submitSurveyResponse = createAsyncThunk(
     { rejectWithValue },
   ) => {
     try {
-      // submit public survey response
       const response = await responseAPI.submitResponse(data.surveyId, data.answers)
 
-      // handle API validation errors
       if (!response.success || !response.data) {
         return rejectWithValue(
           response.errors || {
@@ -62,15 +59,18 @@ export const fetchSurveyResponses = createAsyncThunk(
   'response/fetchSurveyResponses',
 
   async (
-    surveyId: string,
+    data: { surveyId: string; surveyTitle?: string; questionCount?: number } | string,
 
     { rejectWithValue },
   ) => {
+    // support both legacy string form (public survey page) and enriched object form (dashboard)
+    const surveyId = typeof data === 'string' ? data : data.surveyId
+    const surveyTitle = typeof data === 'string' ? undefined : data.surveyTitle
+    const questionCount = typeof data === 'string' ? undefined : data.questionCount
+
     try {
-      // fetch all survey responses
       const response = await responseAPI.getSurveyResponses(surveyId)
 
-      // handle API validation errors
       if (!response.success || !response.data) {
         return rejectWithValue(
           response.errors || {
@@ -79,7 +79,7 @@ export const fetchSurveyResponses = createAsyncThunk(
         )
       }
 
-      return response.data
+      return { surveyId, surveyTitle, questionCount, responses: response.data }
     } catch (error: any) {
       return rejectWithValue({
         general: error.message || 'Failed to fetch responses',
@@ -97,12 +97,10 @@ const responseSlice = createSlice({
 
   reducers: {
     clearError: (state) => {
-      // clear response errors
       state.error = null
     },
 
     clearResponses: (state) => {
-      // clear stored responses
       state.responses = []
     },
   },
@@ -118,14 +116,17 @@ const responseSlice = createSlice({
 
       .addCase(submitSurveyResponse.fulfilled, (state, action) => {
         state.isLoading = false
-
-        // append new response
-        state.responses.push(action.payload)
+        const r = action.payload as SurveyResponse
+        state.responses.push({
+          ...r,
+          surveyId: r.surveyId,
+          surveyTitle: '',
+          questionCount: 0,
+        })
       })
 
       .addCase(submitSurveyResponse.rejected, (state, action) => {
         state.isLoading = false
-
         state.error = action.payload as Record<string, string>
       })
 
@@ -141,14 +142,27 @@ const responseSlice = createSlice({
 
       .addCase(fetchSurveyResponses.fulfilled, (state, action) => {
         state.isLoading = false
+        const { surveyId, surveyTitle, questionCount, responses } = action.payload as {
+          surveyId: string
+          surveyTitle?: string
+          questionCount?: number
+          responses: SurveyResponse[]
+        }
 
-        // store fetched responses
-        state.responses = action.payload
+        // remove existing entries for this survey then append enriched ones
+        state.responses = [
+          ...state.responses.filter((r) => r.surveyId !== surveyId),
+          ...responses.map((r) => ({
+            ...r,
+            surveyId,
+            surveyTitle: surveyTitle ?? '',
+            questionCount: questionCount ?? 0,
+          })),
+        ]
       })
 
       .addCase(fetchSurveyResponses.rejected, (state, action) => {
         state.isLoading = false
-
         state.error = action.payload as Record<string, string>
       })
 

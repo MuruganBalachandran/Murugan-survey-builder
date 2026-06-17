@@ -6,14 +6,13 @@ import { useAppDispatch, useAppSelector } from '@/hooks/redux'
 import { toast } from '@/lib/toast'
 import { clearError, loginUser } from '@/store/slices/authSlice'
 import type { FieldErrors, LoginFormData, LoginFormProps } from '@/types'
+import { AUTH_ERROR_MESSAGES } from '@/utils/constants'
 import { EyeIcon, EyeOffIcon, LockIcon, MailIcon } from '@/utils/icons'
-
 // endregion
 
 // region Component: LoginForm
-
 export const LoginForm = ({ onSuccess }: LoginFormProps) => {
-  // region State Management
+  // State Management
   const dispatch = useAppDispatch()
   const { isLoading } = useAppSelector((state) => state.auth)
 
@@ -21,13 +20,8 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [showPassword, setShowPassword] = useState(false)
 
-  // endregion
 
   // region Event Handlers
-
-  /**
-   * Handles input field changes and clears related errors
-   */
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
@@ -36,41 +30,34 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
     }
   }
 
-  // Validates fields on blur event
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     const newErrors: FieldErrors = {}
 
     if (name === 'email') {
-      if (!value) newErrors.email = 'Email is required'
-      else if (!value.includes('@')) newErrors.email = 'Invalid email'
+      if (!value) newErrors.email = AUTH_ERROR_MESSAGES.EMAIL_REQUIRED
+      else if (!value.includes('@')) newErrors.email = AUTH_ERROR_MESSAGES.EMAIL_INVALID
     }
     if (name === 'password') {
-      if (!value) newErrors.password = 'Password is required'
+      if (!value) newErrors.password = AUTH_ERROR_MESSAGES.PASSWORD_REQUIRED
     }
 
     setFieldErrors((prev) => ({ ...prev, ...newErrors }))
   }
 
-  /**
-   * Handles form submission with validation
-   */
   const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    // region Form Validation
     const newErrors: FieldErrors = {}
-    if (!formData.email) newErrors.email = 'Email is required'
-    else if (!formData.email.includes('@')) newErrors.email = 'Invalid email'
-    if (!formData.password) newErrors.password = 'Password is required'
+    if (!formData.email) newErrors.email = AUTH_ERROR_MESSAGES.EMAIL_REQUIRED
+    else if (!formData.email.includes('@')) newErrors.email = AUTH_ERROR_MESSAGES.EMAIL_INVALID
+    if (!formData.password) newErrors.password = AUTH_ERROR_MESSAGES.PASSWORD_REQUIRED
 
     if (Object.keys(newErrors).length > 0) {
       setFieldErrors(newErrors)
       return
     }
-    // endregion
 
-    // region Submit Logic
     dispatch(clearError())
     const result = await dispatch(loginUser(formData))
 
@@ -84,7 +71,6 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
       const errorMessage = payload.general || payload.email || payload.password
       toast.error(errorMessage || 'Login failed')
     }
-    // endregion
   }
 
   // endregion
@@ -93,7 +79,6 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Email Input */}
       <Input
         label="Email"
         type="email"
@@ -107,7 +92,6 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
         icon={<MailIcon />}
       />
 
-      {/* Password Input */}
       <Input
         label="Password"
         type={showPassword ? 'text' : 'password'}
@@ -123,9 +107,8 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
           <button
             type="button"
             onClick={() => setShowPassword((v) => !v)}
-            className={`flex items-center transition-colors duration-150 ${
-              showPassword ? 'text-violet-400' : 'text-gray-600'
-            }`}
+            className={`flex items-center transition-colors duration-150 ${showPassword ? 'text-violet-400' : 'text-gray-600'
+              }`}
             tabIndex={-1}
             aria-label={showPassword ? 'Hide password' : 'Show password'}
           >
@@ -134,12 +117,10 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
         }
       />
 
-      {/* Submit Button */}
       <Button type="submit" fullWidth isLoading={isLoading} className="mt-2">
         Sign In
       </Button>
     </form>
   )
-
   // endregion
 }

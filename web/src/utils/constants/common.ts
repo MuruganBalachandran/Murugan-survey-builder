@@ -63,6 +63,21 @@ export const ERROR_MESSAGES = {
   VALIDATION: 'Please check your input and try again.',
 } as const
 
+export const AUTH_ERROR_MESSAGES = {
+  NAME_REQUIRED: 'Name required',
+  NAME_MIN_LENGTH: 'Min 2 characters',
+  EMAIL_REQUIRED: 'Email required',
+  EMAIL_INVALID: 'Invalid email',
+  PASSWORD_REQUIRED: 'Password required',
+  PASSWORD_MIN_LENGTH: '8+ characters required',
+  PASSWORD_LOWERCASE: 'Add a lowercase letter',
+  PASSWORD_UPPERCASE: 'Add an uppercase letter',
+  PASSWORD_SPECIAL: 'Add a special character',
+  CONFIRM_PASSWORD_REQUIRED: 'Please confirm your password',
+  CONFIRM_PASSWORD_MISMATCH: "Passwords don't match",
+  TERMS_REQUIRED: 'You must accept the terms',
+} as const
+
 export const SUCCESS_MESSAGES = {
   CREATED: 'Created successfully',
   UPDATED: 'Updated successfully',
