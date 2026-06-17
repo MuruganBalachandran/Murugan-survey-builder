@@ -59,17 +59,27 @@ export const fetchSurveyResponses = createAsyncThunk(
   'response/fetchSurveyResponses',
 
   async (
-    data: { surveyId: string; surveyTitle?: string; questionCount?: number } | string,
+    data:
+      | string
+      | {
+          surveyId: string
+          surveyTitle?: string
+          questionCount?: number
+          page?: number
+          pageSize?: number
+        },
 
     { rejectWithValue },
   ) => {
-    // support both legacy string form (public survey page) and enriched object form (dashboard)
+    // support multiple input forms — legacy string, object with metadata, or object with pagination
     const surveyId = typeof data === 'string' ? data : data.surveyId
     const surveyTitle = typeof data === 'string' ? undefined : data.surveyTitle
     const questionCount = typeof data === 'string' ? undefined : data.questionCount
+    const page = typeof data === 'string' ? 1 : data.page ?? 1
+    const pageSize = typeof data === 'string' ? 10 : data.pageSize ?? 10
 
     try {
-      const response = await responseAPI.getSurveyResponses(surveyId)
+      const response = await responseAPI.getSurveyResponses(surveyId, page, pageSize)
 
       if (!response.success || !response.data) {
         return rejectWithValue(
@@ -79,7 +89,15 @@ export const fetchSurveyResponses = createAsyncThunk(
         )
       }
 
-      return { surveyId, surveyTitle, questionCount, responses: response.data }
+      return {
+        surveyId,
+        surveyTitle,
+        questionCount,
+        responses: response.data.responses,
+        total: response.data.total,
+        page: response.data.page,
+        pageSize: response.data.pageSize,
+      }
     } catch (error: any) {
       return rejectWithValue({
         general: error.message || 'Failed to fetch responses',

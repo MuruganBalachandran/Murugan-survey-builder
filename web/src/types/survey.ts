@@ -204,6 +204,9 @@ export interface ResponsesListProps {
   responses: SurveyResponse[];
   questions: Question[];
   isEmpty?: boolean;
+  totalCount?: number;
+  onExportCSV?: () => void;
+  isExporting?: boolean;
 }
 
 export interface ResponsesSummaryProps {
