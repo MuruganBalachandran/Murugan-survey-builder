@@ -138,7 +138,7 @@ export const CreateSurveyDrawer = ({
     size="xl"
     footer={
       createStep === 0 ? undefined : (
-        <div className="flex w-full items-center justify-between gap-4">
+        <div className="flex w-full flex-wrap items-center justify-between gap-3">
           <Button
             variant="tertiary"
             onClick={onWizardBack}
@@ -148,11 +148,11 @@ export const CreateSurveyDrawer = ({
           </Button>
 
           {/* step indicator pills */}
-          <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-2">
+          <div className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1.5">
             {[1, 2, 3, 4].map((step) => (
               <span
                 key={step}
-                className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${
+                className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
                   createStep === step
                     ? "bg-violet-600 text-white"
                     : "bg-white text-gray-500"
@@ -176,13 +176,6 @@ export const CreateSurveyDrawer = ({
             <div className="flex gap-3">
               <Button variant="secondary" onClick={onWizardFinish}>
                 Done
-              </Button>
-              <Button
-                variant="tertiary"
-                onClick={onManualClose}
-                disabled={!activeSurvey || activeSurvey.status !== "published"}
-              >
-                Manual close
               </Button>
               <Button
                 variant="primary"

@@ -167,6 +167,13 @@ export const deleteSurveyById = createAsyncThunk(
 );
 // endregion
 
+// region helpers
+const mergeSurvey = (existing: Survey, incoming: Partial<Survey>): Survey => ({
+  ...existing,
+  ...incoming,
+});
+// endregion
+
 const surveySlice = createSlice({
   name: "survey",
   initialState,
@@ -190,7 +197,8 @@ const surveySlice = createSlice({
       })
       .addCase(createNewSurvey.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.surveys.push(action.payload);
+        state.surveys.unshift(action.payload);
+        state.surveysTotal += 1;
       })
       .addCase(createNewSurvey.rejected, (state, action) => {
         state.isLoading = false;
@@ -224,6 +232,11 @@ const surveySlice = createSlice({
       .addCase(fetchSurveyById.fulfilled, (state, action) => {
         state.isLoading = false;
         state.currentSurvey = action.payload;
+        // sync computed fields (responseCount, questionCount) back into the list
+        const index = state.surveys.findIndex((s) => s.id === action.payload.id);
+        if (index !== -1) {
+          state.surveys[index] = mergeSurvey(state.surveys[index]!, action.payload);
+        }
       })
       .addCase(fetchSurveyById.rejected, (state, action) => {
         state.isLoading = false;
@@ -239,14 +252,12 @@ const surveySlice = createSlice({
       })
       .addCase(updateSurveyDetails.fulfilled, (state, action) => {
         state.isLoading = false;
-        if (state.currentSurvey) {
+        if (state.currentSurvey?.id === action.payload.id) {
           state.currentSurvey = { ...state.currentSurvey, ...action.payload };
         }
-        const index = state.surveys.findIndex(
-          (s) => s.id === action.payload.id,
-        );
+        const index = state.surveys.findIndex((s) => s.id === action.payload.id);
         if (index !== -1) {
-          state.surveys[index] = action.payload;
+          state.surveys[index] = mergeSurvey(state.surveys[index]!, action.payload);
         }
       })
       .addCase(updateSurveyDetails.rejected, (state, action) => {
@@ -280,10 +291,56 @@ const surveySlice = createSlice({
       .addCase(deleteSurveyById.fulfilled, (state, action) => {
         state.isLoading = false;
         state.surveys = state.surveys.filter((s) => s.id !== action.payload);
+        state.surveysTotal = Math.max(0, state.surveysTotal - 1);
+        if (state.currentSurvey?.id === action.payload) {
+          state.currentSurvey = null;
+        }
       })
       .addCase(deleteSurveyById.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as Record<string, string>;
+      });
+    // endregion
+
+    // region question mutation handlers — keep currentSurvey.questions in sync
+    builder
+      .addCase("question/addQuestionToSurvey/fulfilled", (state, action: any) => {
+        if (state.currentSurvey) {
+          state.currentSurvey.questions = [...state.currentSurvey.questions, action.payload];
+          const index = state.surveys.findIndex((s) => s.id === state.currentSurvey!.id);
+          if (index !== -1) {
+            state.surveys[index] = {
+              ...state.surveys[index]!,
+              questionCount: (state.surveys[index]!.questionCount ?? 0) + 1,
+            };
+          }
+        }
+      })
+      .addCase("question/updateQuestionDetails/fulfilled", (state, action: any) => {
+        if (state.currentSurvey) {
+          state.currentSurvey.questions = state.currentSurvey.questions.map(
+            (q) => (q.id === action.payload.id ? { ...q, ...action.payload } : q),
+          );
+        }
+      })
+      .addCase("question/deleteQuestionFromSurvey/fulfilled", (state, action: any) => {
+        if (state.currentSurvey) {
+          state.currentSurvey.questions = state.currentSurvey.questions.filter(
+            (q) => q.id !== action.payload,
+          );
+          const index = state.surveys.findIndex((s) => s.id === state.currentSurvey!.id);
+          if (index !== -1) {
+            state.surveys[index] = {
+              ...state.surveys[index]!,
+              questionCount: Math.max(0, (state.surveys[index]!.questionCount ?? 1) - 1),
+            };
+          }
+        }
+      })
+      .addCase("question/reorderSurveyQuestions/fulfilled", (state, action: any) => {
+        if (state.currentSurvey) {
+          state.currentSurvey.questions = action.payload;
+        }
       });
     // endregion
   },

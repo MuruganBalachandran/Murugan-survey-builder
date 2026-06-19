@@ -350,10 +350,10 @@ export const SurveyResponsesPage = () => {
           <div className="space-y-6">
             {/* Tab navigation */}
             <div className="border-b border-gray-200">
-              <div className="flex gap-8">
+              <div className="flex gap-8 overflow-x-auto scrollbar-none">
                 <button
                   onClick={() => setActiveTab("analytics")}
-                  className={`py-3 px-1 text-sm font-medium border-b-2 transition-colors ${
+                  className={`shrink-0 py-3 px-1 text-sm font-medium border-b-2 transition-colors ${
                     activeTab === "analytics"
                       ? "border-violet-600 text-violet-600"
                       : "border-transparent text-gray-600 hover:text-gray-900"
@@ -363,7 +363,7 @@ export const SurveyResponsesPage = () => {
                 </button>
                 <button
                   onClick={() => setActiveTab("breakdown")}
-                  className={`py-3 px-1 text-sm font-medium border-b-2 transition-colors ${
+                  className={`shrink-0 py-3 px-1 text-sm font-medium border-b-2 transition-colors ${
                     activeTab === "breakdown"
                       ? "border-violet-600 text-violet-600"
                       : "border-transparent text-gray-600 hover:text-gray-900"
@@ -373,7 +373,7 @@ export const SurveyResponsesPage = () => {
                 </button>
                 <button
                   onClick={() => setActiveTab("responses")}
-                  className={`py-3 px-1 text-sm font-medium border-b-2 transition-colors ${
+                  className={`shrink-0 py-3 px-1 text-sm font-medium border-b-2 transition-colors ${
                     activeTab === "responses"
                       ? "border-violet-600 text-violet-600"
                       : "border-transparent text-gray-600 hover:text-gray-900"
