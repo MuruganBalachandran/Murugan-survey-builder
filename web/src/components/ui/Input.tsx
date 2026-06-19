@@ -1,14 +1,14 @@
 // region imports
-import { forwardRef } from 'react'
-import { cn } from '@/lib/cn'
-import type { InputProps } from '@/types'
+import { forwardRef } from "react";
+import { cn } from "@/utils/common";
+import type { InputProps } from "@/types";
 // endregion
 
 // region component
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, hint, icon, suffix, className, id, ...props }, ref) => {
     // fall back to name as the id so label htmlFor always links correctly
-    const inputId = id || props.name
+    const inputId = id || props.name;
 
     // region render
     return (
@@ -35,14 +35,14 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             className={cn(
-              'w-full rounded-lg border bg-white px-4 py-2.5 text-sm font-normal text-gray-900',
-              'border-gray-200 placeholder-gray-400 transition-all duration-200',
-              'hover:border-gray-300',
-              'focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100',
-              'disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed disabled:border-gray-200',
-              error && 'border-red-500 focus:ring-red-100 focus:border-red-500',
-              icon && 'pl-10',
-              suffix && 'pr-10',
+              "w-full rounded-lg border bg-white px-4 py-2.5 text-sm font-normal text-gray-900",
+              "border-gray-200 placeholder-gray-400 transition-all duration-200",
+              "hover:border-gray-300",
+              "focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100",
+              "disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed disabled:border-gray-200",
+              error && "border-red-500 focus:ring-red-100 focus:border-red-500",
+              icon && "pl-10",
+              suffix && "pr-10",
               className,
             )}
             onFocus={(e) => props.onFocus?.(e)}
@@ -52,18 +52,24 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 
           {/* optional trailing suffix (e.g. unit label or icon) */}
           {suffix && (
-            <div className="absolute right-3 flex items-center text-gray-400">{suffix}</div>
+            <div className="absolute right-3 flex items-center text-gray-400">
+              {suffix}
+            </div>
           )}
         </div>
 
         {/* error takes priority over hint */}
-        {error && <p className="mt-1.5 text-xs font-medium text-red-600">{error}</p>}
-        {hint && !error && <p className="mt-1.5 text-xs text-gray-500">{hint}</p>}
+        {error && (
+          <p className="mt-1.5 text-xs font-medium text-red-600">{error}</p>
+        )}
+        {hint && !error && (
+          <p className="mt-1.5 text-xs text-gray-500">{hint}</p>
+        )}
       </div>
-    )
+    );
     // endregion
   },
-)
+);
 
-Input.displayName = 'Input'
+Input.displayName = "Input";
 // endregion

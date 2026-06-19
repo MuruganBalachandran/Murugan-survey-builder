@@ -1,63 +1,71 @@
-import { useLocation, useNavigate } from '@tanstack/react-router'
-import { useEffect, useRef, useState } from 'react'
-import { CustomModal } from '@/components/common/CustomModal'
-import { useAppDispatch, useAppSelector } from '@/hooks/redux'
-import { logout } from '@/store/slices/authSlice'
-import { NAVIGATION_LINKS } from '@/utils/constants'
-import { ChevronDownIcon, HomeIcon, LogoutIcon, NavSurveyIcon } from '@/utils/icons'
+import { useLocation, useNavigate } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
+import { CustomModal } from "@/components/common/CustomModal";
+import { useAppDispatch, useAppSelector } from "@/hooks/redux";
+import { logoutUser } from "@/store/slices/authSlice";
+import { NAVIGATION_LINKS } from "@/utils/constants";
+import {
+  ChevronDownIcon,
+  HomeIcon,
+  LogoutIcon,
+  NavSurveyIcon,
+} from "@/utils/icons";
 
 export const Header = () => {
-  const navigate = useNavigate()
-  const location = useLocation()
-  const dispatch = useAppDispatch()
-  const { user, isAuthenticated } = useAppSelector((state) => state.auth)
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-  const [isModalLoading, setIsModalLoading] = useState(false)
-  const [showLogoutModal, setShowLogoutModal] = useState(false)
-  const dropdownRef = useRef<HTMLDivElement>(null)
+  const navigate = useNavigate();
+  const location = useLocation();
+  const dispatch = useAppDispatch();
+  const { user, isAuthenticated } = useAppSelector((state) => state.auth);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isModalLoading, setIsModalLoading] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Get first letter of user name
-  const userInitial = user?.name?.[0]?.toUpperCase() || '?'
+  const userInitial = user?.name?.[0]?.toUpperCase() || "?";
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false)
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsDropdownOpen(false);
       }
-    }
+    };
 
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleLogoutClick = () => {
-    setShowLogoutModal(true)
-  }
+    setShowLogoutModal(true);
+  };
 
   const handleConfirmLogout = async () => {
-    setIsModalLoading(true)
+    setIsModalLoading(true);
     try {
-      dispatch(logout())
-      setIsDropdownOpen(false)
-      setShowLogoutModal(false)
-      await navigate({ to: '/login' })
+      await dispatch(logoutUser());
+      setIsDropdownOpen(false);
+      setShowLogoutModal(false);
+      await navigate({ to: "/login" });
     } finally {
-      setIsModalLoading(false)
+      setIsModalLoading(false);
     }
-  }
+  };
 
   const handleCloseModal = () => {
-    setShowLogoutModal(false)
-  }
+    setShowLogoutModal(false);
+  };
 
   const isActive = (path: string) =>
-    location.pathname === path || location.pathname.startsWith(path + '/')
+    location.pathname === path || location.pathname.startsWith(path + "/");
 
   const navLinks = NAVIGATION_LINKS.map((link) => ({
     ...link,
-    icon: link.icon === 'HomeIcon' ? HomeIcon : NavSurveyIcon,
-  }))
+    icon: link.icon === "HomeIcon" ? HomeIcon : NavSurveyIcon,
+  }));
 
   return (
     <>
@@ -66,7 +74,7 @@ export const Header = () => {
           {/* Logo Section */}
           <div className="flex flex-1 items-center gap-3 pl-4 sm:pl-6 lg:pl-8">
             <button
-              onClick={() => navigate({ to: '/' })}
+              onClick={() => navigate({ to: "/" })}
               className="flex items-center gap-3 hover:opacity-80 transition-opacity"
             >
               <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-500 shadow-lg shadow-violet-200">
@@ -79,22 +87,22 @@ export const Header = () => {
           {/* Navigation Links */}
           <nav className="hidden md:flex items-center gap-1">
             {navLinks.map((link) => {
-              const Icon = link.icon
-              const active = isActive(link.path)
+              const Icon = link.icon;
+              const active = isActive(link.path);
               return (
                 <button
                   key={link.path}
                   onClick={() => navigate({ to: link.path as any })}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
                     active
-                      ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-medium shadow-md shadow-violet-100'
-                      : 'text-gray-600 hover:bg-violet-50 hover:text-violet-700'
+                      ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-medium shadow-md shadow-violet-100"
+                      : "text-gray-600 hover:bg-violet-50 hover:text-violet-700"
                   }`}
                 >
                   <Icon />
                   <span className="text-sm">{link.label}</span>
                 </button>
-              )
+              );
             })}
           </nav>
 
@@ -104,14 +112,14 @@ export const Header = () => {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => navigate({ to: '/login' })}
+                  onClick={() => navigate({ to: "/login" })}
                   className="rounded-lg px-3 py-2 text-sm font-semibold text-gray-600 transition-colors hover:bg-violet-50 hover:text-violet-700"
                 >
                   Sign In
                 </button>
                 <button
                   type="button"
-                  onClick={() => navigate({ to: '/signup' })}
+                  onClick={() => navigate({ to: "/signup" })}
                   className="rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-violet-100"
                 >
                   Get Started
@@ -127,7 +135,9 @@ export const Header = () => {
                 >
                   {/* User Initial Avatar */}
                   <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-500">
-                    <span className="text-white font-semibold text-sm">{userInitial}</span>
+                    <span className="text-white font-semibold text-sm">
+                      {userInitial}
+                    </span>
                   </div>
 
                   {/* Chevron */}
@@ -142,8 +152,12 @@ export const Header = () => {
                       <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                         Account
                       </p>
-                      <p className="mt-2 text-sm font-semibold text-gray-900">{user?.name}</p>
-                      <p className="text-xs text-gray-600 truncate">{user?.email}</p>
+                      <p className="mt-2 text-sm font-semibold text-gray-900">
+                        {user?.name}
+                      </p>
+                      <p className="text-xs text-gray-600 truncate">
+                        {user?.email}
+                      </p>
                     </div>
 
                     {/* Logout Button */}
@@ -177,5 +191,5 @@ export const Header = () => {
         isLoading={isModalLoading}
       />
     </>
-  )
-}
+  );
+};

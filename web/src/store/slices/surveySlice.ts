@@ -7,6 +7,7 @@ export interface SurveyState {
   surveys: Survey[];
   surveysTotal: number;
   currentSurvey: SurveyWithQuestions | null;
+  publicSurvey: SurveyWithQuestions | null;
   isLoading: boolean;
   error: Record<string, string> | null;
 }
@@ -15,6 +16,7 @@ const initialState: SurveyState = {
   surveys: [],
   surveysTotal: 0,
   currentSurvey: null,
+  publicSurvey: null,
   isLoading: false,
   error: null,
 };
@@ -125,6 +127,25 @@ export const updateSurveyDetails = createAsyncThunk(
 );
 // endregion
 
+// region fetch public survey
+export const fetchPublicSurvey = createAsyncThunk(
+  "survey/fetchPublicSurvey",
+  async (slug: string, { rejectWithValue }) => {
+    try {
+      const response = await surveyAPI.getPublicSurvey(slug);
+      if (!response.success || !response.data) {
+        return rejectWithValue(
+          response.errors || { general: response.message },
+        );
+      }
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue({ general: error.message || "Survey not found" });
+    }
+  },
+);
+// endregion
+
 // region delete survey
 export const deleteSurveyById = createAsyncThunk(
   "survey/deleteSurveyById",
@@ -155,6 +176,9 @@ const surveySlice = createSlice({
     },
     clearCurrentSurvey: (state) => {
       state.currentSurvey = null;
+    },
+    clearPublicSurvey: (state) => {
+      state.publicSurvey = null;
     },
   },
   extraReducers: (builder) => {
@@ -231,6 +255,22 @@ const surveySlice = createSlice({
       });
     // endregion
 
+    // region fetch public survey handlers
+    builder
+      .addCase(fetchPublicSurvey.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchPublicSurvey.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.publicSurvey = action.payload;
+      })
+      .addCase(fetchPublicSurvey.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as Record<string, string>;
+      });
+    // endregion
+
     // region delete survey handlers
     builder
       .addCase(deleteSurveyById.pending, (state) => {
@@ -249,5 +289,6 @@ const surveySlice = createSlice({
   },
 });
 
-export const { clearError, clearCurrentSurvey } = surveySlice.actions;
+export const { clearError, clearCurrentSurvey, clearPublicSurvey } =
+  surveySlice.actions;
 export default surveySlice.reducer;

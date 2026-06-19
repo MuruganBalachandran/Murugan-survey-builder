@@ -1,8 +1,8 @@
 // region imports
-import { useEffect } from 'react'
-import { cn } from '@/lib/cn'
-import type { ModalProps } from '@/types'
-import { SIZE_CLASSES } from '@/utils/constants'
+import { useEffect } from "react";
+import { cn } from "@/utils/common";
+import type { ModalProps } from "@/types";
+import { SIZE_CLASSES } from "@/utils/constants";
 // endregion
 
 // region component
@@ -12,31 +12,31 @@ export const Modal = ({
   title,
   children,
   footer,
-  size = 'md',
+  size = "md",
   closeOnBackdropClick = true,
 }: ModalProps) => {
   // region effects
 
   // lock scroll and register Escape handler while the modal is open
   useEffect(() => {
-    if (!isOpen) return
+    if (!isOpen) return;
 
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
+      if (e.key === "Escape") onClose();
+    };
 
-    document.addEventListener('keydown', handleEscape)
-    document.body.style.overflow = 'hidden'
+    document.addEventListener("keydown", handleEscape);
+    document.body.style.overflow = "hidden";
 
     return () => {
-      document.removeEventListener('keydown', handleEscape)
-      document.body.style.overflow = ''
-    }
-  }, [isOpen, onClose])
+      document.removeEventListener("keydown", handleEscape);
+      document.body.style.overflow = "";
+    };
+  }, [isOpen, onClose]);
 
   // endregion
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   // region render
   return (
@@ -49,9 +49,9 @@ export const Modal = ({
 
       <div
         className={cn(
-          'relative w-full bg-white rounded-2xl shadow-2xl',
-          'max-h-[90vh] overflow-y-auto',
-          'animate-in fade-in zoom-in-95 duration-200',
+          "relative w-full bg-white rounded-2xl shadow-2xl",
+          "max-h-[90vh] overflow-y-auto",
+          "animate-in fade-in zoom-in-95 duration-200",
           SIZE_CLASSES.MODAL[size],
         )}
       >
@@ -64,7 +64,12 @@ export const Modal = ({
               className="rounded-lg p-2 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600"
               aria-label="Close modal"
             >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -86,7 +91,7 @@ export const Modal = ({
         )}
       </div>
     </div>
-  )
+  );
   // endregion
-}
+};
 // endregion
