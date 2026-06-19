@@ -1,50 +1,56 @@
 // region imports
-import { useState } from 'react'
-import { cn } from '@/lib/cn'
-import type { ColorPickerProps } from '@/types'
-import { Input } from './Input'
+import { useState } from "react";
+import { cn } from "@/utils/common";
+import type { ColorPickerProps } from "@/types";
+import { Input } from "./Input";
 
 // endregion
 
 // region constants
 const PRESET_COLORS = [
-  '#0EA5E9', // sky
-  '#3B82F6', // blue
-  '#8B5CF6', // purple
-  '#EC4899', // pink
-  '#F43F5E', // rose
-  '#F97316', // orange
-  '#EAB308', // yellow
-  '#22C55E', // green
-  '#10B981', // emerald
-  '#06B6D4', // cyan
-  '#0891B2', // cyan-dark
-  '#000000', // black
-]
+  "#0EA5E9", // sky
+  "#3B82F6", // blue
+  "#8B5CF6", // purple
+  "#EC4899", // pink
+  "#F43F5E", // rose
+  "#F97316", // orange
+  "#EAB308", // yellow
+  "#22C55E", // green
+  "#10B981", // emerald
+  "#06B6D4", // cyan
+  "#0891B2", // cyan-dark
+  "#000000", // black
+];
 // endregion
 
 // region component
-export const ColorPicker = ({ value, onChange, label = 'Color' }: ColorPickerProps) => {
+export const ColorPicker = ({
+  value,
+  onChange,
+  label = "Color",
+}: ColorPickerProps) => {
   // region state
-  const [showPicker, setShowPicker] = useState(false)
+  const [showPicker, setShowPicker] = useState(false);
   // endregion
 
   // region handlers
 
   // only propagate valid hex values from the text input
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value
-    if (/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(val) || val === '') {
-      onChange(val)
+    const val = e.target.value;
+    if (/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(val) || val === "") {
+      onChange(val);
     }
-  }
+  };
 
   // endregion
 
   // region render
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-neutral-700">{label}</label>
+      <label className="block text-sm font-medium text-neutral-700">
+        {label}
+      </label>
 
       <div className="flex gap-3">
         {/* hex text input */}
@@ -60,7 +66,7 @@ export const ColorPicker = ({ value, onChange, label = 'Color' }: ColorPickerPro
         {/* native colour input for visual picking */}
         <input
           type="color"
-          value={value || '#000000'}
+          value={value || "#000000"}
           onChange={(e) => onChange(e.target.value)}
           className="h-10 w-12 rounded-lg border border-neutral-300 cursor-pointer"
         />
@@ -81,14 +87,14 @@ export const ColorPicker = ({ value, onChange, label = 'Color' }: ColorPickerPro
             <button
               key={color}
               onClick={() => {
-                onChange(color)
-                setShowPicker(false)
+                onChange(color);
+                setShowPicker(false);
               }}
               className={cn(
-                'h-8 rounded-lg border-2 transition-all',
+                "h-8 rounded-lg border-2 transition-all",
                 value === color
-                  ? 'border-neutral-900 shadow-md'
-                  : 'border-transparent hover:shadow-md',
+                  ? "border-neutral-900 shadow-md"
+                  : "border-transparent hover:shadow-md",
               )}
               style={{ backgroundColor: color }}
               title={color}
@@ -97,7 +103,7 @@ export const ColorPicker = ({ value, onChange, label = 'Color' }: ColorPickerPro
         </div>
       )}
     </div>
-  )
+  );
   // endregion
-}
+};
 // endregion

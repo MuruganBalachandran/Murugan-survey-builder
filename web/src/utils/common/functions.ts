@@ -1,68 +1,81 @@
 // region imports
-import type { ModalVariant, ToastVariant, VariantStyles, VariantToastStyles } from '@/types'
+import type {
+  ModalVariant,
+  ToastVariant,
+  VariantStyles,
+  VariantToastStyles,
+} from "@/types";
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
 // endregion
 export function isValidHexColor(color: string): boolean {
-  return /^#[0-9A-Fa-f]{6}$/.test(color)
+  return /^#[0-9A-Fa-f]{6}$/.test(color);
 }
+
+// region cn
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+// endregion
 
 // convert hex color to rgb
 export function hexToRgb(hex: string): {
-  r: number
-  g: number
-  b: number
+  r: number;
+  g: number;
+  b: number;
 } | null {
   // return null if hex is empty
-  if (!hex) return null
+  if (!hex) return null;
 
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
 
   return result && result[1] && result[2] && result[3]
     ? {
-      r: parseInt(result[1], 16),
+        r: parseInt(result[1], 16),
 
-      g: parseInt(result[2], 16),
+        g: parseInt(result[2], 16),
 
-      b: parseInt(result[3], 16),
-    }
-    : null
+        b: parseInt(result[3], 16),
+      }
+    : null;
 }
 
 // convert rgb values to hex
 export function rgbToHex(r: number, g: number, b: number): string {
   return `#${[r, g, b]
-    .map((x) => Math.min(255, Math.max(0, x)).toString(16).padStart(2, '0'))
-    .join('')}`
+    .map((x) => Math.min(255, Math.max(0, x)).toString(16).padStart(2, "0"))
+    .join("")}`;
 }
 
 // calculate color luminance
 export function getLuminance(hex: string): number {
-  const rgb = hexToRgb(hex)
+  const rgb = hexToRgb(hex);
 
   // fallback luminance
-  if (!rgb) return 0.5
+  if (!rgb) return 0.5;
 
-  const { r, g, b } = rgb
+  const { r, g, b } = rgb;
 
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
 
-  return luminance
+  return luminance;
 }
 
 // get readable contrast color
 export function getContrastColor(hex: string): string {
-  const luminance = getLuminance(hex)
+  const luminance = getLuminance(hex);
 
-  return luminance > 0.5 ? '#000000' : '#FFFFFF'
+  return luminance > 0.5 ? "#000000" : "#FFFFFF";
 }
 
 // lighten hex color
 export function lightenColor(hex: string, amount: number): string {
-  const rgb = hexToRgb(hex)
+  const rgb = hexToRgb(hex);
 
   // return original color if invalid
-  if (!rgb) return hex
+  if (!rgb) return hex;
 
-  const { r, g, b } = rgb
+  const { r, g, b } = rgb;
 
   return rgbToHex(
     Math.round(r + (255 - r) * amount),
@@ -70,17 +83,17 @@ export function lightenColor(hex: string, amount: number): string {
     Math.round(g + (255 - g) * amount),
 
     Math.round(b + (255 - b) * amount),
-  )
+  );
 }
 
 // darken hex color
 export function darkenColor(hex: string, amount: number): string {
-  const rgb = hexToRgb(hex)
+  const rgb = hexToRgb(hex);
 
   // return original color if invalid
-  if (!rgb) return hex
+  if (!rgb) return hex;
 
-  const { r, g, b } = rgb
+  const { r, g, b } = rgb;
 
   return rgbToHex(
     Math.round(r * (1 - amount)),
@@ -88,7 +101,7 @@ export function darkenColor(hex: string, amount: number): string {
     Math.round(g * (1 - amount)),
 
     Math.round(b * (1 - amount)),
-  )
+  );
 }
 // endregion
 
@@ -97,76 +110,77 @@ export function darkenColor(hex: string, amount: number): string {
 export function formatDate(
   date: string | Date,
 
-  format: 'short' | 'long' | 'relative' = 'long',
+  format: "short" | "long" | "relative" = "long",
 ): string {
-  const d = typeof date === 'string' ? new Date(date) : date
+  const d = typeof date === "string" ? new Date(date) : date;
 
   // validate date object
   if (!d || isNaN(d.getTime())) {
-    return 'Invalid date'
+    return "Invalid date";
   }
 
   switch (format) {
-    case 'short':
-      return d.toLocaleDateString('en-US', {
-        month: 'short',
+    case "short":
+      return d.toLocaleDateString("en-US", {
+        month: "short",
 
-        day: 'numeric',
+        day: "numeric",
 
-        year: d.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined,
-      })
+        year:
+          d.getFullYear() !== new Date().getFullYear() ? "numeric" : undefined,
+      });
 
-    case 'long':
-      return d.toLocaleDateString('en-US', {
-        weekday: 'short',
+    case "long":
+      return d.toLocaleDateString("en-US", {
+        weekday: "short",
 
-        month: 'short',
+        month: "short",
 
-        day: 'numeric',
+        day: "numeric",
 
-        year: 'numeric',
+        year: "numeric",
 
-        hour: '2-digit',
+        hour: "2-digit",
 
-        minute: '2-digit',
-      })
+        minute: "2-digit",
+      });
 
-    case 'relative': {
-      const now = new Date()
+    case "relative": {
+      const now = new Date();
 
-      const diff = now.getTime() - d.getTime()
+      const diff = now.getTime() - d.getTime();
 
-      const minutes = Math.floor(diff / 60000)
+      const minutes = Math.floor(diff / 60000);
 
-      const hours = Math.floor(diff / 3600000)
+      const hours = Math.floor(diff / 3600000);
 
-      const days = Math.floor(diff / 86400000)
+      const days = Math.floor(diff / 86400000);
 
       // show recent timestamp
-      if (minutes < 1) return 'Just now'
+      if (minutes < 1) return "Just now";
 
-      if (minutes < 60) return `${minutes}m ago`
+      if (minutes < 60) return `${minutes}m ago`;
 
-      if (hours < 24) return `${hours}h ago`
+      if (hours < 24) return `${hours}h ago`;
 
-      if (days < 7) return `${days}d ago`
+      if (days < 7) return `${days}d ago`;
 
-      return d.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-      })
+      return d.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
     }
   }
 }
 
 // format time values
 export function formatTime(date: string | Date): string {
-  const d = typeof date === 'string' ? new Date(date) : date
+  const d = typeof date === "string" ? new Date(date) : date;
 
-  return d.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  return d.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 // endregion
 
@@ -174,40 +188,40 @@ export function formatTime(date: string | Date): string {
 // store value in local storage
 export function setItem<T>(key: string, value: T): void {
   try {
-    localStorage.setItem(key, JSON.stringify(value))
+    localStorage.setItem(key, JSON.stringify(value));
   } catch {
-    console.error('Failed to save to localStorage')
+    console.error("Failed to save to localStorage");
   }
 }
 
 // retrieve value from local storage
 export function getItem<T>(key: string, defaultValue?: T): T | null {
   try {
-    const item = localStorage.getItem(key)
+    const item = localStorage.getItem(key);
 
-    return item ? JSON.parse(item) : (defaultValue ?? null)
+    return item ? JSON.parse(item) : (defaultValue ?? null);
   } catch {
-    console.error('Failed to read from localStorage')
+    console.error("Failed to read from localStorage");
 
-    return defaultValue ?? null
+    return defaultValue ?? null;
   }
 }
 
 // remove item from local storage
 export function removeItem(key: string): void {
   try {
-    localStorage.removeItem(key)
+    localStorage.removeItem(key);
   } catch {
-    console.error('Failed to remove from localStorage')
+    console.error("Failed to remove from localStorage");
   }
 }
 
 // clear local storage
 export function clearAllStorage(): void {
   try {
-    localStorage.clear()
+    localStorage.clear();
   } catch {
-    console.error('Failed to clear localStorage')
+    console.error("Failed to clear localStorage");
   }
 }
 // endregion
@@ -216,155 +230,163 @@ export function clearAllStorage(): void {
 
 // generate unique identifier
 export function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 // endregion
 
 // region modal variant utilities
 export const getModalVariantStyles = (variant: ModalVariant): VariantStyles => {
-  const baseClasses = 'h-12 w-12 flex items-center justify-center rounded-full'
+  const baseClasses = "h-12 w-12 flex items-center justify-center rounded-full";
 
   switch (variant) {
-    case 'danger':
+    case "danger":
       return {
         iconBg: `${baseClasses} bg-red-100`,
 
-        iconColor: 'text-red-600',
+        iconColor: "text-red-600",
 
-        confirmButtonClass: 'bg-red-600 hover:bg-red-700',
-      }
+        confirmButtonClass: "bg-red-600 hover:bg-red-700",
+      };
 
-    case 'warning':
+    case "warning":
       return {
         iconBg: `${baseClasses} bg-yellow-100`,
 
-        iconColor: 'text-yellow-600',
+        iconColor: "text-yellow-600",
 
-        confirmButtonClass: 'bg-yellow-600 hover:bg-yellow-700',
-      }
+        confirmButtonClass: "bg-yellow-600 hover:bg-yellow-700",
+      };
 
-    case 'success':
+    case "success":
       return {
         iconBg: `${baseClasses} bg-emerald-100`,
 
-        iconColor: 'text-emerald-600',
+        iconColor: "text-emerald-600",
 
-        confirmButtonClass: 'bg-emerald-600 hover:bg-emerald-700',
-      }
+        confirmButtonClass: "bg-emerald-600 hover:bg-emerald-700",
+      };
 
-    case 'info':
+    case "info":
       return {
         iconBg: `${baseClasses} bg-blue-100`,
 
-        iconColor: 'text-blue-600',
+        iconColor: "text-blue-600",
 
-        confirmButtonClass: 'bg-blue-600 hover:bg-blue-700',
-      }
+        confirmButtonClass: "bg-blue-600 hover:bg-blue-700",
+      };
 
     default:
       return {
         iconBg: `${baseClasses} bg-violet-100`,
 
-        iconColor: 'text-violet-600',
+        iconColor: "text-violet-600",
 
-        confirmButtonClass: 'bg-violet-600 hover:bg-violet-700',
-      }
+        confirmButtonClass: "bg-violet-600 hover:bg-violet-700",
+      };
   }
-}
+};
 // endregion
 
 // region toast variant utilities
-export const getToastVariantStyles = (variant: ToastVariant): VariantToastStyles => {
+export const getToastVariantStyles = (
+  variant: ToastVariant,
+): VariantToastStyles => {
   const toastStyles: Record<ToastVariant, VariantToastStyles> = {
     success: {
-      icon: '✓',
+      icon: "✓",
 
-      iconClassName: 'bg-emerald-100 text-emerald-700',
+      iconClassName: "bg-emerald-100 text-emerald-700",
 
-      accentClassName: 'bg-emerald-500',
+      accentClassName: "bg-emerald-500",
 
-      description: 'Success',
+      description: "Success",
     },
 
     error: {
-      icon: '×',
+      icon: "×",
 
-      iconClassName: 'bg-red-100 text-red-700',
+      iconClassName: "bg-red-100 text-red-700",
 
-      accentClassName: 'bg-red-500',
+      accentClassName: "bg-red-500",
 
-      description: 'Error',
+      description: "Error",
     },
 
     warning: {
-      icon: '!',
+      icon: "!",
 
-      iconClassName: 'bg-amber-100 text-amber-700',
+      iconClassName: "bg-amber-100 text-amber-700",
 
-      accentClassName: 'bg-amber-500',
+      accentClassName: "bg-amber-500",
 
-      description: 'Warning',
+      description: "Warning",
     },
 
     info: {
-      icon: 'i',
+      icon: "i",
 
-      iconClassName: 'bg-violet-100 text-violet-700',
+      iconClassName: "bg-violet-100 text-violet-700",
 
-      accentClassName: 'bg-gradient-to-r from-violet-600 to-blue-500',
+      accentClassName: "bg-gradient-to-r from-violet-600 to-blue-500",
 
-      description: 'Information',
+      description: "Information",
     },
-  }
+  };
 
-  return toastStyles[variant]
-}
+  return toastStyles[variant];
+};
 // endregion
 
 // region dashboard utilities
 
 // returns true when an answer field has a non-empty value
 export const isAnswered = (value: string | string[] | number): boolean => {
-  if (Array.isArray(value)) return value.length > 0
-  if (typeof value === 'string') return value.trim().length > 0
-  return true
-}
+  if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === "string") return value.trim().length > 0;
+  return true;
+};
 
 // returns a Date set to 00:00 of the current ISO week's Monday
 export const startOfCurrentWeek = (): Date => {
-  const date = new Date()
-  const day = date.getDay()
-  const daysSinceMonday = day === 0 ? 6 : day - 1
-  date.setHours(0, 0, 0, 0)
-  date.setDate(date.getDate() - daysSinceMonday)
-  return date
-}
+  const date = new Date();
+  const day = date.getDay();
+  const daysSinceMonday = day === 0 ? 6 : day - 1;
+  date.setHours(0, 0, 0, 0);
+  date.setDate(date.getDate() - daysSinceMonday);
+  return date;
+};
 
 // converts a UTC date string into a human-readable relative label
 export const formatRelativeTime = (dateValue: string): string => {
   const elapsedSeconds = Math.max(
     0,
     Math.floor((Date.now() - new Date(dateValue).getTime()) / 1000),
-  )
-  if (elapsedSeconds < 60) return 'Just now'
+  );
+  if (elapsedSeconds < 60) return "Just now";
 
-  const elapsedMinutes = Math.floor(elapsedSeconds / 60)
-  if (elapsedMinutes < 60) return `${elapsedMinutes} min${elapsedMinutes === 1 ? '' : 's'} ago`
+  const elapsedMinutes = Math.floor(elapsedSeconds / 60);
+  if (elapsedMinutes < 60)
+    return `${elapsedMinutes} min${elapsedMinutes === 1 ? "" : "s"} ago`;
 
-  const elapsedHours = Math.floor(elapsedMinutes / 60)
-  if (elapsedHours < 24) return `${elapsedHours} hour${elapsedHours === 1 ? '' : 's'} ago`
+  const elapsedHours = Math.floor(elapsedMinutes / 60);
+  if (elapsedHours < 24)
+    return `${elapsedHours} hour${elapsedHours === 1 ? "" : "s"} ago`;
 
-  const elapsedDays = Math.floor(elapsedHours / 24)
-  if (elapsedDays < 7) return `${elapsedDays} day${elapsedDays === 1 ? '' : 's'} ago`
+  const elapsedDays = Math.floor(elapsedHours / 24);
+  if (elapsedDays < 7)
+    return `${elapsedDays} day${elapsedDays === 1 ? "" : "s"} ago`;
 
-  return new Date(dateValue).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-}
+  return new Date(dateValue).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+};
 
 // returns a time-of-day greeting string
 export const getGreeting = (): string => {
-  const hour = new Date().getHours()
-  if (hour < 12) return 'Good morning'
-  if (hour < 18) return 'Good afternoon'
-  return 'Good evening'
-}
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
+};
 // endregion

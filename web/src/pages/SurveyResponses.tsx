@@ -3,12 +3,13 @@ import { useNavigate, useParams } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import * as XLSX from "xlsx";
 import { AppLayout } from "@/components/Layout/AppLayout";
+import { Loading } from "@/components/common/Loading";
 import { QuestionCharts } from "@/components/surveyResponses/QuestionCharts";
 import { ResponsesList } from "@/components/surveyResponses/ResponsesList";
 import { ResponsesOverTimeChart } from "@/components/surveyResponses/ResponsesOverTimeChart";
 import { ResponsesSummary } from "@/components/surveyResponses/ResponsesSummary";
 import { useAppDispatch, useAppSelector } from "@/hooks/redux";
-import { toast } from "@/lib/toast";
+import { toast } from "@/utils/common/toast";
 import { fetchSurveyResponses } from "@/store/slices/responseSlice";
 import { clearError, fetchSurveyById } from "@/store/slices/surveySlice";
 import type { SurveyResponse } from "@/types/survey";
@@ -34,8 +35,9 @@ export const SurveyResponsesPage = () => {
   const [exporting, setExporting] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalResponses, setTotalResponses] = useState(0);
-  const [activeTab, setActiveTab] = useState<"analytics" | "breakdown" | "responses">("analytics");
-  const [responsesLoaded, setResponsesLoaded] = useState(false);
+  const [activeTab, setActiveTab] = useState<
+    "analytics" | "breakdown" | "responses"
+  >("analytics");
   const [breakdownPage, setBreakdownPage] = useState(1);
   const responsesPageSize = 5;
   const breakdownPageSize = 10;
@@ -43,18 +45,11 @@ export const SurveyResponsesPage = () => {
 
   // region effects
 
-  // fetch survey metadata on mount (but NOT responses yet)
+  // fetch survey metadata and responses on mount
   useEffect(() => {
     dispatch(fetchSurveyById(id));
+    loadResponses(1);
   }, [dispatch, id]);
-
-  // load responses only when the "Responses" tab is clicked
-  useEffect(() => {
-    if (activeTab === "responses" && !responsesLoaded) {
-      loadResponses(1);
-      setResponsesLoaded(true);
-    }
-  }, [activeTab, responsesLoaded]);
 
   // show toast and clear redux error whenever one is set
   useEffect(() => {
@@ -69,8 +64,13 @@ export const SurveyResponsesPage = () => {
 
   // region derived data
 
-  const responsesTotalPages = Math.max(1, Math.ceil(totalResponses / responsesPageSize));
-  const breakdownTotalPages = currentSurvey ? Math.max(1, Math.ceil(currentSurvey.questions.length / breakdownPageSize)) : 1;
+  const responsesTotalPages = Math.max(
+    1,
+    Math.ceil(totalResponses / responsesPageSize),
+  );
+  const breakdownTotalPages = currentSurvey
+    ? Math.max(1, Math.ceil(currentSurvey.questions.length / breakdownPageSize))
+    : 1;
 
   const responsesPageItems = useMemo(
     () => buildPaginationItems(currentPage, responsesTotalPages),
@@ -143,7 +143,11 @@ export const SurveyResponsesPage = () => {
     setLoadingResponses(true);
     try {
       const result = await dispatch(
-        fetchSurveyResponses({ surveyId: id, page, pageSize: responsesPageSize }),
+        fetchSurveyResponses({
+          surveyId: id,
+          page,
+          pageSize: responsesPageSize,
+        }),
       );
       if (result.type === fetchSurveyResponses.fulfilled.type) {
         const payload = result.payload as {
@@ -169,13 +173,13 @@ export const SurveyResponsesPage = () => {
     setExporting(true);
     try {
       const exportDate = new Date();
-      
+
       // Fetch ALL responses for export with reasonable page size
       const pageSize = 100;
       const allResponsesResult = await dispatch(
         fetchSurveyResponses({ surveyId: id, page: 1, pageSize }),
       );
-      
+
       let allResponses: SurveyResponse[] = [];
       if (allResponsesResult.type === fetchSurveyResponses.fulfilled.type) {
         const payload = allResponsesResult.payload as {
@@ -183,7 +187,7 @@ export const SurveyResponsesPage = () => {
           total: number;
         };
         allResponses = payload.responses;
-        
+
         // If there are more responses, fetch additional pages
         if (payload.total > pageSize) {
           const totalPages = Math.ceil(payload.total / pageSize);
@@ -213,10 +217,10 @@ export const SurveyResponsesPage = () => {
 
       // Create single sheet with all responses in table format
       const tableRows: any[] = [];
-      
+
       // Add empty row at the start for spacing
       tableRows.push([]);
-      
+
       // Header row with padding inside cells
       tableRows.push([
         "  Response ID  ",
@@ -232,7 +236,9 @@ export const SurveyResponsesPage = () => {
         ];
 
         currentSurvey.questions.forEach((question) => {
-          const answer = response.answers.find((a) => a.questionId === question.id);
+          const answer = response.answers.find(
+            (a) => a.questionId === question.id,
+          );
           const value = answer
             ? Array.isArray(answer.value)
               ? answer.value.join("; ")
@@ -248,7 +254,7 @@ export const SurveyResponsesPage = () => {
       tableRows.push([]);
 
       const sheet = XLSX.utils.aoa_to_sheet(tableRows);
-      
+
       // Style header row (bold, blue background, white text) - it's at index 1 now
       for (let i = 0; i < tableRows[1].length; i++) {
         const cellRef = XLSX.utils.encode_col(i) + "2"; // Row 2 because we added empty row at start
@@ -338,12 +344,7 @@ export const SurveyResponsesPage = () => {
           </div>
         </div>
 
-        {isLoading && (
-          <div className="text-center py-12">
-            <div className="inline-block w-8 h-8 border-4 border-violet-200 border-t-violet-600 rounded-full animate-spin" />
-            <p className="mt-4 text-gray-600">Loading survey...</p>
-          </div>
-        )}
+        {isLoading && <Loading text="Loading survey..." />}
 
         {currentSurvey && !isLoading && (
           <div className="space-y-6">
@@ -412,14 +413,19 @@ export const SurveyResponsesPage = () => {
                   <div className="flex flex-col gap-4 border-t border-gray-200 pt-5 md:flex-row md:items-center md:justify-between">
                     <p className="text-sm text-gray-600">
                       Showing {(breakdownPage - 1) * breakdownPageSize + 1}-
-                      {Math.min(breakdownPage * breakdownPageSize, currentSurvey.questions.length)} of{" "}
-                      {currentSurvey.questions.length} questions
+                      {Math.min(
+                        breakdownPage * breakdownPageSize,
+                        currentSurvey.questions.length,
+                      )}{" "}
+                      of {currentSurvey.questions.length} questions
                     </p>
 
                     <div className="flex flex-wrap items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => setBreakdownPage(Math.max(1, breakdownPage - 1))}
+                        onClick={() =>
+                          setBreakdownPage(Math.max(1, breakdownPage - 1))
+                        }
                         disabled={breakdownPage === 1}
                         className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
                         aria-label="Previous page"
@@ -459,7 +465,9 @@ export const SurveyResponsesPage = () => {
                       <button
                         type="button"
                         onClick={() =>
-                          setBreakdownPage(Math.min(breakdownTotalPages, breakdownPage + 1))
+                          setBreakdownPage(
+                            Math.min(breakdownTotalPages, breakdownPage + 1),
+                          )
                         }
                         disabled={breakdownPage === breakdownTotalPages}
                         className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
@@ -476,12 +484,7 @@ export const SurveyResponsesPage = () => {
             {/* Responses Tab */}
             {activeTab === "responses" && (
               <div className="space-y-6">
-                {loadingResponses && (
-                  <div className="text-center py-12">
-                    <div className="inline-block w-8 h-8 border-4 border-violet-200 border-t-violet-600 rounded-full animate-spin" />
-                    <p className="mt-4 text-gray-600">Loading responses...</p>
-                  </div>
-                )}
+                {loadingResponses && <Loading text="Loading responses..." />}
 
                 {!loadingResponses && (
                   <>
@@ -498,14 +501,19 @@ export const SurveyResponsesPage = () => {
                       <div className="flex flex-col gap-4 border-t border-gray-200 pt-5 md:flex-row md:items-center md:justify-between">
                         <p className="text-sm text-gray-600">
                           Showing {(currentPage - 1) * responsesPageSize + 1}-
-                          {Math.min(currentPage * responsesPageSize, totalResponses)} of{" "}
-                          {totalResponses}
+                          {Math.min(
+                            currentPage * responsesPageSize,
+                            totalResponses,
+                          )}{" "}
+                          of {totalResponses}
                         </p>
 
                         <div className="flex flex-wrap items-center gap-2">
                           <button
                             type="button"
-                            onClick={() => loadResponses(Math.max(1, currentPage - 1))}
+                            onClick={() =>
+                              loadResponses(Math.max(1, currentPage - 1))
+                            }
                             disabled={currentPage === 1 || loadingResponses}
                             className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
                             aria-label="Previous page"
@@ -546,9 +554,14 @@ export const SurveyResponsesPage = () => {
                           <button
                             type="button"
                             onClick={() =>
-                              loadResponses(Math.min(responsesTotalPages, currentPage + 1))
+                              loadResponses(
+                                Math.min(responsesTotalPages, currentPage + 1),
+                              )
                             }
-                            disabled={currentPage === responsesTotalPages || loadingResponses}
+                            disabled={
+                              currentPage === responsesTotalPages ||
+                              loadingResponses
+                            }
                             className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
                             aria-label="Next page"
                           >

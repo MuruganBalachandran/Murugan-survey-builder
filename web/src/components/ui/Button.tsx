@@ -1,7 +1,7 @@
 // region imports
-import { forwardRef } from 'react'
-import { cn } from '@/lib/cn'
-import type { ButtonProps, ButtonSize, ButtonVariant } from '@/types'
+import { forwardRef } from "react";
+import { cn } from "@/utils/common";
+import type { ButtonProps, ButtonSize, ButtonVariant } from "@/types";
 
 // endregion
 
@@ -10,23 +10,23 @@ import type { ButtonProps, ButtonSize, ButtonVariant } from '@/types'
 // per-variant tailwind classes
 const variants: Record<ButtonVariant, string> = {
   primary:
-    'bg-gradient-to-br from-indigo-500 to-indigo-400 text-white border-none shadow-[0_4px_24px_rgba(99,102,241,0.3),0_1px_0_rgba(255,255,255,0.1)_inset]',
-  secondary: 'bg-white/[0.04] text-[#C4C4D4] border border-white/10',
-  tertiary: 'bg-transparent text-indigo-400 border-none shadow-none',
+    "bg-gradient-to-br from-indigo-500 to-indigo-400 text-white border-none shadow-[0_4px_24px_rgba(99,102,241,0.3),0_1px_0_rgba(255,255,255,0.1)_inset]",
+  secondary: "bg-white/[0.04] text-[#C4C4D4] border border-white/10",
+  tertiary: "bg-transparent text-indigo-400 border-none shadow-none",
   danger:
-    'bg-gradient-to-br from-red-500 to-red-600 text-white border-none shadow-[0_4px_24px_rgba(239,68,68,0.3),0_1px_0_rgba(255,255,255,0.1)_inset]',
+    "bg-gradient-to-br from-red-500 to-red-600 text-white border-none shadow-[0_4px_24px_rgba(239,68,68,0.3),0_1px_0_rgba(255,255,255,0.1)_inset]",
   success:
-    'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-none shadow-[0_4px_24px_rgba(16,185,129,0.3),0_1px_0_rgba(255,255,255,0.1)_inset]',
-}
+    "bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-none shadow-[0_4px_24px_rgba(16,185,129,0.3),0_1px_0_rgba(255,255,255,0.1)_inset]",
+};
 
 // padding + font-size + border-radius per size token
 const sizes: Record<ButtonSize, string> = {
-  xs: 'px-2.5 py-1.5 text-xs font-medium rounded-md',
-  sm: 'px-3 py-2 text-sm font-medium rounded-lg',
-  md: 'px-4 py-2.5 text-sm font-medium rounded-lg',
-  lg: 'px-6 py-3 text-base font-medium rounded-xl',
-  xl: 'px-8 py-3.5 text-base font-semibold rounded-xl',
-}
+  xs: "px-2.5 py-1.5 text-xs font-medium rounded-md",
+  sm: "px-3 py-2 text-sm font-medium rounded-lg",
+  md: "px-4 py-2.5 text-sm font-medium rounded-lg",
+  lg: "px-6 py-3 text-base font-medium rounded-xl",
+  xl: "px-8 py-3.5 text-base font-semibold rounded-xl",
+};
 
 // endregion
 
@@ -34,11 +34,11 @@ const sizes: Record<ButtonSize, string> = {
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {
-      variant = 'primary',
-      size = 'md',
+      variant = "primary",
+      size = "md",
       isLoading = false,
       icon,
-      iconPosition = 'left',
+      iconPosition = "left",
       fullWidth = false,
       className,
       disabled,
@@ -48,7 +48,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref,
   ) => {
-    const isDisabled = disabled || isLoading
+    const isDisabled = disabled || isLoading;
 
     // region render
     return (
@@ -56,15 +56,15 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         disabled={isDisabled}
         className={cn(
-          'inline-flex items-center justify-center gap-2',
-          'tracking-[0.02em] font-semibold text-sm',
-          'transition-all duration-200 ease-out',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#08080E]',
-          'disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none',
-          'hover:opacity-90 active:scale-[0.985]',
+          "inline-flex items-center justify-center gap-2",
+          "tracking-[0.02em] font-semibold text-sm",
+          "transition-all duration-200 ease-out",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#08080E]",
+          "disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none",
+          "hover:opacity-90 active:scale-[0.985]",
           variants[variant],
           sizes[size],
-          fullWidth && 'w-full',
+          fullWidth && "w-full",
           className,
         )}
         style={style}
@@ -97,16 +97,20 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           </>
         ) : (
           <>
-            {icon && iconPosition === 'left' && <span className="flex-shrink-0">{icon}</span>}
+            {icon && iconPosition === "left" && (
+              <span className="flex-shrink-0">{icon}</span>
+            )}
             {children}
-            {icon && iconPosition === 'right' && <span className="flex-shrink-0">{icon}</span>}
+            {icon && iconPosition === "right" && (
+              <span className="flex-shrink-0">{icon}</span>
+            )}
           </>
         )}
       </button>
-    )
+    );
     // endregion
   },
-)
+);
 
-Button.displayName = 'Button'
+Button.displayName = "Button";
 // endregion

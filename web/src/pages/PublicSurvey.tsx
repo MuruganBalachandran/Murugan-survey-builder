@@ -5,10 +5,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
-import { toast } from "@/lib/toast";
-import { submitResponse } from "@/services/api/responses";
-import { getPublicSurvey } from "@/services/api/surveys";
-import type { Answer, Question, SurveyWithQuestions } from "@/types/survey";
+import { Loading } from "@/components/common/Loading";
+import { toast } from "@/utils/common/toast";
+import { useAppDispatch, useAppSelector } from "@/hooks/redux";
+import { submitSurveyResponse } from "@/store/slices/responseSlice";
+import {
+  fetchPublicSurvey,
+  clearPublicSurvey,
+} from "@/store/slices/surveySlice";
+import type { Answer, Question } from "@/types/survey";
 import { StarRating } from "@/components/ui/StarRating";
 import { CharCounter } from "@/components/ui/CharCounter";
 import { ArrowLeftIcon, CheckLargeIcon, ProgressIcon } from "@/utils/icons";
@@ -46,12 +51,16 @@ const getQuestionUiType = (question: Question) => {
 
 // evaluates a visibleIf rule against the current answers map
 const evaluateVisibleIf = (
-  visibleIf: { questionId: string; operator: "equals" | "not_equals"; value: string } | undefined,
+  visibleIf:
+    | { questionId: string; operator: "equals" | "not_equals"; value: string }
+    | undefined,
   answers: Record<string, string | string[] | number>,
 ): boolean => {
   if (!visibleIf) return true;
   const answer = answers[visibleIf.questionId];
-  const answerStr = Array.isArray(answer) ? answer.join(", ") : String(answer ?? "");
+  const answerStr = Array.isArray(answer)
+    ? answer.join(", ")
+    : String(answer ?? "");
   return visibleIf.operator === "equals"
     ? answerStr === visibleIf.value
     : answerStr !== visibleIf.value;
@@ -70,55 +79,40 @@ const isQuestionVisible = (_question: Question) => true;
 export const PublicSurveyPage = () => {
   // region state
   const { slug } = useParams({ from: "/survey/$slug" });
-  const [survey, setSurvey] = useState<SurveyWithQuestions | null>(null);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useAppDispatch();
+  const survey = useAppSelector((state) => state.survey.publicSurvey);
+  const loading = useAppSelector((state) => state.survey.isLoading);
+  const submitting = useAppSelector((state) => state.response.isLoading);
   const [notFound, setNotFound] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [started, setStarted] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<
     Record<string, string | string[] | number>
   >({});
-  // ref used to programmatically focus the active question's input after transition
   const stepInputRef = useRef<
     HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null
   >(null);
   // endregion
 
-  // region functions
-
-  const loadSurvey = async () => {
-    setLoading(true);
-    try {
-      const result = await getPublicSurvey(slug);
-      if (result.success && result.data) {
-        setSurvey(result.data);
-      } else {
-        setNotFound(true);
-      }
-    } catch {
-      setNotFound(true);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // endregion
-
   // region effects
 
-  // load survey when slug changes
   useEffect(() => {
-    loadSurvey();
-  }, [slug]);
+    dispatch(clearPublicSurvey());
+    setNotFound(false);
+    setSubmitted(false);
+    setStarted(false);
+    setCurrentIndex(0);
+    setAnswers({});
+    dispatch(fetchPublicSurvey(slug)).then((result) => {
+      if (result.type === fetchPublicSurvey.rejected.type) setNotFound(true);
+    });
+  }, [slug, dispatch]);
 
-  // auto-focus the input of the current question after each step change
   useEffect(() => {
     if (!started || submitted || loading || !survey?.questions?.length) return;
     const currentQuestion = survey.questions[currentIndex];
     if (!currentQuestion) return;
-    // defer to next tick so the element is mounted before focus
     const timeout = window.setTimeout(() => {
       stepInputRef.current?.focus();
     }, 0);
@@ -142,8 +136,8 @@ export const PublicSurveyPage = () => {
   // progress as a percentage of completed steps
   const progress = questions.length
     ? Math.round(
-      ((currentIndex + (submitted ? 1 : 0)) / questions.length) * 100,
-    )
+        ((currentIndex + (submitted ? 1 : 0)) / questions.length) * 100,
+      )
     : 0;
   const currentAnswer = currentQuestion
     ? answers[currentQuestion.id]
@@ -195,13 +189,26 @@ export const PublicSurveyPage = () => {
     }
 
     // enforce character limits for text questions
-    const textAnswer = typeof currentAnswer === "string" ? currentAnswer.trim() : "";
-    if (textAnswer && currentQuestion.minLength && textAnswer.length < currentQuestion.minLength) {
-      toast.error(`Please enter at least ${currentQuestion.minLength} characters`);
+    const textAnswer =
+      typeof currentAnswer === "string" ? currentAnswer.trim() : "";
+    if (
+      textAnswer &&
+      currentQuestion.minLength &&
+      textAnswer.length < currentQuestion.minLength
+    ) {
+      toast.error(
+        `Please enter at least ${currentQuestion.minLength} characters`,
+      );
       return;
     }
-    if (textAnswer && currentQuestion.maxLength && textAnswer.length > currentQuestion.maxLength) {
-      toast.error(`Please keep your answer under ${currentQuestion.maxLength} characters`);
+    if (
+      textAnswer &&
+      currentQuestion.maxLength &&
+      textAnswer.length > currentQuestion.maxLength
+    ) {
+      toast.error(
+        `Please keep your answer under ${currentQuestion.maxLength} characters`,
+      );
       return;
     }
 
@@ -217,27 +224,29 @@ export const PublicSurveyPage = () => {
   const handleSubmit = async () => {
     if (!survey) return;
 
-    setSubmitting(true);
     try {
-      // map answers state to the API shape
       const responseAnswers: Answer[] = questions.map((question) => ({
         questionId: question.id,
         value: answers[question.id] || "",
       }));
 
-      const result = await submitResponse(survey.id, responseAnswers);
-      if (result.success) {
+      const result = await dispatch(
+        submitSurveyResponse({ surveyId: survey.id, answers: responseAnswers }),
+      );
+      if (result.type === submitSurveyResponse.fulfilled.type) {
         setSubmitted(true);
         toast.success("Thank you for your response!");
-      } else if (result.message?.toLowerCase().includes("already submitted")) {
+      } else if (
+        (result.payload as any)?.general
+          ?.toLowerCase()
+          .includes("already submitted")
+      ) {
         toast.error("You have already submitted a response to this survey.");
       } else {
         toast.error("Failed to submit response");
       }
     } catch {
       toast.error("Error submitting response");
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -259,10 +268,7 @@ export const PublicSurveyPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-violet-200 border-t-violet-600" />
-          <p className="mt-4 text-gray-600">Loading survey...</p>
-        </div>
+        <Loading text="Loading survey..." />
       </div>
     );
   }
@@ -378,8 +384,8 @@ export const PublicSurveyPage = () => {
                     isClosed
                       ? undefined
                       : {
-                        background: `linear-gradient(135deg, ${brandColor} 0%, ${brandColor}cc 100%)`,
-                      }
+                          background: `linear-gradient(135deg, ${brandColor} 0%, ${brandColor}cc 100%)`,
+                        }
                   }
                 >
                   {isClosed ? "Survey closed" : "Start Survey"}
@@ -449,7 +455,10 @@ export const PublicSurveyPage = () => {
                       ref={stepInputRef as React.RefObject<HTMLInputElement>}
                       value={String(currentAnswer || "")}
                       onChange={(event) =>
-                        handleAnswerChange(currentQuestion.id, event.target.value)
+                        handleAnswerChange(
+                          currentQuestion.id,
+                          event.target.value,
+                        )
                       }
                       placeholder="Your answer..."
                       autoFocus
@@ -470,7 +479,10 @@ export const PublicSurveyPage = () => {
                       ref={stepInputRef as React.RefObject<HTMLTextAreaElement>}
                       value={String(currentAnswer || "")}
                       onChange={(event) =>
-                        handleAnswerChange(currentQuestion.id, event.target.value)
+                        handleAnswerChange(
+                          currentQuestion.id,
+                          event.target.value,
+                        )
                       }
                       placeholder="Your answer..."
                       rows={6}
@@ -491,10 +503,11 @@ export const PublicSurveyPage = () => {
                     {currentQuestion.options?.map((option) => (
                       <label
                         key={option}
-                        className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition-all ${currentAnswer === option
+                        className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition-all ${
+                          currentAnswer === option
                             ? "border-violet-500 bg-violet-50"
                             : "border-gray-200 bg-white hover:border-gray-300"
-                          }`}
+                        }`}
                       >
                         <input
                           type="radio"
@@ -523,10 +536,11 @@ export const PublicSurveyPage = () => {
                       return (
                         <label
                           key={option}
-                          className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition-all ${selected
+                          className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition-all ${
+                            selected
                               ? "border-violet-500 bg-violet-50"
                               : "border-gray-200 bg-white hover:border-gray-300"
-                            }`}
+                          }`}
                         >
                           <input
                             type="checkbox"
@@ -585,7 +599,9 @@ export const PublicSurveyPage = () => {
                 {/* 1-5 rating stars */}
                 {currentUiType === "buttons" && (
                   <StarRating
-                    value={typeof currentAnswer === "number" ? currentAnswer : 0}
+                    value={
+                      typeof currentAnswer === "number" ? currentAnswer : 0
+                    }
                     color={brandColor}
                     size={36}
                     interactive
@@ -601,10 +617,11 @@ export const PublicSurveyPage = () => {
                     {["Yes", "No"].map((option) => (
                       <label
                         key={option}
-                        className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition-all ${currentAnswer === option
+                        className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition-all ${
+                          currentAnswer === option
                             ? "border-violet-500 bg-violet-50"
                             : "border-gray-200 bg-white hover:border-gray-300"
-                          }`}
+                        }`}
                       >
                         <input
                           type="radio"

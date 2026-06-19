@@ -1,79 +1,95 @@
 // region imports
-import { useEffect } from 'react'
-import { toast } from '@/lib/toast'
-import type { ShareSurveyModalProps } from '@/types'
-import { getSurveyUrl } from '@/utils/common/survey'
-import { CopyShareIcon, LinkedInIcon, MailShareIcon, Share2Icon, WhatsAppIcon } from '@/utils/icons'
+import { useEffect } from "react";
+import { toast } from "@/utils/common/toast";
+import type { ShareSurveyModalProps } from "@/types";
+import { getSurveyUrl } from "@/utils/common/survey";
+import {
+  CopyShareIcon,
+  LinkedInIcon,
+  MailShareIcon,
+  Share2Icon,
+  WhatsAppIcon,
+} from "@/utils/icons";
 // endregion
 
 // region component
-export const ShareSurveyModal = ({ survey, onClose, onCopy }: ShareSurveyModalProps) => {
+export const ShareSurveyModal = ({
+  survey,
+  onClose,
+  onCopy,
+}: ShareSurveyModalProps) => {
   // region effects
 
   // close the modal on Escape key
   useEffect(() => {
-    if (!survey) return
+    if (!survey) return;
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onClose, survey])
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose, survey]);
 
   // endregion
 
-  if (!survey) return null
+  if (!survey) return null;
 
   // region derived data
-  const surveyUrl = getSurveyUrl(survey.slug)
-  const shareText = `Please take a moment to complete "${survey.title}".`
+  const surveyUrl = getSurveyUrl(survey.slug);
+  const shareText = `Please take a moment to complete "${survey.title}".`;
 
   const openShareWindow = (url: string) => {
-    window.open(url, '_blank', 'noopener,noreferrer')
-  }
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
 
   // share channel definitions — each maps to a platform-specific URL
   const shareOptions = [
     {
-      label: 'WhatsApp',
+      label: "WhatsApp",
       icon: <WhatsAppIcon />,
-      className: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100',
+      className: "bg-emerald-50 text-emerald-700 hover:bg-emerald-100",
       onClick: () =>
-        openShareWindow(`https://wa.me/?text=${encodeURIComponent(`${shareText} ${surveyUrl}`)}`),
+        openShareWindow(
+          `https://wa.me/?text=${encodeURIComponent(`${shareText} ${surveyUrl}`)}`,
+        ),
     },
     {
-      label: 'Email',
+      label: "Email",
       icon: <MailShareIcon />,
-      className: 'bg-blue-50 text-blue-700 hover:bg-blue-100',
+      className: "bg-blue-50 text-blue-700 hover:bg-blue-100",
       onClick: () =>
         window.location.assign(
           `mailto:?subject=${encodeURIComponent(survey.title)}&body=${encodeURIComponent(`${shareText}\n\n${surveyUrl}`)}`,
         ),
     },
     {
-      label: 'LinkedIn',
+      label: "LinkedIn",
       icon: <LinkedInIcon />,
-      className: 'bg-sky-50 text-sky-700 hover:bg-sky-100',
+      className: "bg-sky-50 text-sky-700 hover:bg-sky-100",
       onClick: () =>
         openShareWindow(
           `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(surveyUrl)}`,
         ),
     },
-  ]
+  ];
   // endregion
 
   // region handlers
 
   const handleNativeShare = async () => {
-    if (!navigator.share) return
+    if (!navigator.share) return;
     try {
-      await navigator.share({ title: survey.title, text: shareText, url: surveyUrl })
+      await navigator.share({
+        title: survey.title,
+        text: shareText,
+        url: surveyUrl,
+      });
     } catch (error) {
       // ignore user-cancelled share dialogs
-      if (error instanceof DOMException && error.name === 'AbortError') return
-      toast.error('Unable to open share options')
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      toast.error("Unable to open share options");
     }
-  }
+  };
 
   // endregion
 
@@ -81,7 +97,11 @@ export const ShareSurveyModal = ({ survey, onClose, onCopy }: ShareSurveyModalPr
   return (
     <>
       {/* backdrop */}
-      <div className="fixed inset-0 z-40 bg-black/50" onClick={onClose} role="presentation" />
+      <div
+        className="fixed inset-0 z-40 bg-black/50"
+        onClick={onClose}
+        role="presentation"
+      />
 
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
@@ -93,7 +113,10 @@ export const ShareSurveyModal = ({ survey, onClose, onCopy }: ShareSurveyModalPr
           {/* modal header */}
           <div className="flex items-start justify-between gap-4 border-b border-gray-200 px-6 py-5">
             <div>
-              <h2 id="share-survey-title" className="text-lg font-bold text-gray-900">
+              <h2
+                id="share-survey-title"
+                className="text-lg font-bold text-gray-900"
+              >
                 Share survey
               </h2>
               <p className="mt-1 text-sm text-gray-600">
@@ -159,7 +182,7 @@ export const ShareSurveyModal = ({ survey, onClose, onCopy }: ShareSurveyModalPr
             </div>
 
             {/* native share API — only shown when the browser supports it */}
-            {typeof navigator.share === 'function' && (
+            {typeof navigator.share === "function" && (
               <button
                 type="button"
                 onClick={handleNativeShare}
@@ -173,7 +196,7 @@ export const ShareSurveyModal = ({ survey, onClose, onCopy }: ShareSurveyModalPr
         </div>
       </div>
     </>
-  )
+  );
   // endregion
-}
+};
 // endregion

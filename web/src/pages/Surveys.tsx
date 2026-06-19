@@ -2,6 +2,7 @@
 import { Outlet, useLocation } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CustomModal } from "@/components/common/CustomModal";
+import { Loading } from "@/components/common/Loading";
 import { AppLayout } from "@/components/Layout/AppLayout";
 import { CreateSurveyDrawer } from "@/components/surveys/drawers/CreateSurveyDrawer";
 import { EditSurveyDrawer } from "@/components/surveys/drawers/EditSurveyDrawer";
@@ -12,8 +13,8 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { useAppDispatch, useAppSelector } from "@/hooks/redux";
 import { useModal } from "@/hooks/useModal";
-import { toast } from "@/lib/toast";
-import type { Survey } from "@/services/api/surveys";
+import { toast } from "@/utils/common/toast";
+import type { Survey } from "@/types/survey";
 import {
   addQuestionToSurvey,
   deleteQuestionFromSurvey,
@@ -46,7 +47,13 @@ import {
   SURVEY_STATUSES,
   SURVEY_TEMPLATES,
 } from "@/utils/constants";
-import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, FilterIcon, SortIcon } from "@/utils/icons";
+import {
+  CalendarIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  FilterIcon,
+  SortIcon,
+} from "@/utils/icons";
 import {
   isMultipleChoiceQuestion,
   isValidMaxResponses,
@@ -140,7 +147,7 @@ export const SurveysPage = () => {
       activeSurvey.title !== surveyForm.title.trim() ||
       (activeSurvey.description || "") !== surveyForm.description.trim() ||
       (activeSurvey.primaryColor || "").toLowerCase() !==
-      surveyForm.primaryColor.toLowerCase() ||
+        surveyForm.primaryColor.toLowerCase() ||
       (activeSurvey.logoUrl || "") !== surveyForm.logoUrl.trim() ||
       (activeSurvey.endsAt || "") !== (surveyForm.endsAt || "") ||
       String(activeSurvey.maxResponses ?? "") !== surveyForm.maxResponses
@@ -325,7 +332,7 @@ export const SurveysPage = () => {
               : question.uiType === "toggle"
                 ? "yes_no"
                 : question.type === "multiple_choice" ||
-                  question.type === "rating"
+                    question.type === "rating"
                   ? question.type
                   : "short_text",
       uiType:
@@ -337,8 +344,8 @@ export const SurveysPage = () => {
         (question.type === "multiple_choice" ||
           question.uiType === "checkbox_group" ||
           question.uiType === "select") &&
-          question.options &&
-          question.options.length > 0
+        question.options &&
+        question.options.length > 0
           ? question.options.map((option) => option)
           : ["", ""],
       // pre-fill character limits and conditional logic from saved question
@@ -375,7 +382,10 @@ export const SurveysPage = () => {
       nextErrors.description = "Description must be 5-100 characters";
     }
 
-    if (surveyForm.maxResponses !== "" && !isValidMaxResponses(surveyForm.maxResponses)) {
+    if (
+      surveyForm.maxResponses !== "" &&
+      !isValidMaxResponses(surveyForm.maxResponses)
+    ) {
       nextErrors.maxResponses = "Response limit must be between 1 and 10,000";
     }
 
@@ -393,9 +403,17 @@ export const SurveysPage = () => {
       nextErrors.title = "Question title must be 3-100 characters";
     }
 
-    if (isMultipleChoiceQuestion(questionForm.type) && !isValidQuestionOptions(questionForm.options)) {
-      const cleaned = questionForm.options.map((opt) => opt.trim()).filter(Boolean);
-      nextErrors.options = cleaned.length < 2 ? "Add at least 2 options" : "Options must be unique";
+    if (
+      isMultipleChoiceQuestion(questionForm.type) &&
+      !isValidQuestionOptions(questionForm.options)
+    ) {
+      const cleaned = questionForm.options
+        .map((opt) => opt.trim())
+        .filter(Boolean);
+      nextErrors.options =
+        cleaned.length < 2
+          ? "Add at least 2 options"
+          : "Options must be unique";
     }
 
     setQuestionErrors(nextErrors);
@@ -547,8 +565,8 @@ export const SurveysPage = () => {
                   required: q.required,
                   options:
                     q.type === "multiple_choice" ||
-                      q.type === "checkbox_group" ||
-                      q.type === "dropdown"
+                    q.type === "checkbox_group" ||
+                    q.type === "dropdown"
                       ? q.options.filter(Boolean)
                       : undefined,
                 }),
@@ -733,12 +751,16 @@ export const SurveysPage = () => {
       required: questionForm.required,
       options:
         questionForm.type === "multiple_choice" ||
-          questionForm.type === "checkbox_group" ||
-          questionForm.type === "dropdown"
+        questionForm.type === "checkbox_group" ||
+        questionForm.type === "dropdown"
           ? cleanedOptions
           : undefined,
-      minLength: questionForm.minLength ? Number(questionForm.minLength) : undefined,
-      maxLength: questionForm.maxLength ? Number(questionForm.maxLength) : undefined,
+      minLength: questionForm.minLength
+        ? Number(questionForm.minLength)
+        : undefined,
+      maxLength: questionForm.maxLength
+        ? Number(questionForm.maxLength)
+        : undefined,
       visibleIf: questionForm.visibleIf ?? undefined,
     };
 
@@ -747,11 +769,11 @@ export const SurveysPage = () => {
       const result =
         questionMode === "edit" && editingQuestionId
           ? await dispatch(
-            updateQuestionDetails({
-              ...payload,
-              questionId: editingQuestionId,
-            }),
-          )
+              updateQuestionDetails({
+                ...payload,
+                questionId: editingQuestionId,
+              }),
+            )
           : await dispatch(addQuestionToSurvey(payload));
 
       if (
@@ -946,7 +968,10 @@ export const SurveysPage = () => {
                 icon={<FilterIcon />}
                 options={[
                   { value: "all", label: "All status" },
-                  ...SURVEY_STATUSES.map((s) => ({ value: s.id, label: s.label })),
+                  ...SURVEY_STATUSES.map((s) => ({
+                    value: s.id,
+                    label: s.label,
+                  })),
                 ]}
               />
 
@@ -961,8 +986,8 @@ export const SurveysPage = () => {
           </div>
 
           {isLoading && surveys.length === 0 ? (
-            <div className="mt-6 rounded-2xl border border-dashed border-gray-200 p-8 text-center text-sm text-gray-500">
-              Loading surveys...
+            <div className="mt-6 flex justify-center py-8">
+              <Loading size="md" text="Loading surveys..." />
             </div>
           ) : paginatedSurveys.length > 0 ? (
             <>
@@ -1019,10 +1044,11 @@ export const SurveysPage = () => {
                           key={item}
                           type="button"
                           onClick={() => handlePageChange(item)}
-                          className={`inline-flex h-10 min-w-10 items-center justify-center rounded-lg border px-3 text-sm font-semibold transition-colors ${item === currentPage
+                          className={`inline-flex h-10 min-w-10 items-center justify-center rounded-lg border px-3 text-sm font-semibold transition-colors ${
+                            item === currentPage
                               ? "border-violet-600 bg-violet-600 text-white shadow-sm"
                               : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
-                            }`}
+                          }`}
                           aria-current={
                             item === currentPage ? "page" : undefined
                           }
