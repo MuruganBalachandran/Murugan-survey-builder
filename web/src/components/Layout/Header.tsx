@@ -77,12 +77,9 @@ export const Header = () => {
           <div className="flex flex-1 items-center gap-3 pl-4 sm:pl-6 lg:pl-8">
             <button
               onClick={() => navigate({ to: "/" })}
-              className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+              className="flex items-center hover:opacity-80 transition-opacity"
             >
-              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-500 shadow-lg shadow-violet-200">
-                <span className="text-white font-bold text-lg">S</span>
-              </div>
-              <h1 className="text-xl font-bold text-gray-900">SurveyBuilder</h1>
+              <img src="/logo.png" alt="Qorvia" className="h-10 object-contain" />
             </button>
           </div>
 
