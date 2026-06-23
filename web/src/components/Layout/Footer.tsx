@@ -8,16 +8,10 @@ export const Footer = () => {
       <div className="grid w-full gap-8 px-4 py-8 sm:px-6 lg:grid-cols-[1.2fr_1fr_1fr] lg:px-8">
         <div>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 ring-1 ring-white/20">
-              <span className="text-lg font-bold">S</span>
-            </div>
-            <div>
-              <p className="font-bold">SurveyBuilder</p>
-              <p className="text-sm text-violet-100">Create, share, and collect responses.</p>
-            </div>
+            <img src="/logo.png" alt="Qorvia" className="h-10 object-contain brightness-0 invert" />
           </div>
           <p className="mt-5 text-sm text-violet-100">
-            © {currentYear} SurveyBuilder. All rights reserved.
+            © {currentYear} Qorvia. All rights reserved.
           </p>
         </div>
 

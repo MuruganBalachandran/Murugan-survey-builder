@@ -21,7 +21,7 @@ export const LockedAccessPage = () => {
                 <p className="text-sm font-semibold uppercase tracking-[0.2em] text-violet-100">
                   Workspace
                 </p>
-                <h1 className="mt-3 text-4xl font-bold">Survey analytics dashboard</h1>
+                <h1 className="mt-3 text-4xl font-bold">Qorvia analytics dashboard</h1>
                 <p className="mt-3 max-w-xl text-violet-100">
                   Manage surveys, track responses, and continue drafts from one place.
                 </p>

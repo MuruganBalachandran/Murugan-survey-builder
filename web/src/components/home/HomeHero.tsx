@@ -78,9 +78,7 @@ export const HomeHero = ({
                 <rect x="9" y="3" width="6" height="4" rx="1" />
               </svg>
             </div>
-            <span className="text-sm font-bold text-gray-900">
-              SurveyBuilder
-            </span>
+            <span className="text-sm font-bold text-gray-900">Qorvia</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700">
@@ -230,7 +228,7 @@ export const HomeHero = ({
                 <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
               </svg>
               <span className="flex-1 truncate text-[10px] text-gray-400">
-                surveybuilder.app/s/product-survey
+                qorvia.app/s/product-survey
               </span>
               <span className="rounded-md bg-violet-600 px-1.5 py-0.5 text-[9px] font-bold text-white">
                 Copy
