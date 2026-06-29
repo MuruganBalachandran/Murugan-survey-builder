@@ -82,7 +82,8 @@ export const signup = async (c: Context): Promise<Response> => {
     // create a JWT token with the user id and email as payload
     const token = await generateToken(newUser.id, newUser.email, c.env);
 
-    // Set the JWT in an httpOnly cookie — never exposed to JS
+    // Set-Cookie: Standard header instructing the browser to store the JWT token
+    // in an HttpOnly cookie to shield it from client-side JS access (mitigates XSS attacks)
     c.header('Set-Cookie', buildCookieHeader(token, c.env))
     return c.json(
       {
@@ -153,7 +154,8 @@ export const login = async (c: Context): Promise<Response> => {
     // generate access token with user id and email as payload
     const token = await generateToken(user.id, user.email, c.env);
 
-    // Set the JWT in an httpOnly cookie — never exposed to JS
+    // Set-Cookie: Standard header instructing the browser to store the JWT token
+    // in an HttpOnly cookie to shield it from client-side JS access (mitigates XSS attacks)
     c.header('Set-Cookie', buildCookieHeader(token, c.env))
     return c.json(
       {
@@ -210,7 +212,7 @@ export const verify = async (c: Context): Promise<Response> => {
 // region logout
 export const logout = async (c: Context): Promise<Response> => {
   try {
-    // Set the cookie to empty to clear it
+    // Set-Cookie: Clear the session by setting Max-Age=0, prompting the browser to instantly purge the cookie
     c.header('Set-Cookie', clearCookieHeader())
     return c.json(
       {

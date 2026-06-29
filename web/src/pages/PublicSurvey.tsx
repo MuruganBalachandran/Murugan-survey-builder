@@ -1,74 +1,11 @@
 // region imports
-
-import { useParams } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Textarea } from "@/components/ui/Textarea";
 import { Loading } from "@/components/common/Loading";
-import { toast } from "@/utils/common/toast";
-import { useAppDispatch, useAppSelector } from "@/hooks/redux";
-import { submitSurveyResponse } from "@/store/slices/responseSlice";
-import {
-  fetchPublicSurvey,
-  clearPublicSurvey,
-} from "@/store/slices/surveySlice";
-import type { Answer, Question } from "@/types/survey";
-import { StarRating } from "@/components/ui/StarRating";
-import { CharCounter } from "@/components/ui/CharCounter";
-import { ArrowLeftIcon, CheckLargeIcon, ProgressIcon } from "@/utils/icons";
-
-// endregion
-
-// region types/interfaces
-// (all types imported)
-// endregion
-
-// region helpers
-
-// resolves the correct input widget for a question, falling back to uiType then type
-const getQuestionUiType = (question: Question) => {
-  if (question.uiType) return question.uiType;
-
-  switch (question.type) {
-    case "long_text":
-      return "textarea";
-    case "multiple_choice":
-      return "radio";
-    case "checkbox_group":
-      return "checkbox_group";
-    case "dropdown":
-      return "select";
-    case "rating":
-      return "buttons";
-    case "yes_no":
-      return "toggle";
-    case "short_text":
-    default:
-      return "input";
-  }
-};
-
-// evaluates a visibleIf rule against the current answers map
-const evaluateVisibleIf = (
-  visibleIf:
-    | { questionId: string; operator: "equals" | "not_equals"; value: string }
-    | undefined,
-  answers: Record<string, string | string[] | number>,
-): boolean => {
-  if (!visibleIf) return true;
-  const answer = answers[visibleIf.questionId];
-  const answerStr = Array.isArray(answer)
-    ? answer.join(", ")
-    : String(answer ?? "");
-  return visibleIf.operator === "equals"
-    ? answerStr === visibleIf.value
-    : answerStr !== visibleIf.value;
-};
-
-// placeholder for future conditional-logic visibility; always visible for now
-const isQuestionVisible = (_question: Question) => true;
-
+import { ArrowLeftIcon } from "@/utils/icons";
+import { usePublicSurvey } from "@/hooks/usePublicSurvey";
+import { PublicSurveyCover } from "@/components/surveys/public/PublicSurveyCover";
+import { PublicSurveyQuestionStep } from "@/components/surveys/public/PublicSurveyQuestionStep";
+import { PublicSurveyThankYou } from "@/components/surveys/public/PublicSurveyThankYou";
 // endregion
 
 /**
@@ -77,194 +14,31 @@ const isQuestionVisible = (_question: Question) => true;
  */
 // region component
 export const PublicSurveyPage = () => {
-  // region state
-  const { slug } = useParams({ from: "/survey/$slug" });
-  const dispatch = useAppDispatch();
-  const survey = useAppSelector((state) => state.survey.publicSurvey);
-  const loading = useAppSelector((state) => state.survey.isLoading);
-  const submitting = useAppSelector((state) => state.response.isLoading);
-  const [notFound, setNotFound] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [started, setStarted] = useState(false);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<
-    Record<string, string | string[] | number>
-  >({});
-  const stepInputRef = useRef<
-    HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null
-  >(null);
-  // endregion
-
-  // region effects
-
-  useEffect(() => {
-    dispatch(clearPublicSurvey());
-    setNotFound(false);
-    setSubmitted(false);
-    setStarted(false);
-    setCurrentIndex(0);
-    setAnswers({});
-    dispatch(fetchPublicSurvey(slug)).then((result) => {
-      if (result.type === fetchPublicSurvey.rejected.type) setNotFound(true);
-    });
-  }, [slug, dispatch]);
-
-  useEffect(() => {
-    if (!started || submitted || loading || !survey?.questions?.length) return;
-    const currentQuestion = survey.questions[currentIndex];
-    if (!currentQuestion) return;
-    const timeout = window.setTimeout(() => {
-      stepInputRef.current?.focus();
-    }, 0);
-    return () => window.clearTimeout(timeout);
-  }, [currentIndex, loading, started, submitted, survey]);
-
-  // endregion
-
-  // region derived data
-
-  const brandColor = survey?.primaryColor || "#6366F1";
-  // filter out any hidden questions (future conditional logic hook)
-  const questions = useMemo(
-    () =>
-      (survey?.questions || []).filter(
-        (q) => isQuestionVisible(q) && evaluateVisibleIf(q.visibleIf, answers),
-      ),
-    [survey, answers],
-  );
-  const currentQuestion = questions[currentIndex];
-  // progress as a percentage of completed steps
-  const progress = questions.length
-    ? Math.round(
-        ((currentIndex + (submitted ? 1 : 0)) / questions.length) * 100,
-      )
-    : 0;
-  const currentAnswer = currentQuestion
-    ? answers[currentQuestion.id]
-    : undefined;
-  const currentUiType = currentQuestion
-    ? getQuestionUiType(currentQuestion)
-    : undefined;
-
-  // whether the respondent may advance to the next question
-  const canGoNext = useMemo(() => {
-    if (!currentQuestion) return false;
-    if (!currentQuestion.required) return true;
-
-    if (currentUiType === "checkbox_group") {
-      return Array.isArray(currentAnswer)
-        ? currentAnswer.length > 0
-        : Boolean(currentAnswer);
-    }
-
-    return typeof currentAnswer === "string"
-      ? currentAnswer.trim().length > 0
-      : currentAnswer !== undefined;
-  }, [currentAnswer, currentQuestion, currentUiType]);
-
-  // endregion
-
-  // region handlers
-
-  const handleAnswerChange = (
-    questionId: string,
-    value: string | string[] | number,
-  ) => {
-    setAnswers((prev) => ({ ...prev, [questionId]: value }));
-  };
-
-  const handleStart = () => {
-    setStarted(true);
-  };
-
-  const handlePrevious = () => {
-    setCurrentIndex((current) => Math.max(0, current - 1));
-  };
-
-  const handleNext = async () => {
-    if (!currentQuestion) return;
-    if (currentQuestion.required && !canGoNext) {
-      toast.error("Please answer this question");
-      return;
-    }
-
-    // enforce character limits for text questions
-    const textAnswer =
-      typeof currentAnswer === "string" ? currentAnswer.trim() : "";
-    if (
-      textAnswer &&
-      currentQuestion.minLength &&
-      textAnswer.length < currentQuestion.minLength
-    ) {
-      toast.error(
-        `Please enter at least ${currentQuestion.minLength} characters`,
-      );
-      return;
-    }
-    if (
-      textAnswer &&
-      currentQuestion.maxLength &&
-      textAnswer.length > currentQuestion.maxLength
-    ) {
-      toast.error(
-        `Please keep your answer under ${currentQuestion.maxLength} characters`,
-      );
-      return;
-    }
-
-    // advance to next question or submit if on the last one
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex((current) => current + 1);
-      return;
-    }
-
-    await handleSubmit();
-  };
-
-  const handleSubmit = async () => {
-    if (!survey) return;
-
-    try {
-      const responseAnswers: Answer[] = questions.map((question) => ({
-        questionId: question.id,
-        value: answers[question.id] || "",
-      }));
-
-      const result = await dispatch(
-        submitSurveyResponse({ surveyId: survey.id, answers: responseAnswers }),
-      );
-      if (result.type === submitSurveyResponse.fulfilled.type) {
-        setSubmitted(true);
-        toast.success("Thank you for your response!");
-      } else if (
-        (result.payload as any)?.general
-          ?.toLowerCase()
-          .includes("already submitted")
-      ) {
-        toast.error("You have already submitted a response to this survey.");
-      } else {
-        toast.error("Failed to submit response");
-      }
-    } catch {
-      toast.error("Error submitting response");
-    }
-  };
-
-  // allow Enter key to advance through questions (except inside textareas)
-  const handleKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key !== "Enter") return;
-    const target = event.target as HTMLElement | null;
-    if (target?.tagName === "TEXTAREA") return;
-    if (started && !submitted) {
-      event.preventDefault();
-      void handleNext();
-    }
-  };
-
-  // endregion
+  const {
+    survey,
+    loading,
+    submitting,
+    notFound,
+    submitted,
+    started,
+    currentIndex,
+    stepInputRef,
+    brandColor,
+    questions,
+    currentQuestion,
+    progress,
+    currentAnswer,
+    currentUiType,
+    canGoNext,
+    handleAnswerChange,
+    handleStart,
+    handlePrevious,
+    handleNext,
+    handleKeyDown,
+    isClosed,
+  } = usePublicSurvey();
 
   // region loading / not-found states
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -294,11 +68,6 @@ export const PublicSurveyPage = () => {
   }
 
   if (!survey) return null;
-
-  const isClosed =
-    survey.status === "closed" ||
-    (!!survey.endsAt && new Date(survey.endsAt) < new Date());
-
   // endregion
 
   // region render
@@ -310,371 +79,32 @@ export const PublicSurveyPage = () => {
     >
       <div className="mx-auto flex min-h-[calc(100vh-3rem)] max-w-3xl items-center justify-center">
         <div className="w-full rounded-[2rem] border border-white/70 bg-white/95 p-6 shadow-[0_20px_80px_rgba(17,24,39,0.12)] backdrop-blur-sm sm:p-8">
-          {/* thank-you screen shown after successful submission */}
           {submitted ? (
-            <div className="py-12 text-center">
-              <div
-                className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full"
-                style={{
-                  backgroundColor: `${brandColor}18`,
-                  color: brandColor,
-                }}
-              >
-                <CheckLargeIcon />
-              </div>
-              <h2 className="text-3xl font-bold text-gray-900">Thank you</h2>
-              <p className="mt-3 text-gray-600">
-                Your response has been recorded successfully.
-              </p>
-            </div>
+            <PublicSurveyThankYou brandColor={brandColor} />
           ) : !started ? (
-            /* survey cover / intro screen */
-            <div className="space-y-8 text-center">
-              <div className="space-y-4">
-                {survey.logoUrl ? (
-                  <img
-                    src={survey.logoUrl}
-                    alt="Survey logo"
-                    className="mx-auto h-16 w-16 rounded-2xl object-cover shadow-sm"
-                  />
-                ) : (
-                  <div
-                    className="mx-auto h-16 w-16 rounded-2xl shadow-sm"
-                    style={{ backgroundColor: brandColor }}
-                  />
-                )}
-                <div
-                  className="mx-auto h-1.5 w-24 rounded-full"
-                  style={{ backgroundColor: brandColor }}
-                />
-              </div>
-
-              <div className="space-y-3">
-                <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
-                  {survey.title}
-                </h1>
-                {survey.description && (
-                  <p className="mx-auto max-w-xl text-base leading-7 text-gray-600 sm:text-lg">
-                    {survey.description}
-                  </p>
-                )}
-              </div>
-
-              <div className="flex flex-wrap items-center justify-center gap-3">
-                <span className="inline-flex items-center gap-2 rounded-full bg-gray-50 px-4 py-2 text-sm font-medium text-gray-700">
-                  <span
-                    className="h-2.5 w-2.5 rounded-full"
-                    style={{ backgroundColor: brandColor }}
-                  />
-                  {questions.length} questions
-                </span>
-                <span className="inline-flex items-center gap-2 rounded-full bg-gray-50 px-4 py-2 text-sm font-medium text-gray-700">
-                  <ProgressIcon />
-                  One question at a time
-                </span>
-              </div>
-
-              <div className="flex justify-center pt-2">
-                <Button
-                  variant="primary"
-                  size="lg"
-                  onClick={handleStart}
-                  disabled={isClosed}
-                  style={
-                    isClosed
-                      ? undefined
-                      : {
-                          background: `linear-gradient(135deg, ${brandColor} 0%, ${brandColor}cc 100%)`,
-                        }
-                  }
-                >
-                  {isClosed ? "Survey closed" : "Start Survey"}
-                </Button>
-              </div>
-              {isClosed && (
-                <p className="text-sm font-medium text-red-500">
-                  <strong>{survey.title}</strong> is no longer accepting
-                  responses.
-                </p>
-              )}
-            </div>
+            <PublicSurveyCover
+              survey={survey}
+              brandColor={brandColor}
+              questionsCount={questions.length}
+              isClosed={isClosed}
+              onStart={handleStart}
+            />
           ) : currentQuestion ? (
-            /* single-question step */
-            <div className="space-y-8">
-              <div className="space-y-5">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p
-                      className="text-sm font-semibold uppercase tracking-[0.22em]"
-                      style={{ color: brandColor }}
-                    >
-                      Question {currentIndex + 1} of {questions.length}
-                    </p>
-                    <h2 className="mt-3 text-2xl font-bold text-gray-900">
-                      {currentQuestion.title}
-                    </h2>
-                    {currentQuestion.description && (
-                      <p className="mt-2 text-sm leading-6 text-gray-600">
-                        {currentQuestion.description}
-                      </p>
-                    )}
-                  </div>
-                  {/* desktop progress bar */}
-                  <div className="hidden items-center gap-2 sm:flex">
-                    <div className="h-2 w-36 overflow-hidden rounded-full bg-gray-100">
-                      <div
-                        className="h-full rounded-full transition-all duration-300"
-                        style={{
-                          width: `${progress}%`,
-                          backgroundColor: brandColor,
-                        }}
-                      />
-                    </div>
-                    <span className="text-xs font-semibold text-gray-500">
-                      {progress}%
-                    </span>
-                  </div>
-                </div>
-
-                {/* mobile progress bar */}
-                <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100 sm:hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-300"
-                    style={{
-                      width: `${progress}%`,
-                      backgroundColor: brandColor,
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                {currentUiType === "input" && (
-                  <>
-                    <Input
-                      ref={stepInputRef as React.RefObject<HTMLInputElement>}
-                      value={String(currentAnswer || "")}
-                      onChange={(event) =>
-                        handleAnswerChange(
-                          currentQuestion.id,
-                          event.target.value,
-                        )
-                      }
-                      placeholder="Your answer..."
-                      autoFocus
-                    />
-                    {currentQuestion.maxLength && (
-                      <CharCounter
-                        value={String(currentAnswer || "")}
-                        max={currentQuestion.maxLength}
-                        min={currentQuestion.minLength}
-                      />
-                    )}
-                  </>
-                )}
-
-                {currentUiType === "textarea" && (
-                  <>
-                    <Textarea
-                      ref={stepInputRef as React.RefObject<HTMLTextAreaElement>}
-                      value={String(currentAnswer || "")}
-                      onChange={(event) =>
-                        handleAnswerChange(
-                          currentQuestion.id,
-                          event.target.value,
-                        )
-                      }
-                      placeholder="Your answer..."
-                      rows={6}
-                      autoFocus
-                    />
-                    {currentQuestion.maxLength && (
-                      <CharCounter
-                        value={String(currentAnswer || "")}
-                        max={currentQuestion.maxLength}
-                        min={currentQuestion.minLength}
-                      />
-                    )}
-                  </>
-                )}
-
-                {currentUiType === "radio" && (
-                  <div className="grid gap-3">
-                    {currentQuestion.options?.map((option) => (
-                      <label
-                        key={option}
-                        className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition-all ${
-                          currentAnswer === option
-                            ? "border-violet-500 bg-violet-50"
-                            : "border-gray-200 bg-white hover:border-gray-300"
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name={currentQuestion.id}
-                          checked={currentAnswer === option}
-                          onChange={() =>
-                            handleAnswerChange(currentQuestion.id, option)
-                          }
-                          className="h-4 w-4 text-violet-600 focus:ring-violet-500"
-                          autoFocus={option === currentQuestion.options?.[0]}
-                        />
-                        <span className="text-sm font-medium text-gray-800">
-                          {option}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-
-                {currentUiType === "checkbox_group" && (
-                  <div className="grid gap-3">
-                    {currentQuestion.options?.map((option) => {
-                      const selected = Array.isArray(currentAnswer)
-                        ? currentAnswer.includes(option)
-                        : false;
-                      return (
-                        <label
-                          key={option}
-                          className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition-all ${
-                            selected
-                              ? "border-violet-500 bg-violet-50"
-                              : "border-gray-200 bg-white hover:border-gray-300"
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selected}
-                            onChange={(event) => {
-                              const current = Array.isArray(currentAnswer)
-                                ? currentAnswer
-                                : [];
-                              // add or remove option from the selected array
-                              if (event.target.checked) {
-                                handleAnswerChange(currentQuestion.id, [
-                                  ...current,
-                                  option,
-                                ]);
-                              } else {
-                                handleAnswerChange(
-                                  currentQuestion.id,
-                                  current.filter((item) => item !== option),
-                                );
-                              }
-                            }}
-                            className="h-4 w-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
-                          />
-                          <span className="text-sm font-medium text-gray-800">
-                            {option}
-                          </span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {currentUiType === "select" && (
-                  <select
-                    ref={stepInputRef as React.RefObject<HTMLSelectElement>}
-                    value={
-                      typeof currentAnswer === "string" ? currentAnswer : ""
-                    }
-                    onChange={(event) =>
-                      handleAnswerChange(currentQuestion.id, event.target.value)
-                    }
-                    className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
-                    autoFocus
-                  >
-                    <option value="" disabled>
-                      Select an option
-                    </option>
-                    {currentQuestion.options?.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                )}
-
-                {/* 1-5 rating stars */}
-                {currentUiType === "buttons" && (
-                  <StarRating
-                    value={
-                      typeof currentAnswer === "number" ? currentAnswer : 0
-                    }
-                    color={brandColor}
-                    size={36}
-                    interactive
-                    onChange={(rating) =>
-                      handleAnswerChange(currentQuestion.id, rating)
-                    }
-                  />
-                )}
-
-                {/* yes / no rendered as radio pair */}
-                {currentUiType === "toggle" && (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {["Yes", "No"].map((option) => (
-                      <label
-                        key={option}
-                        className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition-all ${
-                          currentAnswer === option
-                            ? "border-violet-500 bg-violet-50"
-                            : "border-gray-200 bg-white hover:border-gray-300"
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name={currentQuestion.id}
-                          checked={currentAnswer === option}
-                          onChange={() =>
-                            handleAnswerChange(currentQuestion.id, option)
-                          }
-                          className="h-4 w-4 text-violet-600 focus:ring-violet-500"
-                          autoFocus={option === "Yes"}
-                        />
-                        <span className="text-sm font-medium text-gray-800">
-                          {option}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="flex flex-col gap-3 border-t border-gray-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
-                <Button
-                  variant="tertiary"
-                  onClick={handlePrevious}
-                  disabled={currentIndex === 0}
-                  icon={<ArrowLeftIcon />}
-                >
-                  Previous
-                </Button>
-
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-gray-500">
-                    {currentIndex + 1} / {questions.length}
-                  </span>
-                  <Button
-                    variant="primary"
-                    onClick={handleNext}
-                    isLoading={submitting}
-                    disabled={!canGoNext}
-                    icon={
-                      currentIndex < questions.length - 1 ? undefined : (
-                        <CheckLargeIcon />
-                      )
-                    }
-                    style={{
-                      background: `linear-gradient(135deg, ${brandColor} 0%, ${brandColor}cc 100%)`,
-                    }}
-                  >
-                    {currentIndex < questions.length - 1 ? "Next" : "Submit"}
-                  </Button>
-                </div>
-              </div>
-            </div>
+            <PublicSurveyQuestionStep
+              currentIndex={currentIndex}
+              questionsCount={questions.length}
+              currentQuestion={currentQuestion}
+              currentAnswer={currentAnswer}
+              currentUiType={currentUiType}
+              progress={progress}
+              brandColor={brandColor}
+              canGoNext={canGoNext}
+              submitting={submitting}
+              stepInputRef={stepInputRef}
+              onAnswerChange={handleAnswerChange}
+              onNext={handleNext}
+              onPrevious={handlePrevious}
+            />
           ) : null}
         </div>
       </div>

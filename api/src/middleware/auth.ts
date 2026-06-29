@@ -1,18 +1,20 @@
 // region imports
 import type { Context, Next } from 'hono'
 import type { AuthContext, UnauthorizedResponse } from '../types'
-import { HTTP_STATUS, verifyToken } from '../utils'
+import { HTTP_STATUS, verifyToken, getTokenFromCookie } from '../utils'
 // endregion
 
 export type { AuthContext }
 
 // region middleware
+
+// Middleware to verify the client's session using the secure HTTP-only JWT cookie
 export const authMiddleware = async (c: Context, next: Next) => {
   try {
-    // Read JWT from the httpOnly cookie set at login/signup
-    const cookie = c.req.header('Cookie') ?? ''
-    const match = cookie.match(/(?:^|;\s*)auth_token=([^;]+)/)
-    const token = match?.[1] ?? null
+    // Extract the raw HTTP Cookie header value from the request headers
+    const cookieHeader = c.req.header('Cookie') ?? ''
+    // Extract the 'auth_token' value using the cookie utility
+    const token = getTokenFromCookie(cookieHeader)
 
     if (!token) {
       const response: UnauthorizedResponse = { success: false, message: 'Not authenticated' }
