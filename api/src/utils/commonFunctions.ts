@@ -50,11 +50,17 @@ const COOKIE_NAME = "auth_token";
 export const buildCookieHeader = (token: string, env: Env): string => {
   const maxAge = 60 * 60; // 1 hour — matches JWT_EXPIRY
   return [
+    // Cookie name and the JWT token payload
     `${COOKIE_NAME}=${token}`,
+    // Lifespan of the cookie in seconds (1 hour)
     `Max-Age=${maxAge}`,
+    // Path parameter making the cookie accessible across the entire application domain
     "Path=/",
+    // HTTP-only flag to prevent client-side script access (mitigates XSS attacks)
     "HttpOnly",
+    // SameSite=None attribute allowing cookies to be sent in cross-site requests
     "SameSite=None",
+    // Secure attribute ensuring the cookie is only transmitted over HTTPS
     "Secure",
   ]
     .filter(Boolean)
@@ -63,10 +69,12 @@ export const buildCookieHeader = (token: string, env: Env): string => {
 
 // Builds a Set-Cookie header that immediately expires the cookie
 export const clearCookieHeader = (): string =>
+  // Set Max-Age to 0 to instruct the browser to delete the cookie immediately
   `${COOKIE_NAME}=; Max-Age=0; Path=/; HttpOnly; SameSite=None; Secure`;
 
 // Extracts the JWT value from the Cookie request header
 export const getTokenFromCookie = (cookieHeader: string): string | null => {
+  // Regex pattern matching the cookie name followed by its value within the Cookie header
   const match = cookieHeader.match(
     new RegExp(`(?:^|;\\s*)${COOKIE_NAME}=([^;]+)`),
   );
