@@ -142,9 +142,6 @@ export const QuestionCharts = ({
   if (responses.length === 0) {
     return (
       <div className="app-panel">
-        <h2 className="text-lg font-semibold text-gray-900 mb-6">
-          Question breakdown
-        </h2>
         <EmptyState
           title="No responses yet"
           description="Share your survey link with respondents to begin gathering feedback and see the analytics here."
