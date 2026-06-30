@@ -1,4 +1,4 @@
-# Survey Builder
+# Qorvia - Survey Builder
 
 A lightweight branded survey builder. Create surveys, add questions, brand them with your colors and logo, share a public link, and view responses — all without leaving the dashboard.
 
