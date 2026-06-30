@@ -1,129 +1,144 @@
-# Qorvia - Survey Builder
+# Qorvia – Survey Builder
 
-A lightweight branded survey builder. Create surveys, add questions, brand them with your colors and logo, share a public link, and view responses — all without leaving the dashboard.
+A survey platform for creating branded surveys, sharing them through a public link, collecting responses, and viewing analytics from a single dashboard.
+
+Built with **React**, **Hono**, **Cloudflare Workers**, and **Cloudflare D1**.
 
 **Live Demo:** https://main.survey-builder-dhz.pages.dev
 
-[https://github.com/user-attachments/assets/5a898028-63e4-4eef-bd75-1e06e0852c8c](https://github.com/user-attachments/assets/aa2e6536-8695-4481-b2f5-0eb25384bf92)
+## Demo
 
-## Architecture
-<img width="1691" height="930" alt="image" src="https://github.com/user-attachments/assets/3098910b-096c-4219-9dad-a8b59bcf322a" />
+https://github.com/user-attachments/assets/aa2e6536-8695-4481-b2f5-0eb25384bf92
 
-## What it does
+## Features
 
-- Sign up / sign in with email + password
-- Create surveys with a 4-step guided wizard (basics → branding → questions → publish)
-- Add, edit, reorder, and delete questions from a slide-out drawer
-- 7 question types: short text, long text, multiple choice, checkbox group, dropdown, rating, yes/no
-- Per-survey branding: primary color picker + logo URL
-- Publish a survey and share a public URL — no login required to respond
-- View all responses per survey in the dashboard
-- Server-side filtered and paginated survey list — search, status, date range, and sort are applied in SQL
+- Create surveys using a four-step guided wizard
+- Add, edit, delete, and reorder questions
+- Support for seven question types
+- Customize surveys with a logo and brand colors
+- Publish surveys and share a public link
+- Collect anonymous responses
+- View responses with charts and analytics
+- Search, filter, sort, and paginate surveys
+- Export responses to Excel
+- Secure JWT-based authentication
 
-## Stack
+## Tech Stack
 
-| Layer | Choice |
-|---|---|
+| Layer | Technology |
+| --- | --- |
+| Frontend | React 18, Vite, TanStack Router |
 | Backend | Hono on Cloudflare Workers |
-| Frontend | React 18 + Vite + TanStack Router |
-| Database | Cloudflare D1 (SQLite at the edge) |
-| Language | TypeScript end-to-end |
-| Auth | JWT (HS256 via `jose`) + PBKDF2 password hashing |
+| Database | Cloudflare D1 (SQLite) |
+| Language | TypeScript |
+| State Management | Redux Toolkit |
+| Authentication | JWT (`jose`) + PBKDF2 |
 | Styling | Tailwind CSS |
-| State | Redux Toolkit + redux-persist |
-| HTTP | Axios with interceptors |
+| HTTP | Axios |
+| Charts | Chart.js |
+| Excel Export | xlsx |
 | Linting | Biome |
 
-## Project structure
+## Architecture
 
-This is a pnpm workspace with two packages.
+### High-level flow
 
+```text
+Browser
+    │
+React
+(TanStack Router + Redux Toolkit)
+    │
+Axios
+    │
+Cloudflare Workers (Hono)
+    │
+JWT Authentication Middleware
+    │
+Controllers
+    │
+Raw SQL Queries
+    │
+Cloudflare D1 (SQLite)
 ```
-/
-├── api/        # Hono Worker — auth, surveys, questions, responses
-├── web/        # React app — builder UI, dashboard, public survey page
+
+### Detailed architecture
+
+```html
+<img width="1691" alt="Architecture" src="https://github.com/user-attachments/assets/3098910b-096c-4219-9dad-a8b59bcf322a" />
+```
+
+## Project Structure
+
+```text
+.
+├── api/        # Hono API
+├── web/        # React application
 ├── biome.json
 └── package.json
 ```
 
-See [`api/README.md`](./api/README.md) and [`web/README.md`](./web/README.md) for detailed architecture notes on each package.
+See `api/README.md` and `web/README.md` for package-specific documentation.
 
-## Architecture overview
+## Engineering Decisions
 
-```
-Browser
-  └── React (TanStack Router, Redux)
-        └── Axios → /api proxy (Vite dev) or direct (prod)
-                      └── Hono Worker
-                            └── Cloudflare D1
-```
+### Stateless authentication
 
-The API is stateless — JWT auth, no sessions. The frontend stores the token in `localStorage`, attaches it on every request via an Axios interceptor, and handles expiry with a custom `auth:session-expired` event that shows a toast and redirects to login.
+The API is stateless. Authentication uses JWTs stored in secure HttpOnly cookies, and every request is authenticated independently through middleware without server-side sessions.
 
-The survey builder runs entirely inside an OffCanvas drawer — no separate route. This keeps the surveys list and builder on one page so changes appear immediately without navigation.
+### Raw SQL instead of an ORM
 
+Prepared SQL statements are used instead of an ORM to keep the data layer simple and provide full control over queries, filtering, pagination, and batch operations.
 
-## Most interesting decisions
+### Survey builder workflow
 
-**Locked dashboard instead of a blank login page** — Unauthenticated users see a blurred version of the real dashboard — analytics, charts, surveys — but cannot interact with it. The goal was to communicate the product's value before asking for a sign-in. It creates curiosity and gives context rather than dropping users onto an empty screen.
+Survey creation happens inside a multi-step drawer rather than separate pages, allowing users to stay on the dashboard while building surveys.
 
-**Multi-step OffCanvas wizard for survey creation** — Survey creation is split into four steps (details → branding → questions → publish) inside a drawer. Users never leave the surveys page, so there are no route transitions to manage and the survey list updates immediately after creation.
+### Locked dashboard preview
 
-**Server-side filtering and pagination** — The surveys list fetches only the current page from the API. Search, status, date range, and sort are passed as query params and applied in SQL with `WHERE`, `ORDER BY`, `LIMIT`, and `OFFSET`. The API returns `{ surveys, total, page, pageSize }` — the frontend stores only the visible page and drives the pagination bar from `total`. Search input is debounced 400ms client-side before triggering a fetch so the API isn't called on every keystroke.
+Unauthenticated users see a blurred preview of the dashboard instead of an empty login screen, providing context before asking them to sign in.
 
-**Client-side filtering, search, sort, and pagination composed together** — This was the original approach — all four applied in-memory from a single fetched list. It has since been moved server-side (see above). The frontend filter state, pagination controls, and search debounce remain on the client, but they now drive API params rather than in-memory operations.
+### Server-side data operations
 
-## What I'd do differently with another week
+Searching, filtering, sorting, and pagination are handled in SQL using `WHERE`, `ORDER BY`, `LIMIT`, and `OFFSET`, so only the required data is returned to the client.
 
-Right now every published survey is fully public — anyone with the link can respond, anonymously, with no way to know who submitted what.
+## Future Improvements
 
-I'd add authenticated responses. A survey owner could mark a survey as private, requiring respondents to sign in before submitting. The response would then be tied to a verified identity instead of an anonymous submission.
+The next planned feature is private surveys.
 
-This opens up the real organisational use case — a team lead sends an internal survey to their team, only team members can respond, and the owner can see exactly who said what. Anonymous public surveys are a commodity. Authenticated internal surveys for teams is where the product becomes genuinely useful to a paying user.
+Survey owners would be able to require respondents to sign in before submitting responses, allowing responses to be associated with verified users instead of remaining anonymous.
 
-The work would touch three layers:
-- The API needs a `visibility` field on surveys (`public` / `private`) and the response endpoint needs to verify a JWT before accepting a submission.
-- The public survey page needs to handle the unauthenticated case gracefully — redirect to login, then return the respondent back to the survey after sign-in.
-- The dashboard responses view needs to surface respondent identity instead of showing "Anonymous submitted."
+This would require:
 
-The authentication infrastructure is already there — JWT, PBKDF2, the auth slice in Redux. The gap is purely on the response side. It would require a schema change on the responses table and a new respondent relationship, but nothing architecturally difficult.
+- Survey visibility (`public` / `private`)
+- JWT verification for response submission
+- Linking responses to authenticated users
+- Showing respondent identities in the dashboard
 
-## Running locally
+## Running Locally
 
 ```bash
-pnpm install          # installs api, web, and root devDeps
-pnpm dev              # api on :8787, web on :5173 (proxies /api)
+pnpm install
+pnpm dev
 ```
 
-Other scripts from the root:
+Useful commands:
 
 ```bash
-pnpm check            # Biome lint + format (must pass)
-pnpm check:fix        # Auto-fix Biome issues
-pnpm typecheck        # tsc --noEmit across both packages
-pnpm build            # Production build of web/
+pnpm build
+pnpm check
+pnpm check:fix
+pnpm typecheck
 ```
 
-## Deploying to Production
+## Deployment
 
-For detailed deployment instructions, see:
-- **API deployment** → [`api/README.md` → Deploying to Production](./api/README.md#deploying-to-production)
-- **Frontend deployment** → [`web/README.md` → Deploying to Production](./web/README.md#deploying-to-production)
+- Frontend: Cloudflare Pages
+- Backend: Cloudflare Workers
+- Database: Cloudflare D1
 
-Quick summary:
-1. Deploy D1 database schema: `wrangler d1 execute survey-builder --remote --file=schema.sql`
-2. Set environment variables in `wrangler.jsonc` (JWT_SECRET, FRONTEND_URL)
-3. Deploy API: `cd api && npm run deploy`
-4. Set VITE_API_URL in `web/.env` and build
-5. Deploy frontend: `cd web && wrangler pages deploy dist`
-6. Update FRONTEND_URL in API and redeploy for CORS
+## AI Usage
 
-The full app is deployed across Cloudflare Workers (API) and Cloudflare Pages (frontend) with D1 for persistence.
+AI tools were used to speed up development tasks such as refactoring, documentation, and TypeScript fixes.
 
-## AI tools used
-
-**Amazon Q Developer (IDE assistant)** — Used primarily as an implementation accelerator for fixing TypeScript issues, reducing repetitive Redux/thunk boilerplate, speeding up refactors, and improving documentation quality. Helpful for productivity-oriented tasks, but generated code was always reviewed and simplified where necessary to maintain the minimal, consistent code style of the project.
-
-**Claude** — Used mainly during planning and UI iteration for discussing feature organisation, validating component structure ideas, and exploring UX tradeoffs before implementation. Some UI suggestions were intentionally overridden to better align with the product direction and interaction model I wanted.
-
-**What remained fully manual** — The core engineering and system design decisions were entirely my own: the drawer-based UX, D1 over KV, no ORM, PBKDF2 for auth, and the overall project and file architecture. AI tools were used as assistants within an already defined structure — not as decision-makers. Every generated suggestion was reviewed, understood, modified when necessary, and integrated intentionally before being committed.
+The application architecture, authentication flow, database design, project structure, and implementation decisions were designed and implemented manually. AI-generated suggestions were reviewed, understood, and modified before being included in the project.
