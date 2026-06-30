@@ -4,6 +4,9 @@ A lightweight branded survey builder. Create surveys, add questions, brand them 
 
 **Live Demo:** https://main.survey-builder-dhz.pages.dev
 
+## Architecture
+<img width="1691" height="930" alt="image" src="https://github.com/user-attachments/assets/3098910b-096c-4219-9dad-a8b59bcf322a" />
+
 ## What it does
 
 - Sign up / sign in with email + password
